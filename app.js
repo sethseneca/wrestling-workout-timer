@@ -6,19 +6,22 @@
   var SAVED_TIMERS_KEY = "wrestlingWorkoutSavedTimers";
   var AUDIO_FILES = {
     three: [
-      { src: "assets/audio/three.ogg", type: "audio/ogg" },
       { src: "assets/audio/three.m4a", type: "audio/mp4" }
     ],
     two: [
-      { src: "assets/audio/two.ogg", type: "audio/ogg" },
       { src: "assets/audio/two.m4a", type: "audio/mp4" }
     ],
     one: [
-      { src: "assets/audio/one.ogg", type: "audio/ogg" },
       { src: "assets/audio/one.m4a", type: "audio/mp4" }
     ],
     whistle: [
-      { src: "assets/audio/whistle.mp3", type: "audio/mpeg" }
+      { src: "assets/audio/whistle-start.m4a", type: "audio/mp4" }
+    ],
+    restHorn: [
+      { src: "assets/audio/rest-horn.m4a", type: "audio/mp4" }
+    ],
+    finalHorn: [
+      { src: "assets/audio/final-horn.m4a", type: "audio/mp4" }
     ]
   };
   var DEFAULTS = {
@@ -64,6 +67,8 @@
     isDone: false,
     audioContext: null,
     audioAssets: {},
+    audioBuffers: {},
+    audioBufferPromises: {},
     audioAssetsPrimed: false,
     wakeLock: null,
     playedCues: {},
@@ -303,6 +308,10 @@
       state.playedCues.workStart = true;
     }
 
+    if (state.isRunning && step.phase === "rest" && previousPhase === "work") {
+      playRestHorn();
+    }
+
     if (state.isRunning) {
       state.targetTime = performance.now() + state.remainingMs;
     }
@@ -341,10 +350,6 @@
     if (state.currentIndex >= state.sequence.length - 1) {
       finishWorkout(true);
       return;
-    }
-
-    if (!wasSkipped && previousPhase === "work") {
-      playRoundEndHorn(false);
     }
 
     setCurrentStep(state.currentIndex + 1, previousPhase);
@@ -432,6 +437,7 @@
     }
 
     primeAudioAssets();
+    loadAudioBuffers();
   }
 
   function loadAudioAssets() {
@@ -445,6 +451,44 @@
       var audio = new Audio(source);
       audio.preload = "auto";
       state.audioAssets[name] = audio;
+    });
+  }
+
+  function loadAudioBuffers() {
+    if (!state.audioContext || !window.fetch) {
+      return;
+    }
+
+    Object.keys(AUDIO_FILES).forEach(function (name) {
+      if (state.audioBuffers[name] || state.audioBufferPromises[name]) {
+        return;
+      }
+
+      var source = chooseAudioSource(AUDIO_FILES[name]);
+
+      if (!source) {
+        return;
+      }
+
+      state.audioBufferPromises[name] = fetch(source)
+        .then(function (response) {
+          if (!response.ok) {
+            throw new Error("Audio file failed to load");
+          }
+
+          return response.arrayBuffer();
+        })
+        .then(function (arrayBuffer) {
+          return state.audioContext.decodeAudioData(arrayBuffer);
+        })
+        .then(function (audioBuffer) {
+          state.audioBuffers[name] = audioBuffer;
+          return audioBuffer;
+        })
+        .catch(function () {
+          state.audioBufferPromises[name] = null;
+          return null;
+        });
     });
   }
 
@@ -591,8 +635,35 @@
     playToneAt(1180, 0.028, 0.18, "triangle", startOffset + 0.006);
   }
 
+  function playRestHorn() {
+    if (playAudioAsset("restHorn", 1, 0, function () {
+      playRoundEndHorn(false);
+    })) {
+      return;
+    }
+
+    playRoundEndHorn(false);
+  }
+
   function playAudioAsset(name, volume, delayMs, fallback) {
     var source = state.audioAssets[name];
+    var delaySeconds = (delayMs || 0) / 1000;
+
+    if (state.audioBuffers[name]) {
+      playAudioBuffer(name, volume, delaySeconds);
+      return true;
+    }
+
+    if (state.audioBufferPromises[name]) {
+      state.audioBufferPromises[name].then(function (audioBuffer) {
+        if (audioBuffer) {
+          playAudioBuffer(name, volume, delaySeconds);
+        } else if (fallback) {
+          fallback();
+        }
+      });
+      return true;
+    }
 
     if (!source) {
       return false;
@@ -617,6 +688,23 @@
     return true;
   }
 
+  function playAudioBuffer(name, volume, delaySeconds) {
+    if (!state.audioContext || !state.audioBuffers[name]) {
+      return false;
+    }
+
+    var now = state.audioContext.currentTime + delaySeconds;
+    var source = state.audioContext.createBufferSource();
+    var gain = state.audioContext.createGain();
+
+    source.buffer = state.audioBuffers[name];
+    gain.gain.setValueAtTime(volume, now);
+    source.connect(gain);
+    gain.connect(state.audioContext.destination);
+    source.start(now);
+    return true;
+  }
+
   function speakCountdownNumber(secondsRemaining) {
     if (!("speechSynthesis" in window) || !("SpeechSynthesisUtterance" in window)) {
       return;
@@ -634,6 +722,12 @@
   }
 
   function playFinishTone() {
+    if (playAudioAsset("finalHorn", 1, 0, function () {
+      playRoundEndHorn(true);
+    })) {
+      return;
+    }
+
     playRoundEndHorn(true);
   }
 
