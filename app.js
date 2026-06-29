@@ -47,7 +47,7 @@
     isDone: false,
     audioContext: null,
     wakeLock: null,
-    countdownBeeps: {},
+    playedCues: {},
     savedTimers: [],
     lastStateSave: 0
   };
@@ -228,6 +228,7 @@
     cancelAnimationFrame(state.rafId);
     state.isRunning = true;
     state.targetTime = performance.now() + state.remainingMs;
+    playStartCueIfNeeded();
     requestWakeLock();
     tick();
     updateControls();
@@ -274,11 +275,12 @@
 
     state.currentIndex = index;
     state.remainingMs = step.duration * 1000;
-    state.countdownBeeps = {};
+    state.playedCues = {};
     updateDisplay();
 
-    if (isWorkRestTransition(previousPhase, step.phase)) {
-      playTransitionTone();
+    if (state.isRunning && step.phase === "work" && previousPhase !== "work") {
+      playWhistleStart();
+      state.playedCues.workStart = true;
     }
 
     if (state.isRunning) {
@@ -294,7 +296,7 @@
     }
 
     state.remainingMs = Math.max(0, state.targetTime - performance.now());
-    maybePlayCountdownBeep();
+    maybePlayIntervalCues();
     updateDisplay();
     saveTimerStateThrottled();
 
@@ -321,6 +323,10 @@
       return;
     }
 
+    if (!wasSkipped && previousPhase === "work") {
+      playRoundEndHorn(false);
+    }
+
     setCurrentStep(state.currentIndex + 1, previousPhase);
 
     if (state.isRunning) {
@@ -337,7 +343,7 @@
     state.hasStarted = true;
     state.isDone = true;
     state.remainingMs = 0;
-    state.countdownBeeps = {};
+    state.playedCues = {};
     app.className = "app phase-done";
     phaseLabelEl.textContent = "DONE";
     countdownEl.textContent = "00:00";
@@ -371,12 +377,22 @@
     runStatusEl.textContent = state.isDone ? "Done" : state.isRunning ? "Running" : state.hasStarted ? "Paused" : "Ready";
   }
 
-  function maybePlayCountdownBeep() {
+  function maybePlayIntervalCues() {
+    var step = state.sequence[state.currentIndex];
     var secondsRemaining = Math.ceil(state.remainingMs / 1000);
 
-    if (secondsRemaining >= 1 && secondsRemaining <= 3 && !state.countdownBeeps[secondsRemaining]) {
-      state.countdownBeeps[secondsRemaining] = true;
-      playCountdownTone(secondsRemaining);
+    if (!step) {
+      return;
+    }
+
+    if ((step.phase === "ready" || step.phase === "rest") && secondsRemaining >= 1 && secondsRemaining <= 3 && !state.playedCues["countdown-" + secondsRemaining]) {
+      state.playedCues["countdown-" + secondsRemaining] = true;
+      playCountdownCue(secondsRemaining);
+    }
+
+    if (step.phase === "work" && step.duration > 10 && secondsRemaining === 10 && !state.playedCues.tenSecondWarning) {
+      state.playedCues.tenSecondWarning = true;
+      playTenSecondWarning();
     }
   }
 
@@ -396,13 +412,17 @@
   }
 
   function playTone(frequency, duration, volume, type) {
+    playToneAt(frequency, duration, volume, type, 0);
+  }
+
+  function playToneAt(frequency, duration, volume, type, startOffset) {
     unlockAudio();
 
     if (!state.audioContext || state.audioContext.state === "suspended") {
       return;
     }
 
-    var now = state.audioContext.currentTime;
+    var now = state.audioContext.currentTime + startOffset;
     var oscillator = state.audioContext.createOscillator();
     var gain = state.audioContext.createGain();
 
@@ -417,23 +437,95 @@
     oscillator.stop(now + duration + 0.02);
   }
 
-  function playCountdownTone(secondsRemaining) {
-    playTone(secondsRemaining === 1 ? 920 : 760, 0.12, 0.35, "square");
+  function playCountdownCue(secondsRemaining) {
+    speakCountdownNumber(secondsRemaining);
+    playTone(secondsRemaining === 1 ? 980 : 820, 0.14, 0.32, "square");
   }
 
-  function playTransitionTone() {
-    playTone(620, 0.16, 0.38, "square");
+  function playStartCueIfNeeded() {
+    var step = state.sequence[state.currentIndex];
+
+    if (!step || step.phase !== "work" || state.playedCues.workStart) {
+      return;
+    }
+
+    if (state.remainingMs >= step.duration * 1000 - 120) {
+      playWhistleStart();
+      state.playedCues.workStart = true;
+    }
+  }
+
+  function playWhistleStart() {
+    playWhistleSweep(1850, 3600, 0, 0.34, 0.68);
+    playWhistleSweep(2300, 4100, 0.05, 0.26, 0.45);
+    playToneAt(3200, 0.09, 0.36, "square", 0.3);
+  }
+
+  function playWhistleSweep(startFrequency, endFrequency, startOffset, duration, volume) {
+    unlockAudio();
+
+    if (!state.audioContext || state.audioContext.state === "suspended") {
+      return;
+    }
+
+    var now = state.audioContext.currentTime + startOffset;
+    var oscillator = state.audioContext.createOscillator();
+    var gain = state.audioContext.createGain();
+
+    oscillator.type = "sawtooth";
+    oscillator.frequency.setValueAtTime(startFrequency, now);
+    oscillator.frequency.exponentialRampToValueAtTime(endFrequency, now + duration * 0.45);
+    oscillator.frequency.exponentialRampToValueAtTime(startFrequency * 1.15, now + duration);
+    gain.gain.setValueAtTime(0.0001, now);
+    gain.gain.exponentialRampToValueAtTime(volume, now + 0.02);
+    gain.gain.exponentialRampToValueAtTime(0.0001, now + duration);
+    oscillator.connect(gain);
+    gain.connect(state.audioContext.destination);
+    oscillator.start(now);
+    oscillator.stop(now + duration + 0.02);
+  }
+
+  function playTenSecondWarning() {
+    for (var index = 0; index < 4; index += 1) {
+      playPop(index * 0.14);
+    }
+  }
+
+  function playPop(startOffset) {
+    playToneAt(175, 0.045, 0.48, "square", startOffset);
+    playToneAt(1180, 0.028, 0.18, "triangle", startOffset + 0.006);
+  }
+
+  function speakCountdownNumber(secondsRemaining) {
+    if (!("speechSynthesis" in window) || !("SpeechSynthesisUtterance" in window)) {
+      return;
+    }
+
+    try {
+      var utterance = new SpeechSynthesisUtterance(String(secondsRemaining));
+      utterance.rate = 1.08;
+      utterance.pitch = 1;
+      utterance.volume = 1;
+      window.speechSynthesis.speak(utterance);
+    } catch (error) {
+      return;
+    }
   }
 
   function playFinishTone() {
-    playTone(440, 0.28, 0.35, "sine");
-    window.setTimeout(function () {
-      playTone(660, 0.34, 0.35, "sine");
-    }, 180);
+    playRoundEndHorn(true);
   }
 
-  function isWorkRestTransition(previousPhase, nextPhase) {
-    return (previousPhase === "work" && nextPhase === "rest") || (previousPhase === "rest" && nextPhase === "work");
+  function playRoundEndHorn(isFinal) {
+    var duration = isFinal ? 1.15 : 0.55;
+    var volume = isFinal ? 0.64 : 0.52;
+
+    playToneAt(185, duration, volume, "sawtooth", 0);
+    playToneAt(245, duration * 0.92, volume * 0.72, "sawtooth", 0.015);
+
+    if (isFinal) {
+      playToneAt(140, 0.55, volume * 0.5, "square", 0.58);
+    }
   }
 
   function restoreTimerState() {
@@ -450,7 +542,7 @@
     state.hasStarted = snapshot.hasStarted;
     state.isDone = snapshot.isDone;
     state.isRunning = false;
-    state.countdownBeeps = {};
+    state.playedCues = {};
 
     if (!state.sequence.length) {
       return false;
@@ -539,7 +631,7 @@
 
       state.currentIndex += 1;
       state.remainingMs = state.sequence[state.currentIndex].duration * 1000;
-      state.countdownBeeps = {};
+      state.playedCues = {};
     }
 
     state.remainingMs = Math.max(0, state.remainingMs - remainingElapsed);
