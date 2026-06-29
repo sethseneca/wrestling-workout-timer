@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#111827">
+    <title>Wrestling Workout Timer</title>
+    <link rel="stylesheet" href="style.css">
+  </head>
+  <body>
+    <main class="app" id="app">
+      <section class="timer-panel" aria-labelledby="phaseLabel">
+        <div class="brand-row">
+          <p class="kicker">Wrestling Workout Timer</p>
+          <span class="status-pill" id="runStatus">Ready</span>
+        </div>
+
+        <div class="timer-display">
+          <p class="phase-label" id="phaseLabel">GET READY</p>
+          <p class="countdown" id="countdown" aria-live="polite">00:10</p>
+          <p class="round-counter" id="roundCounter">Round 1 of 8</p>
+        </div>
+
+        <div class="controls" aria-label="Timer controls">
+          <button class="primary" id="startButton" type="button">Start</button>
+          <button id="pauseButton" type="button" disabled>Pause</button>
+          <button id="skipButton" type="button">Skip</button>
+          <button id="resetButton" type="button">Reset</button>
+        </div>
+      </section>
+
+      <section class="settings-panel" aria-labelledby="settingsTitle">
+        <h1 id="settingsTitle">Workout Setup</h1>
+
+        <form id="settingsForm">
+          <fieldset class="duration-field">
+            <legend>Work Duration</legend>
+            <div class="time-inputs">
+              <label>
+                <span>Min</span>
+                <input id="workMinutes" inputmode="numeric" min="0" max="59" type="number" value="0">
+              </label>
+              <label>
+                <span>Sec</span>
+                <input id="workSeconds" inputmode="numeric" min="0" max="59" step="5" type="number" value="30">
+              </label>
+            </div>
+          </fieldset>
+
+          <fieldset class="duration-field">
+            <legend>Rest Duration</legend>
+            <div class="time-inputs">
+              <label>
+                <span>Min</span>
+                <input id="restMinutes" inputmode="numeric" min="0" max="59" type="number" value="0">
+              </label>
+              <label>
+                <span>Sec</span>
+                <input id="restSeconds" inputmode="numeric" min="0" max="59" step="5" type="number" value="15">
+              </label>
+            </div>
+          </fieldset>
+
+          <fieldset class="duration-field">
+            <legend>Get Ready</legend>
+            <div class="time-inputs">
+              <label>
+                <span>Min</span>
+                <input id="readyMinutes" inputmode="numeric" min="0" max="59" type="number" value="0">
+              </label>
+              <label>
+                <span>Sec</span>
+                <input id="readySeconds" inputmode="numeric" min="0" max="59" step="5" type="number" value="10">
+              </label>
+            </div>
+          </fieldset>
+
+          <label class="round-field">
+            <span>Rounds</span>
+            <input id="rounds" inputmode="numeric" min="1" max="99" type="number" value="8">
+          </label>
+        </form>
+      </section>
+    </main>
+
+    <script src="app.js" defer></script>
+  </body>
+</html>

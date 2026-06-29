@@ -2,7 +2,7 @@
 
 ## Highest-Leverage Next Step
 
-Define the version-one timer flow: workout name, number of rounds, work time, rest time, start/pause/reset, and audio cues.
+Test version 1 on a phone in portrait mode and adjust tap target sizing or tone volume if needed.
 
 ## Staff Meeting Notes
 

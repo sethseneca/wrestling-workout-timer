@@ -10,8 +10,8 @@ Help wrestlers, coaches, and training partners run workout timers, interval roun
 
 - Project folder created on 2026-06-29.
 - Git initialized.
-- Product and technical direction still need to be decided.
+- Version 1 is a static, mobile-first interval timer built with vanilla HTML/CSS/JS.
 
 ## Next Step
 
-Decide the first usable version: the smallest timer experience worth building first.
+Open `index.html` directly in a browser, or publish the folder to GitHub Pages as-is.
