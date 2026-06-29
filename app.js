@@ -4,6 +4,23 @@
   var SETTINGS_KEY = "wrestlingWorkoutTimerSettings";
   var TIMER_STATE_KEY = "wrestlingWorkoutTimerState";
   var SAVED_TIMERS_KEY = "wrestlingWorkoutSavedTimers";
+  var AUDIO_FILES = {
+    three: [
+      { src: "assets/audio/three.ogg", type: "audio/ogg" },
+      { src: "assets/audio/three.m4a", type: "audio/mp4" }
+    ],
+    two: [
+      { src: "assets/audio/two.ogg", type: "audio/ogg" },
+      { src: "assets/audio/two.m4a", type: "audio/mp4" }
+    ],
+    one: [
+      { src: "assets/audio/one.ogg", type: "audio/ogg" },
+      { src: "assets/audio/one.m4a", type: "audio/mp4" }
+    ],
+    whistle: [
+      { src: "assets/audio/whistle.mp3", type: "audio/mpeg" }
+    ]
+  };
   var DEFAULTS = {
     workSeconds: 30,
     restSeconds: 15,
@@ -46,12 +63,15 @@
     hasStarted: false,
     isDone: false,
     audioContext: null,
+    audioAssets: {},
+    audioAssetsPrimed: false,
     wakeLock: null,
     playedCues: {},
     savedTimers: [],
     lastStateSave: 0
   };
 
+  loadAudioAssets();
   writeSettingsToInputs(state.settings);
   state.savedTimers = loadSavedTimers();
 
@@ -398,6 +418,7 @@
 
   function unlockAudio() {
     if (!window.AudioContext && !window.webkitAudioContext) {
+      primeAudioAssets();
       return;
     }
 
@@ -409,6 +430,67 @@
     if (state.audioContext.state === "suspended") {
       state.audioContext.resume();
     }
+
+    primeAudioAssets();
+  }
+
+  function loadAudioAssets() {
+    Object.keys(AUDIO_FILES).forEach(function (name) {
+      var source = chooseAudioSource(AUDIO_FILES[name]);
+
+      if (!source) {
+        return;
+      }
+
+      var audio = new Audio(source);
+      audio.preload = "auto";
+      state.audioAssets[name] = audio;
+    });
+  }
+
+  function chooseAudioSource(candidates) {
+    var testAudio = document.createElement("audio");
+
+    for (var index = 0; index < candidates.length; index += 1) {
+      if (!candidates[index].type || testAudio.canPlayType(candidates[index].type)) {
+        return candidates[index].src;
+      }
+    }
+
+    return candidates[0] ? candidates[0].src : "";
+  }
+
+  function primeAudioAssets() {
+    if (state.audioAssetsPrimed) {
+      return;
+    }
+
+    Object.keys(state.audioAssets).forEach(function (name) {
+      var audio = state.audioAssets[name];
+      audio.muted = true;
+      audio.volume = 0;
+
+      var playAttempt = audio.play();
+
+      if (playAttempt && typeof playAttempt.then === "function") {
+        playAttempt.then(function () {
+          audio.pause();
+          audio.currentTime = 0;
+          audio.muted = false;
+          audio.volume = 1;
+        }).catch(function () {
+          audio.muted = false;
+          audio.volume = 1;
+        });
+      } else {
+        audio.pause();
+        audio.currentTime = 0;
+        audio.muted = false;
+        audio.volume = 1;
+      }
+    });
+
+    state.audioAssetsPrimed = true;
   }
 
   function playTone(frequency, duration, volume, type) {
@@ -438,8 +520,13 @@
   }
 
   function playCountdownCue(secondsRemaining) {
-    speakCountdownNumber(secondsRemaining);
-    playTone(secondsRemaining === 1 ? 980 : 820, 0.14, 0.32, "square");
+    var cueName = secondsRemaining === 3 ? "three" : secondsRemaining === 2 ? "two" : "one";
+
+    if (!playAudioAsset(cueName, 1, 0, function () {
+      speakCountdownNumber(secondsRemaining);
+    })) {
+      speakCountdownNumber(secondsRemaining);
+    }
   }
 
   function playStartCueIfNeeded() {
@@ -456,6 +543,14 @@
   }
 
   function playWhistleStart() {
+    if (playAudioAsset("whistle", 1, 0, playSyntheticWhistleStart)) {
+      return;
+    }
+
+    playSyntheticWhistleStart();
+  }
+
+  function playSyntheticWhistleStart() {
     playWhistleSweep(1850, 3600, 0, 0.34, 0.68);
     playWhistleSweep(2300, 4100, 0.05, 0.26, 0.45);
     playToneAt(3200, 0.09, 0.36, "square", 0.3);
@@ -494,6 +589,32 @@
   function playPop(startOffset) {
     playToneAt(175, 0.045, 0.48, "square", startOffset);
     playToneAt(1180, 0.028, 0.18, "triangle", startOffset + 0.006);
+  }
+
+  function playAudioAsset(name, volume, delayMs, fallback) {
+    var source = state.audioAssets[name];
+
+    if (!source) {
+      return false;
+    }
+
+    window.setTimeout(function () {
+      var cue = source.cloneNode(true);
+      cue.volume = volume;
+      cue.currentTime = 0;
+
+      var playAttempt = cue.play();
+
+      if (playAttempt && typeof playAttempt.catch === "function") {
+        playAttempt.catch(function () {
+          if (fallback) {
+            fallback();
+          }
+        });
+      }
+    }, delayMs || 0);
+
+    return true;
   }
 
   function speakCountdownNumber(secondsRemaining) {
