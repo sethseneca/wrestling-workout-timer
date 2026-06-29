@@ -6,25 +6,25 @@
   var SAVED_TIMERS_KEY = "wrestlingWorkoutSavedTimers";
   var AUDIO_FILES = {
     three: [
-      { src: "assets/audio/three.m4a", type: "audio/mp4" }
+      { src: "assets/audio/three.m4a?v=20260629-cues5", type: "audio/mp4" }
     ],
     two: [
-      { src: "assets/audio/two.m4a", type: "audio/mp4" }
+      { src: "assets/audio/two.m4a?v=20260629-cues5", type: "audio/mp4" }
     ],
     one: [
-      { src: "assets/audio/one.m4a", type: "audio/mp4" }
+      { src: "assets/audio/one.m4a?v=20260629-cues5", type: "audio/mp4" }
     ],
     whistle: [
-      { src: "assets/audio/whistle-start.m4a", type: "audio/mp4" }
+      { src: "assets/audio/whistle-start.m4a?v=20260629-cues5", type: "audio/mp4" }
     ],
     restHorn: [
-      { src: "assets/audio/rest-horn.m4a", type: "audio/mp4" }
+      { src: "assets/audio/rest-horn.m4a?v=20260629-cues5", type: "audio/mp4" }
     ],
     finalHorn: [
-      { src: "assets/audio/final-horn.m4a", type: "audio/mp4" }
+      { src: "assets/audio/final-horn.m4a?v=20260629-cues5", type: "audio/mp4" }
     ],
     tenSecondPop: [
-      { src: "assets/audio/ten-second-pop.m4a", type: "audio/mp4" }
+      { src: "assets/audio/ten-second-pop.m4a?v=20260629-cues5", type: "audio/mp4" }
     ]
   };
   var DEFAULTS = {
@@ -551,7 +551,7 @@
 
   function playTenSecondWarning(delaySeconds, shouldTrack) {
     for (var index = 0; index < 5; index += 1) {
-      playAudioBuffer("tenSecondPop", 1, (delaySeconds || 0) + index * 0.16, shouldTrack);
+      playAudioBuffer("tenSecondPop", 1, (delaySeconds || 0) + index * 0.4, shouldTrack);
     }
   }
 
