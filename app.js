@@ -22,6 +22,9 @@
     ],
     finalHorn: [
       { src: "assets/audio/final-horn.m4a", type: "audio/mp4" }
+    ],
+    tenSecondPop: [
+      { src: "assets/audio/ten-second-pop.m4a", type: "audio/mp4" }
     ]
   };
   var DEFAULTS = {
@@ -66,17 +69,15 @@
     hasStarted: false,
     isDone: false,
     audioContext: null,
-    audioAssets: {},
     audioBuffers: {},
     audioBufferPromises: {},
-    audioAssetsPrimed: false,
+    audioReadyPromise: null,
+    activeCueNodes: [],
     wakeLock: null,
-    playedCues: {},
     savedTimers: [],
     lastStateSave: 0
   };
 
-  loadAudioAssets();
   writeSettingsToInputs(state.settings);
   state.savedTimers = loadSavedTimers();
 
@@ -192,8 +193,10 @@
     return sequence;
   }
 
-  function handleStart() {
+  async function handleStart() {
     unlockAudio();
+    runStatusEl.textContent = "Loading";
+    await ensureAudioReady();
 
     if (state.isDone) {
       resetTimer(false);
@@ -212,8 +215,9 @@
     startRunning();
   }
 
-  function handlePauseResume() {
+  async function handlePauseResume() {
     unlockAudio();
+    await ensureAudioReady();
 
     if (!state.hasStarted || state.isDone) {
       return;
@@ -226,8 +230,9 @@
     }
   }
 
-  function handleSkip() {
+  async function handleSkip() {
     unlockAudio();
+    await ensureAudioReady();
 
     if (state.isDone) {
       return;
@@ -251,9 +256,10 @@
     }
 
     cancelAnimationFrame(state.rafId);
+    clearScheduledCues();
     state.isRunning = true;
     state.targetTime = performance.now() + state.remainingMs;
-    playStartCueIfNeeded();
+    scheduleCurrentIntervalCues(null);
     requestWakeLock();
     tick();
     updateControls();
@@ -264,6 +270,7 @@
     state.remainingMs = Math.max(0, state.targetTime - performance.now());
     state.isRunning = false;
     cancelAnimationFrame(state.rafId);
+    clearScheduledCues();
     releaseWakeLock();
     updateDisplay();
     updateControls();
@@ -272,6 +279,7 @@
 
   function resetTimer(shouldSave) {
     cancelAnimationFrame(state.rafId);
+    clearScheduledCues();
     releaseWakeLock();
 
     state.settings = readSettingsFromInputs();
@@ -300,20 +308,11 @@
 
     state.currentIndex = index;
     state.remainingMs = step.duration * 1000;
-    state.playedCues = {};
     updateDisplay();
-
-    if (state.isRunning && step.phase === "work" && previousPhase !== "work") {
-      playWhistleStart();
-      state.playedCues.workStart = true;
-    }
-
-    if (state.isRunning && step.phase === "rest" && previousPhase === "work") {
-      playRestHorn();
-    }
 
     if (state.isRunning) {
       state.targetTime = performance.now() + state.remainingMs;
+      scheduleCurrentIntervalCues(previousPhase);
     }
 
     saveTimerState();
@@ -325,7 +324,6 @@
     }
 
     state.remainingMs = Math.max(0, state.targetTime - performance.now());
-    maybePlayIntervalCues();
     updateDisplay();
     saveTimerStateThrottled();
 
@@ -342,6 +340,7 @@
     var previousPhase = previousStep ? previousStep.phase : null;
 
     cancelAnimationFrame(state.rafId);
+    clearScheduledCues();
 
     if (wasSkipped) {
       state.remainingMs = 0;
@@ -363,12 +362,12 @@
 
   function finishWorkout(shouldPlayTone) {
     cancelAnimationFrame(state.rafId);
+    clearScheduledCues();
     releaseWakeLock();
     state.isRunning = false;
     state.hasStarted = true;
     state.isDone = true;
     state.remainingMs = 0;
-    state.playedCues = {};
     app.className = "app phase-done";
     phaseLabelEl.textContent = "DONE";
     countdownEl.textContent = "00:00";
@@ -402,28 +401,8 @@
     runStatusEl.textContent = state.isDone ? "Done" : state.isRunning ? "Running" : state.hasStarted ? "Paused" : "Ready";
   }
 
-  function maybePlayIntervalCues() {
-    var step = state.sequence[state.currentIndex];
-    var secondsRemaining = Math.ceil(state.remainingMs / 1000);
-
-    if (!step) {
-      return;
-    }
-
-    if ((step.phase === "ready" || step.phase === "rest") && secondsRemaining >= 1 && secondsRemaining <= 3 && !state.playedCues["countdown-" + secondsRemaining]) {
-      state.playedCues["countdown-" + secondsRemaining] = true;
-      playCountdownCue(secondsRemaining);
-    }
-
-    if (step.phase === "work" && step.duration > 10 && secondsRemaining === 10 && !state.playedCues.tenSecondWarning) {
-      state.playedCues.tenSecondWarning = true;
-      playTenSecondWarning();
-    }
-  }
-
   function unlockAudio() {
     if (!window.AudioContext && !window.webkitAudioContext) {
-      primeAudioAssets();
       return;
     }
 
@@ -436,60 +415,77 @@
       state.audioContext.resume();
     }
 
-    primeAudioAssets();
-    loadAudioBuffers();
+    ensureAudioReady();
   }
 
-  function loadAudioAssets() {
-    Object.keys(AUDIO_FILES).forEach(function (name) {
-      var source = chooseAudioSource(AUDIO_FILES[name]);
-
-      if (!source) {
-        return;
-      }
-
-      var audio = new Audio(source);
-      audio.preload = "auto";
-      state.audioAssets[name] = audio;
-    });
-  }
-
-  function loadAudioBuffers() {
-    if (!state.audioContext || !window.fetch) {
-      return;
+  function ensureAudioReady() {
+    if (!window.AudioContext && !window.webkitAudioContext) {
+      return Promise.resolve(false);
     }
 
-    Object.keys(AUDIO_FILES).forEach(function (name) {
-      if (state.audioBuffers[name] || state.audioBufferPromises[name]) {
-        return;
-      }
+    if (!state.audioContext) {
+      var AudioContextConstructor = window.AudioContext || window.webkitAudioContext;
+      state.audioContext = new AudioContextConstructor();
+    }
 
-      var source = chooseAudioSource(AUDIO_FILES[name]);
+    if (state.audioContext.state === "suspended") {
+      state.audioContext.resume();
+    }
 
-      if (!source) {
-        return;
-      }
+    if (state.audioReadyPromise) {
+      return state.audioReadyPromise;
+    }
 
-      state.audioBufferPromises[name] = fetch(source)
-        .then(function (response) {
-          if (!response.ok) {
-            throw new Error("Audio file failed to load");
-          }
-
-          return response.arrayBuffer();
-        })
-        .then(function (arrayBuffer) {
-          return state.audioContext.decodeAudioData(arrayBuffer);
-        })
-        .then(function (audioBuffer) {
-          state.audioBuffers[name] = audioBuffer;
-          return audioBuffer;
-        })
-        .catch(function () {
-          state.audioBufferPromises[name] = null;
-          return null;
-        });
+    state.audioReadyPromise = Promise.all(Object.keys(AUDIO_FILES).map(function (name) {
+      return loadAudioBuffer(name);
+    })).then(function () {
+      return true;
+    }).catch(function () {
+      return false;
     });
+
+    return state.audioReadyPromise;
+  }
+
+  function loadAudioBuffer(name) {
+    if (state.audioBuffers[name]) {
+      return Promise.resolve(state.audioBuffers[name]);
+    }
+
+    if (state.audioBufferPromises[name]) {
+      return state.audioBufferPromises[name];
+    }
+
+    if (!state.audioContext || !window.fetch) {
+      return Promise.resolve(null);
+    }
+
+    var source = chooseAudioSource(AUDIO_FILES[name]);
+
+    if (!source) {
+      return Promise.resolve(null);
+    }
+
+    state.audioBufferPromises[name] = fetch(source)
+      .then(function (response) {
+        if (!response.ok) {
+          throw new Error("Audio file failed to load");
+        }
+
+        return response.arrayBuffer();
+      })
+      .then(function (arrayBuffer) {
+        return state.audioContext.decodeAudioData(arrayBuffer);
+      })
+      .then(function (audioBuffer) {
+        state.audioBuffers[name] = audioBuffer;
+        return audioBuffer;
+      })
+      .catch(function () {
+        return null;
+      });
+
+    return state.audioBufferPromises[name];
   }
 
   function chooseAudioSource(candidates) {
@@ -504,188 +500,59 @@
     return candidates[0] ? candidates[0].src : "";
   }
 
-  function primeAudioAssets() {
-    if (state.audioAssetsPrimed) {
-      return;
-    }
-
-    Object.keys(state.audioAssets).forEach(function (name) {
-      var audio = state.audioAssets[name];
-      audio.muted = true;
-      audio.volume = 0;
-
-      var playAttempt = audio.play();
-
-      if (playAttempt && typeof playAttempt.then === "function") {
-        playAttempt.then(function () {
-          audio.pause();
-          audio.currentTime = 0;
-          audio.muted = false;
-          audio.volume = 1;
-        }).catch(function () {
-          audio.muted = false;
-          audio.volume = 1;
-        });
-      } else {
-        audio.pause();
-        audio.currentTime = 0;
-        audio.muted = false;
-        audio.volume = 1;
-      }
-    });
-
-    state.audioAssetsPrimed = true;
-  }
-
-  function playTone(frequency, duration, volume, type) {
-    playToneAt(frequency, duration, volume, type, 0);
-  }
-
-  function playToneAt(frequency, duration, volume, type, startOffset) {
-    unlockAudio();
-
-    if (!state.audioContext || state.audioContext.state === "suspended") {
-      return;
-    }
-
-    var now = state.audioContext.currentTime + startOffset;
-    var oscillator = state.audioContext.createOscillator();
-    var gain = state.audioContext.createGain();
-
-    oscillator.type = type || "sine";
-    oscillator.frequency.setValueAtTime(frequency, now);
-    gain.gain.setValueAtTime(0.0001, now);
-    gain.gain.exponentialRampToValueAtTime(volume, now + 0.015);
-    gain.gain.exponentialRampToValueAtTime(0.0001, now + duration);
-    oscillator.connect(gain);
-    gain.connect(state.audioContext.destination);
-    oscillator.start(now);
-    oscillator.stop(now + duration + 0.02);
-  }
-
-  function playCountdownCue(secondsRemaining) {
+  function playCountdownCue(secondsRemaining, delaySeconds) {
     var cueName = secondsRemaining === 3 ? "three" : secondsRemaining === 2 ? "two" : "one";
-
-    if (!playAudioAsset(cueName, 1, 0, function () {
-      speakCountdownNumber(secondsRemaining);
-    })) {
-      speakCountdownNumber(secondsRemaining);
-    }
+    playAudioBuffer(cueName, 1, delaySeconds || 0);
   }
 
-  function playStartCueIfNeeded() {
+  function scheduleCurrentIntervalCues(previousPhase) {
     var step = state.sequence[state.currentIndex];
 
-    if (!step || step.phase !== "work" || state.playedCues.workStart) {
+    if (!step || !state.audioContext) {
       return;
     }
 
-    if (state.remainingMs >= step.duration * 1000 - 120) {
-      playWhistleStart();
-      state.playedCues.workStart = true;
-    }
-  }
+    clearScheduledCues();
 
-  function playWhistleStart() {
-    if (playAudioAsset("whistle", 1, 0, playSyntheticWhistleStart)) {
-      return;
-    }
+    if ((step.phase === "ready" || step.phase === "rest") && state.remainingMs >= 1000) {
+      [3, 2, 1].forEach(function (secondsRemaining) {
+        var delaySeconds = state.remainingMs / 1000 - secondsRemaining;
 
-    playSyntheticWhistleStart();
-  }
-
-  function playSyntheticWhistleStart() {
-    playWhistleSweep(1850, 3600, 0, 0.34, 0.68);
-    playWhistleSweep(2300, 4100, 0.05, 0.26, 0.45);
-    playToneAt(3200, 0.09, 0.36, "square", 0.3);
-  }
-
-  function playWhistleSweep(startFrequency, endFrequency, startOffset, duration, volume) {
-    unlockAudio();
-
-    if (!state.audioContext || state.audioContext.state === "suspended") {
-      return;
-    }
-
-    var now = state.audioContext.currentTime + startOffset;
-    var oscillator = state.audioContext.createOscillator();
-    var gain = state.audioContext.createGain();
-
-    oscillator.type = "sawtooth";
-    oscillator.frequency.setValueAtTime(startFrequency, now);
-    oscillator.frequency.exponentialRampToValueAtTime(endFrequency, now + duration * 0.45);
-    oscillator.frequency.exponentialRampToValueAtTime(startFrequency * 1.15, now + duration);
-    gain.gain.setValueAtTime(0.0001, now);
-    gain.gain.exponentialRampToValueAtTime(volume, now + 0.02);
-    gain.gain.exponentialRampToValueAtTime(0.0001, now + duration);
-    oscillator.connect(gain);
-    gain.connect(state.audioContext.destination);
-    oscillator.start(now);
-    oscillator.stop(now + duration + 0.02);
-  }
-
-  function playTenSecondWarning() {
-    for (var index = 0; index < 4; index += 1) {
-      playPop(index * 0.14);
-    }
-  }
-
-  function playPop(startOffset) {
-    playToneAt(175, 0.045, 0.48, "square", startOffset);
-    playToneAt(1180, 0.028, 0.18, "triangle", startOffset + 0.006);
-  }
-
-  function playRestHorn() {
-    if (playAudioAsset("restHorn", 1, 0, function () {
-      playRoundEndHorn(false);
-    })) {
-      return;
-    }
-
-    playRoundEndHorn(false);
-  }
-
-  function playAudioAsset(name, volume, delayMs, fallback) {
-    var source = state.audioAssets[name];
-    var delaySeconds = (delayMs || 0) / 1000;
-
-    if (state.audioBuffers[name]) {
-      playAudioBuffer(name, volume, delaySeconds);
-      return true;
-    }
-
-    if (state.audioBufferPromises[name]) {
-      state.audioBufferPromises[name].then(function (audioBuffer) {
-        if (audioBuffer) {
-          playAudioBuffer(name, volume, delaySeconds);
-        } else if (fallback) {
-          fallback();
+        if (delaySeconds >= -0.08) {
+          playCountdownCue(secondsRemaining, Math.max(0, delaySeconds));
         }
       });
-      return true;
     }
 
-    if (!source) {
-      return false;
+    if (step.phase === "work" && state.remainingMs >= step.duration * 1000 - 250) {
+      playWhistleStart(0);
     }
 
-    window.setTimeout(function () {
-      var cue = source.cloneNode(true);
-      cue.volume = volume;
-      cue.currentTime = 0;
+    if (step.phase === "work" && step.duration > 10) {
+      var warningDelay = state.remainingMs / 1000 - 10;
 
-      var playAttempt = cue.play();
-
-      if (playAttempt && typeof playAttempt.catch === "function") {
-        playAttempt.catch(function () {
-          if (fallback) {
-            fallback();
-          }
-        });
+      if (warningDelay >= -0.08) {
+        playTenSecondWarning(Math.max(0, warningDelay));
       }
-    }, delayMs || 0);
+    }
 
-    return true;
+    if (step.phase === "rest" && previousPhase === "work" && state.remainingMs >= step.duration * 1000 - 250) {
+      playRestHorn(0);
+    }
+  }
+
+  function playWhistleStart(delaySeconds) {
+    playAudioBuffer("whistle", 1, delaySeconds || 0);
+  }
+
+  function playTenSecondWarning(delaySeconds) {
+    for (var index = 0; index < 5; index += 1) {
+      playAudioBuffer("tenSecondPop", 1, (delaySeconds || 0) + index * 0.16);
+    }
+  }
+
+  function playRestHorn(delaySeconds) {
+    playAudioBuffer("restHorn", 1, delaySeconds || 0);
   }
 
   function playAudioBuffer(name, volume, delaySeconds) {
@@ -702,45 +569,24 @@
     source.connect(gain);
     gain.connect(state.audioContext.destination);
     source.start(now);
+    state.activeCueNodes.push(source);
     return true;
   }
 
-  function speakCountdownNumber(secondsRemaining) {
-    if (!("speechSynthesis" in window) || !("SpeechSynthesisUtterance" in window)) {
-      return;
-    }
+  function clearScheduledCues() {
+    state.activeCueNodes.forEach(function (source) {
+      try {
+        source.stop();
+      } catch (error) {
+        return;
+      }
+    });
 
-    try {
-      var utterance = new SpeechSynthesisUtterance(String(secondsRemaining));
-      utterance.rate = 1.08;
-      utterance.pitch = 1;
-      utterance.volume = 1;
-      window.speechSynthesis.speak(utterance);
-    } catch (error) {
-      return;
-    }
+    state.activeCueNodes = [];
   }
 
   function playFinishTone() {
-    if (playAudioAsset("finalHorn", 1, 0, function () {
-      playRoundEndHorn(true);
-    })) {
-      return;
-    }
-
-    playRoundEndHorn(true);
-  }
-
-  function playRoundEndHorn(isFinal) {
-    var duration = isFinal ? 1.15 : 0.55;
-    var volume = isFinal ? 0.64 : 0.52;
-
-    playToneAt(185, duration, volume, "sawtooth", 0);
-    playToneAt(245, duration * 0.92, volume * 0.72, "sawtooth", 0.015);
-
-    if (isFinal) {
-      playToneAt(140, 0.55, volume * 0.5, "square", 0.58);
-    }
+    playAudioBuffer("finalHorn", 1, 0);
   }
 
   function restoreTimerState() {
@@ -757,7 +603,6 @@
     state.hasStarted = snapshot.hasStarted;
     state.isDone = snapshot.isDone;
     state.isRunning = false;
-    state.playedCues = {};
 
     if (!state.sequence.length) {
       return false;
@@ -846,7 +691,6 @@
 
       state.currentIndex += 1;
       state.remainingMs = state.sequence[state.currentIndex].duration * 1000;
-      state.playedCues = {};
     }
 
     state.remainingMs = Math.max(0, state.remainingMs - remainingElapsed);
