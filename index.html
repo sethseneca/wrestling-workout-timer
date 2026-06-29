@@ -87,6 +87,18 @@
             <span>Rounds</span>
             <input id="rounds" inputmode="numeric" min="1" max="99" type="number" value="8">
           </label>
+
+          <section class="timer-library" aria-labelledby="savedTimersTitle">
+            <h2 id="savedTimersTitle">Saved Timers</h2>
+            <div class="save-timer-row">
+              <label class="timer-name-field">
+                <span>Name</span>
+                <input id="timerName" maxlength="40" placeholder="Match Day Conditioning" type="text">
+              </label>
+              <button id="saveTimerButton" type="button">Save</button>
+            </div>
+            <div class="saved-timer-list" id="savedTimerList" aria-live="polite"></div>
+          </section>
         </form>
       </section>
     </main>

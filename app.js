@@ -1,7 +1,9 @@
 (function () {
   "use strict";
 
-  var STORAGE_KEY = "wrestlingWorkoutTimerSettings";
+  var SETTINGS_KEY = "wrestlingWorkoutTimerSettings";
+  var TIMER_STATE_KEY = "wrestlingWorkoutTimerState";
+  var SAVED_TIMERS_KEY = "wrestlingWorkoutSavedTimers";
   var DEFAULTS = {
     workSeconds: 30,
     restSeconds: 15,
@@ -19,6 +21,9 @@
   var skipButton = document.getElementById("skipButton");
   var resetButton = document.getElementById("resetButton");
   var settingsForm = document.getElementById("settingsForm");
+  var timerNameInput = document.getElementById("timerName");
+  var saveTimerButton = document.getElementById("saveTimerButton");
+  var savedTimerList = document.getElementById("savedTimerList");
 
   var inputs = {
     workMinutes: document.getElementById("workMinutes"),
@@ -42,11 +47,19 @@
     isDone: false,
     audioContext: null,
     wakeLock: null,
-    countdownBeeps: {}
+    countdownBeeps: {},
+    savedTimers: [],
+    lastStateSave: 0
   };
 
   writeSettingsToInputs(state.settings);
-  resetTimer(false);
+  state.savedTimers = loadSavedTimers();
+
+  if (!restoreTimerState()) {
+    resetTimer(false);
+  }
+
+  renderSavedTimers();
 
   document.addEventListener("pointerdown", unlockAudio, { once: true });
   startButton.addEventListener("click", handleStart);
@@ -55,12 +68,15 @@
     resetTimer(true);
   });
   skipButton.addEventListener("click", handleSkip);
+  saveTimerButton.addEventListener("click", handleSaveTimer);
   settingsForm.addEventListener("input", handleSettingsInput);
+  savedTimerList.addEventListener("click", handleSavedTimerClick);
+  window.addEventListener("beforeunload", saveTimerState);
   document.addEventListener("visibilitychange", handleVisibilityChange);
 
   function loadSettings() {
     try {
-      var stored = JSON.parse(localStorage.getItem(STORAGE_KEY));
+      var stored = JSON.parse(localStorage.getItem(SETTINGS_KEY));
       return normalizeSettings(Object.assign({}, DEFAULTS, stored || {}));
     } catch (error) {
       return Object.assign({}, DEFAULTS);
@@ -68,7 +84,7 @@
   }
 
   function saveSettings(settings) {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(settings));
+    localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
   }
 
   function normalizeSettings(settings) {
@@ -113,6 +129,8 @@
 
     if (!state.isRunning && !state.hasStarted) {
       resetTimer(false);
+    } else {
+      saveTimerState();
     }
   }
 
@@ -195,6 +213,7 @@
       saveSettings(state.settings);
       state.sequence = buildSequence(state.settings);
       state.currentIndex = 0;
+      state.remainingMs = state.sequence[0] ? state.sequence[0].duration * 1000 : 0;
       state.hasStarted = true;
     }
 
@@ -212,6 +231,7 @@
     requestWakeLock();
     tick();
     updateControls();
+    saveTimerState();
   }
 
   function pauseRunning() {
@@ -221,6 +241,7 @@
     releaseWakeLock();
     updateDisplay();
     updateControls();
+    saveTimerState();
   }
 
   function resetTimer(shouldSave) {
@@ -240,13 +261,14 @@
     state.isDone = false;
     setCurrentStep(0, null);
     updateControls();
+    saveTimerState();
   }
 
   function setCurrentStep(index, previousPhase) {
     var step = state.sequence[index];
 
     if (!step) {
-      finishWorkout();
+      finishWorkout(true);
       return;
     }
 
@@ -262,6 +284,8 @@
     if (state.isRunning) {
       state.targetTime = performance.now() + state.remainingMs;
     }
+
+    saveTimerState();
   }
 
   function tick() {
@@ -272,6 +296,7 @@
     state.remainingMs = Math.max(0, state.targetTime - performance.now());
     maybePlayCountdownBeep();
     updateDisplay();
+    saveTimerStateThrottled();
 
     if (state.remainingMs <= 0) {
       advanceInterval(false);
@@ -292,7 +317,7 @@
     }
 
     if (state.currentIndex >= state.sequence.length - 1) {
-      finishWorkout();
+      finishWorkout(true);
       return;
     }
 
@@ -305,7 +330,7 @@
     }
   }
 
-  function finishWorkout() {
+  function finishWorkout(shouldPlayTone) {
     cancelAnimationFrame(state.rafId);
     releaseWakeLock();
     state.isRunning = false;
@@ -318,8 +343,11 @@
     countdownEl.textContent = "00:00";
     roundCounterEl.textContent = "Round " + state.settings.rounds + " of " + state.settings.rounds;
     runStatusEl.textContent = "Done";
-    playFinishTone();
+    if (shouldPlayTone) {
+      playFinishTone();
+    }
     updateControls();
+    saveTimerState();
   }
 
   function updateDisplay() {
@@ -408,6 +436,282 @@
     return (previousPhase === "work" && nextPhase === "rest") || (previousPhase === "rest" && nextPhase === "work");
   }
 
+  function restoreTimerState() {
+    var snapshot = loadTimerState();
+
+    if (!snapshot) {
+      return false;
+    }
+
+    state.settings = snapshot.settings;
+    writeSettingsToInputs(state.settings);
+    state.sequence = buildSequence(state.settings);
+    state.currentIndex = clamp(snapshot.currentIndex, 0, Math.max(state.sequence.length - 1, 0));
+    state.hasStarted = snapshot.hasStarted;
+    state.isDone = snapshot.isDone;
+    state.isRunning = false;
+    state.countdownBeeps = {};
+
+    if (!state.sequence.length) {
+      return false;
+    }
+
+    var step = state.sequence[state.currentIndex];
+    state.remainingMs = clamp(snapshot.remainingMs, 0, step.duration * 1000);
+
+    if (snapshot.isRunning && !snapshot.isDone) {
+      applyElapsedSinceSave(Date.now() - snapshot.savedAt);
+    }
+
+    if (state.isDone) {
+      finishWorkout(false);
+      return true;
+    }
+
+    updateDisplay();
+    updateControls();
+
+    if (snapshot.isRunning && state.hasStarted) {
+      startRunning();
+    } else {
+      saveTimerState();
+    }
+
+    return true;
+  }
+
+  function loadTimerState() {
+    try {
+      var snapshot = JSON.parse(localStorage.getItem(TIMER_STATE_KEY));
+
+      if (!snapshot || !snapshot.settings) {
+        return null;
+      }
+
+      return {
+        settings: normalizeSettings(snapshot.settings),
+        currentIndex: toNumber(snapshot.currentIndex, 0),
+        remainingMs: toNumber(snapshot.remainingMs, 0),
+        hasStarted: Boolean(snapshot.hasStarted),
+        isRunning: Boolean(snapshot.isRunning),
+        isDone: Boolean(snapshot.isDone),
+        savedAt: toNumber(snapshot.savedAt, Date.now())
+      };
+    } catch (error) {
+      return null;
+    }
+  }
+
+  function saveTimerState() {
+    var remainingMs = state.isRunning ? Math.max(0, state.targetTime - performance.now()) : state.remainingMs;
+
+    localStorage.setItem(TIMER_STATE_KEY, JSON.stringify({
+      settings: state.settings,
+      currentIndex: state.currentIndex,
+      remainingMs: Math.round(remainingMs),
+      hasStarted: state.hasStarted,
+      isRunning: state.isRunning,
+      isDone: state.isDone,
+      savedAt: Date.now()
+    }));
+
+    state.lastStateSave = Date.now();
+  }
+
+  function saveTimerStateThrottled() {
+    if (Date.now() - state.lastStateSave >= 500) {
+      saveTimerState();
+    }
+  }
+
+  function applyElapsedSinceSave(elapsedMs) {
+    var remainingElapsed = Math.max(0, elapsedMs);
+
+    while (remainingElapsed >= state.remainingMs && !state.isDone) {
+      remainingElapsed -= state.remainingMs;
+
+      if (state.currentIndex >= state.sequence.length - 1) {
+        state.remainingMs = 0;
+        state.isDone = true;
+        state.hasStarted = true;
+        return;
+      }
+
+      state.currentIndex += 1;
+      state.remainingMs = state.sequence[state.currentIndex].duration * 1000;
+      state.countdownBeeps = {};
+    }
+
+    state.remainingMs = Math.max(0, state.remainingMs - remainingElapsed);
+  }
+
+  function loadSavedTimers() {
+    try {
+      var timers = JSON.parse(localStorage.getItem(SAVED_TIMERS_KEY));
+
+      if (!Array.isArray(timers)) {
+        return [];
+      }
+
+      return timers
+        .map(function (timer) {
+          if (!timer || !timer.name || !timer.settings) {
+            return null;
+          }
+
+          return {
+            id: timer.id || createTimerId(),
+            name: String(timer.name).trim().slice(0, 40),
+            settings: normalizeSettings(timer.settings),
+            updatedAt: toNumber(timer.updatedAt, Date.now()),
+            lastUsedAt: toNumber(timer.lastUsedAt, timer.updatedAt || Date.now())
+          };
+        })
+        .filter(Boolean)
+        .sort(compareSavedTimers);
+    } catch (error) {
+      return [];
+    }
+  }
+
+  function saveSavedTimers() {
+    localStorage.setItem(SAVED_TIMERS_KEY, JSON.stringify(state.savedTimers));
+  }
+
+  function handleSaveTimer() {
+    var name = timerNameInput.value.trim();
+
+    if (!name) {
+      timerNameInput.focus();
+      timerNameInput.placeholder = "Name this timer";
+      return;
+    }
+
+    var now = Date.now();
+    var settings = readSettingsFromInputs();
+    var existing = state.savedTimers.find(function (timer) {
+      return timer.name.toLowerCase() === name.toLowerCase();
+    });
+
+    if (existing) {
+      existing.name = name;
+      existing.settings = settings;
+      existing.updatedAt = now;
+      existing.lastUsedAt = now;
+    } else {
+      state.savedTimers.push({
+        id: createTimerId(),
+        name: name,
+        settings: settings,
+        updatedAt: now,
+        lastUsedAt: now
+      });
+    }
+
+    state.savedTimers.sort(compareSavedTimers);
+    saveSavedTimers();
+    renderSavedTimers();
+    timerNameInput.value = "";
+  }
+
+  function handleSavedTimerClick(event) {
+    var loadButton = event.target.closest("[data-load-timer]");
+    var deleteButton = event.target.closest("[data-delete-timer]");
+
+    if (loadButton) {
+      loadSavedTimer(loadButton.getAttribute("data-load-timer"));
+    }
+
+    if (deleteButton) {
+      deleteSavedTimer(deleteButton.getAttribute("data-delete-timer"));
+    }
+  }
+
+  function loadSavedTimer(id) {
+    var timer = findSavedTimer(id);
+
+    if (!timer) {
+      return;
+    }
+
+    timer.lastUsedAt = Date.now();
+    state.settings = timer.settings;
+    writeSettingsToInputs(state.settings);
+    saveSettings(state.settings);
+    state.savedTimers.sort(compareSavedTimers);
+    saveSavedTimers();
+    renderSavedTimers();
+    resetTimer(false);
+  }
+
+  function deleteSavedTimer(id) {
+    state.savedTimers = state.savedTimers.filter(function (timer) {
+      return timer.id !== id;
+    });
+    saveSavedTimers();
+    renderSavedTimers();
+  }
+
+  function findSavedTimer(id) {
+    return state.savedTimers.find(function (timer) {
+      return timer.id === id;
+    });
+  }
+
+  function renderSavedTimers() {
+    savedTimerList.textContent = "";
+
+    if (!state.savedTimers.length) {
+      var empty = document.createElement("p");
+      empty.className = "empty-saved-timers";
+      empty.textContent = "No saved timers yet.";
+      savedTimerList.appendChild(empty);
+      return;
+    }
+
+    state.savedTimers.forEach(function (timer) {
+      var item = document.createElement("div");
+      item.className = "saved-timer-item";
+
+      var loadButton = document.createElement("button");
+      loadButton.className = "saved-timer-load";
+      loadButton.type = "button";
+      loadButton.setAttribute("data-load-timer", timer.id);
+
+      var name = document.createElement("span");
+      name.className = "saved-timer-name";
+      name.textContent = timer.name;
+
+      var meta = document.createElement("span");
+      meta.className = "saved-timer-meta";
+      meta.textContent = getTimerSummary(timer.settings);
+
+      var deleteButton = document.createElement("button");
+      deleteButton.className = "saved-timer-delete";
+      deleteButton.type = "button";
+      deleteButton.setAttribute("data-delete-timer", timer.id);
+      deleteButton.textContent = "Delete";
+
+      loadButton.appendChild(name);
+      loadButton.appendChild(meta);
+      item.appendChild(loadButton);
+      item.appendChild(deleteButton);
+      savedTimerList.appendChild(item);
+    });
+  }
+
+  function getTimerSummary(settings) {
+    return formatShortDuration(settings.workSeconds) + " work / " + formatShortDuration(settings.restSeconds) + " rest / " + settings.rounds + " rounds";
+  }
+
+  function compareSavedTimers(a, b) {
+    return (b.lastUsedAt || b.updatedAt) - (a.lastUsedAt || a.updatedAt);
+  }
+
+  function createTimerId() {
+    return "timer-" + Date.now().toString(36) + "-" + Math.random().toString(36).slice(2, 8);
+  }
+
   async function requestWakeLock() {
     if (!("wakeLock" in navigator) || state.wakeLock) {
       return;
@@ -436,6 +740,8 @@
   }
 
   function handleVisibilityChange() {
+    saveTimerState();
+
     if (document.visibilityState === "visible" && state.isRunning) {
       requestWakeLock();
     }
@@ -446,6 +752,13 @@
     var minutes = Math.floor(seconds / 60);
     var remainder = seconds % 60;
     return String(minutes).padStart(2, "0") + ":" + String(remainder).padStart(2, "0");
+  }
+
+  function formatShortDuration(totalSeconds) {
+    var seconds = Math.max(0, totalSeconds);
+    var minutes = Math.floor(seconds / 60);
+    var remainder = seconds % 60;
+    return minutes + ":" + String(remainder).padStart(2, "0");
   }
 
   function toNumber(value, fallback) {

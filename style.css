@@ -160,10 +160,16 @@ button.primary {
   padding: 16px;
 }
 
-h1 {
+h1,
+h2 {
   margin: 0 0 14px;
   font-size: 1.25rem;
   letter-spacing: 0;
+}
+
+h2 {
+  margin-bottom: 10px;
+  font-size: 1rem;
 }
 
 form {
@@ -177,6 +183,71 @@ fieldset,
   border: 1px solid var(--line);
   border-radius: 8px;
   background: rgba(255, 255, 255, 0.04);
+}
+
+.timer-library {
+  display: grid;
+  gap: 10px;
+  padding-top: 4px;
+}
+
+.save-timer-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 92px;
+  gap: 10px;
+  align-items: end;
+}
+
+.save-timer-row button {
+  min-height: 50px;
+}
+
+.saved-timer-list {
+  display: grid;
+  gap: 8px;
+}
+
+.saved-timer-item {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 78px;
+  gap: 8px;
+}
+
+.saved-timer-load {
+  min-height: 58px;
+  padding: 9px 10px;
+  text-align: left;
+}
+
+.saved-timer-name,
+.saved-timer-meta {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.saved-timer-name {
+  color: var(--text);
+  font-size: 0.94rem;
+  font-weight: 900;
+}
+
+.saved-timer-meta,
+.empty-saved-timers {
+  color: var(--muted);
+  font-size: 0.8rem;
+  font-weight: 750;
+}
+
+.saved-timer-delete {
+  min-height: 58px;
+  font-size: 0.82rem;
+}
+
+.empty-saved-timers {
+  margin: 0;
+  padding: 10px 0 2px;
 }
 
 fieldset {
