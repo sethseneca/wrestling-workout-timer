@@ -43,6 +43,7 @@
   var pauseButton = document.getElementById("pauseButton");
   var skipButton = document.getElementById("skipButton");
   var resetButton = document.getElementById("resetButton");
+  var manualCuesEl = document.getElementById("manualCues");
   var settingsForm = document.getElementById("settingsForm");
   var timerNameInput = document.getElementById("timerName");
   var saveTimerButton = document.getElementById("saveTimerButton");
@@ -95,6 +96,7 @@
     resetTimer(true);
   });
   skipButton.addEventListener("click", handleSkip);
+  manualCuesEl.addEventListener("click", handleManualCueClick);
   saveTimerButton.addEventListener("click", handleSaveTimer);
   settingsForm.addEventListener("input", handleSettingsInput);
   savedTimerList.addEventListener("click", handleSavedTimerClick);
@@ -589,6 +591,25 @@
 
   function playFinishTone() {
     playAudioBuffer("finalHorn", 1, 0);
+  }
+
+  async function handleManualCueClick(event) {
+    var button = event.target.closest("[data-manual-cue]");
+
+    if (!button) {
+      return;
+    }
+
+    unlockAudio();
+    await ensureAudioReady();
+
+    if (button.getAttribute("data-manual-cue") === "whistle") {
+      playWhistleStart(0);
+    }
+
+    if (button.getAttribute("data-manual-cue") === "horn") {
+      playRestHorn(0);
+    }
   }
 
   async function handleSoundCheckClick(event) {

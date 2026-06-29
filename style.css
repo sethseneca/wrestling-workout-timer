@@ -125,6 +125,19 @@ input {
   gap: 10px;
 }
 
+.manual-cues {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.manual-cues button {
+  min-height: 64px;
+  border-color: rgba(255, 255, 255, 0.24);
+  background: rgba(255, 255, 255, 0.12);
+  font-size: 1.08rem;
+}
+
 button {
   min-height: 58px;
   border: 1px solid var(--line);
