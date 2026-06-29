@@ -74,7 +74,7 @@
     audioBuffers: {},
     audioBufferPromises: {},
     audioReadyPromise: null,
-    activeCueNodes: [],
+    scheduledCueNodes: [],
     wakeLock: null,
     savedTimers: [],
     lastStateSave: 0
@@ -504,9 +504,9 @@
     return candidates[0] ? candidates[0].src : "";
   }
 
-  function playCountdownCue(secondsRemaining, delaySeconds) {
+  function playCountdownCue(secondsRemaining, delaySeconds, shouldTrack) {
     var cueName = secondsRemaining === 3 ? "three" : secondsRemaining === 2 ? "two" : "one";
-    playAudioBuffer(cueName, 1, delaySeconds || 0);
+    playAudioBuffer(cueName, 1, delaySeconds || 0, shouldTrack);
   }
 
   function scheduleCurrentIntervalCues(previousPhase) {
@@ -523,43 +523,43 @@
         var delaySeconds = state.remainingMs / 1000 - secondsRemaining;
 
         if (delaySeconds >= -0.08) {
-          playCountdownCue(secondsRemaining, Math.max(0, delaySeconds));
+          playCountdownCue(secondsRemaining, Math.max(0, delaySeconds), true);
         }
       });
     }
 
     if (step.phase === "work" && state.remainingMs >= step.duration * 1000 - 250) {
-      playWhistleStart(0);
+      playWhistleStart(0, true);
     }
 
     if (step.phase === "work" && step.duration > 10) {
       var warningDelay = state.remainingMs / 1000 - 10;
 
       if (warningDelay >= -0.08) {
-        playTenSecondWarning(Math.max(0, warningDelay));
+        playTenSecondWarning(Math.max(0, warningDelay), true);
       }
     }
 
     if (step.phase === "rest" && previousPhase === "work" && state.remainingMs >= step.duration * 1000 - 250) {
-      playRestHorn(0);
+      playRestHorn(0, true);
     }
   }
 
-  function playWhistleStart(delaySeconds) {
-    playAudioBuffer("whistle", 1, delaySeconds || 0);
+  function playWhistleStart(delaySeconds, shouldTrack) {
+    playAudioBuffer("whistle", 1, delaySeconds || 0, shouldTrack);
   }
 
-  function playTenSecondWarning(delaySeconds) {
+  function playTenSecondWarning(delaySeconds, shouldTrack) {
     for (var index = 0; index < 5; index += 1) {
-      playAudioBuffer("tenSecondPop", 1, (delaySeconds || 0) + index * 0.16);
+      playAudioBuffer("tenSecondPop", 1, (delaySeconds || 0) + index * 0.16, shouldTrack);
     }
   }
 
-  function playRestHorn(delaySeconds) {
-    playAudioBuffer("restHorn", 1, delaySeconds || 0);
+  function playRestHorn(delaySeconds, shouldTrack) {
+    playAudioBuffer("restHorn", 1, delaySeconds || 0, shouldTrack);
   }
 
-  function playAudioBuffer(name, volume, delaySeconds) {
+  function playAudioBuffer(name, volume, delaySeconds, shouldTrack) {
     if (!state.audioContext || !state.audioBuffers[name]) {
       return false;
     }
@@ -573,12 +573,21 @@
     source.connect(gain);
     gain.connect(state.audioContext.destination);
     source.start(now);
-    state.activeCueNodes.push(source);
+
+    if (shouldTrack) {
+      state.scheduledCueNodes.push(source);
+      source.onended = function () {
+        state.scheduledCueNodes = state.scheduledCueNodes.filter(function (cueNode) {
+          return cueNode !== source;
+        });
+      };
+    }
+
     return true;
   }
 
   function clearScheduledCues() {
-    state.activeCueNodes.forEach(function (source) {
+    state.scheduledCueNodes.forEach(function (source) {
       try {
         source.stop();
       } catch (error) {
@@ -586,7 +595,7 @@
       }
     });
 
-    state.activeCueNodes = [];
+    state.scheduledCueNodes = [];
   }
 
   function playFinishTone() {
