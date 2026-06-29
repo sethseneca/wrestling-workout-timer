@@ -191,6 +191,24 @@ fieldset,
   padding-top: 4px;
 }
 
+.sound-check {
+  display: grid;
+  gap: 10px;
+  padding-top: 4px;
+}
+
+.sound-check-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.sound-check-grid button {
+  min-height: 48px;
+  padding: 8px;
+  font-size: 0.84rem;
+}
+
 .save-timer-row {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 92px;

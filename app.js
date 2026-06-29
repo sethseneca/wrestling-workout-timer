@@ -47,6 +47,7 @@
   var timerNameInput = document.getElementById("timerName");
   var saveTimerButton = document.getElementById("saveTimerButton");
   var savedTimerList = document.getElementById("savedTimerList");
+  var soundCheckEl = document.getElementById("soundCheck");
 
   var inputs = {
     workMinutes: document.getElementById("workMinutes"),
@@ -97,6 +98,7 @@
   saveTimerButton.addEventListener("click", handleSaveTimer);
   settingsForm.addEventListener("input", handleSettingsInput);
   savedTimerList.addEventListener("click", handleSavedTimerClick);
+  soundCheckEl.addEventListener("click", handleSoundCheckClick);
   window.addEventListener("beforeunload", saveTimerState);
   document.addEventListener("visibilitychange", handleVisibilityChange);
 
@@ -587,6 +589,39 @@
 
   function playFinishTone() {
     playAudioBuffer("finalHorn", 1, 0);
+  }
+
+  async function handleSoundCheckClick(event) {
+    var button = event.target.closest("[data-sound-check]");
+
+    if (!button) {
+      return;
+    }
+
+    unlockAudio();
+    await ensureAudioReady();
+
+    if (button.getAttribute("data-sound-check") === "countdown") {
+      playCountdownCue(3, 0);
+      playCountdownCue(2, 1);
+      playCountdownCue(1, 2);
+    }
+
+    if (button.getAttribute("data-sound-check") === "whistle") {
+      playWhistleStart(0);
+    }
+
+    if (button.getAttribute("data-sound-check") === "restHorn") {
+      playRestHorn(0);
+    }
+
+    if (button.getAttribute("data-sound-check") === "tenSecondPop") {
+      playTenSecondWarning(0);
+    }
+
+    if (button.getAttribute("data-sound-check") === "finalHorn") {
+      playFinishTone();
+    }
   }
 
   function restoreTimerState() {
