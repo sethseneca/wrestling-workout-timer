@@ -6,22 +6,22 @@
   var SAVED_TIMERS_KEY = "wrestlingWorkoutSavedTimers";
   var AUDIO_FILES = {
     ready: [
-      { src: "assets/audio/ready.m4a?v=20260630-audio3", type: "audio/mp4" }
+      { src: "assets/audio/ready.m4a?v=20260630-console1", type: "audio/mp4" }
     ],
     set: [
-      { src: "assets/audio/set.m4a?v=20260630-audio3", type: "audio/mp4" }
+      { src: "assets/audio/set.m4a?v=20260630-console1", type: "audio/mp4" }
     ],
     whistle: [
-      { src: "assets/audio/whistle-start.m4a?v=20260630-audio3", type: "audio/mp4" }
+      { src: "assets/audio/whistle-start.m4a?v=20260630-console1", type: "audio/mp4" }
     ],
     restHorn: [
-      { src: "assets/audio/rest-horn.m4a?v=20260630-audio3", type: "audio/mp4" }
+      { src: "assets/audio/rest-horn.m4a?v=20260630-console1", type: "audio/mp4" }
     ],
     finalHorn: [
-      { src: "assets/audio/final-horn.m4a?v=20260630-audio3", type: "audio/mp4" }
+      { src: "assets/audio/final-horn.m4a?v=20260630-console1", type: "audio/mp4" }
     ],
     tenSecondPop: [
-      { src: "assets/audio/ten-second-pop.m4a?v=20260630-audio3", type: "audio/mp4" }
+      { src: "assets/audio/ten-second-pop.m4a?v=20260630-console1", type: "audio/mp4" }
     ]
   };
   var DEFAULTS = {
@@ -37,7 +37,8 @@
   var roundCounterEl = document.getElementById("roundCounter");
   var runStatusEl = document.getElementById("runStatus");
   var startButton = document.getElementById("startButton");
-  var pauseButton = document.getElementById("pauseButton");
+  var playButtonLabel = document.getElementById("playButtonLabel");
+  var skipBackButton = document.getElementById("skipBackButton");
   var skipButton = document.getElementById("skipButton");
   var resetButton = document.getElementById("resetButton");
   var manualCuesEl = document.getElementById("manualCues");
@@ -92,11 +93,11 @@
   document.addEventListener("touchstart", handleAudioInteraction, { passive: true });
   document.addEventListener("click", handleAudioInteraction);
   document.addEventListener("keydown", handleAudioInteraction);
-  startButton.addEventListener("click", handleStart);
-  pauseButton.addEventListener("click", handlePauseResume);
+  startButton.addEventListener("click", handlePlayPause);
   resetButton.addEventListener("click", function () {
     resetTimer(true);
   });
+  skipBackButton.addEventListener("click", handleSkipBack);
   skipButton.addEventListener("click", handleSkip);
   manualCuesEl.addEventListener("click", handleManualCueClick);
   saveTimerButton.addEventListener("click", handleSaveTimer);
@@ -203,6 +204,15 @@
     return sequence;
   }
 
+  async function handlePlayPause() {
+    if (state.hasStarted && !state.isDone) {
+      await handlePauseResume();
+      return;
+    }
+
+    await handleStart();
+  }
+
   async function handleStart() {
     await unlockAudio();
     runStatusEl.textContent = "Loading";
@@ -258,6 +268,27 @@
     }
 
     advanceInterval(true);
+  }
+
+  async function handleSkipBack() {
+    await unlockAudio();
+    await ensureAudioReady();
+
+    if (state.isDone) {
+      resetTimer(false);
+      return;
+    }
+
+    if (!state.hasStarted) {
+      state.settings = readSettingsFromInputs();
+      saveSettings(state.settings);
+      state.sequence = buildSequence(state.settings);
+      state.currentIndex = 0;
+      state.remainingMs = state.sequence[0] ? state.sequence[0].duration * 1000 : 0;
+      state.hasStarted = true;
+    }
+
+    retreatInterval();
   }
 
   function startRunning() {
@@ -370,6 +401,26 @@
     }
   }
 
+  function retreatInterval() {
+    var nextStep = state.sequence[state.currentIndex];
+    var nextPhase = nextStep ? nextStep.phase : null;
+
+    cancelAnimationFrame(state.rafId);
+    clearScheduledCues();
+
+    if (state.currentIndex <= 0) {
+      setCurrentStep(0, null);
+    } else {
+      setCurrentStep(state.currentIndex - 1, nextPhase);
+    }
+
+    if (state.isRunning) {
+      tick();
+    } else {
+      updateControls();
+    }
+  }
+
   function finishWorkout(shouldPlayTone) {
     cancelAnimationFrame(state.rafId);
     clearScheduledCues();
@@ -404,9 +455,11 @@
   }
 
   function updateControls() {
-    startButton.disabled = state.isRunning;
-    pauseButton.disabled = !state.hasStarted || state.isDone;
-    pauseButton.textContent = state.isRunning ? "Pause" : "Resume";
+    startButton.disabled = false;
+    startButton.classList.toggle("is-running", state.isRunning);
+    startButton.setAttribute("aria-label", state.isRunning ? "Pause timer" : state.hasStarted && !state.isDone ? "Resume timer" : "Start timer");
+    playButtonLabel.textContent = state.isRunning ? "Pause" : state.hasStarted && !state.isDone ? "Resume" : "Start";
+    skipBackButton.disabled = state.isDone || (!state.hasStarted && !state.sequence.length);
     skipButton.disabled = state.isDone;
     runStatusEl.textContent = state.isDone ? "Done" : state.isRunning ? "Running" : state.hasStarted ? "Paused" : "Ready";
   }

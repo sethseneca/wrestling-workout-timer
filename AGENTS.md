@@ -11,8 +11,9 @@ Move Wrestling Workout Timer forward with small, safe, practical changes.
 - Do not add Cloudways, payments, accounts, or a large backend unless Seth explicitly asks.
 - Prefer a responsive web app/PWA as the first technical default.
 - Keep handoff context current in `CLAUDE_HANDOFF.md` when asked.
+- Treat requested app changes as permission to commit, push, and verify GitHub Pages unless Seth says to keep the work local.
 
 ## Safety
 
 - Do not commit secrets, `.env` files, build artifacts, or dependency folders.
-- Do not commit or push unless Seth explicitly asks or the task is project setup that includes GitHub linking.
+- Before pushing, confirm the diff is scoped to the requested change and run the most relevant quick validation.
