@@ -6,22 +6,22 @@
   var SAVED_TIMERS_KEY = "wrestlingWorkoutSavedTimers";
   var AUDIO_FILES = {
     ready: [
-      { src: "assets/audio/ready.m4a?v=20260629-cues8", type: "audio/mp4" }
+      { src: "assets/audio/ready.m4a?v=20260630-audio2", type: "audio/mp4" }
     ],
     set: [
-      { src: "assets/audio/set.m4a?v=20260629-cues8", type: "audio/mp4" }
+      { src: "assets/audio/set.m4a?v=20260630-audio2", type: "audio/mp4" }
     ],
     whistle: [
-      { src: "assets/audio/whistle-start.m4a?v=20260629-cues8", type: "audio/mp4" }
+      { src: "assets/audio/whistle-start.m4a?v=20260630-audio2", type: "audio/mp4" }
     ],
     restHorn: [
-      { src: "assets/audio/rest-horn.m4a?v=20260629-cues8", type: "audio/mp4" }
+      { src: "assets/audio/rest-horn.m4a?v=20260630-audio2", type: "audio/mp4" }
     ],
     finalHorn: [
-      { src: "assets/audio/final-horn.m4a?v=20260629-cues8", type: "audio/mp4" }
+      { src: "assets/audio/final-horn.m4a?v=20260630-audio2", type: "audio/mp4" }
     ],
     tenSecondPop: [
-      { src: "assets/audio/ten-second-pop.m4a?v=20260629-cues8", type: "audio/mp4" }
+      { src: "assets/audio/ten-second-pop.m4a?v=20260630-audio2", type: "audio/mp4" }
     ]
   };
   var DEFAULTS = {
@@ -71,10 +71,12 @@
     audioBuffers: {},
     audioBufferPromises: {},
     audioReadyPromise: null,
+    audioUnlocked: false,
     scheduledCueNodes: [],
     wakeLock: null,
     savedTimers: [],
-    lastStateSave: 0
+    lastStateSave: 0,
+    hiddenAt: 0
   };
 
   writeSettingsToInputs(state.settings);
@@ -86,7 +88,10 @@
 
   renderSavedTimers();
 
-  document.addEventListener("pointerdown", unlockAudio, { once: true });
+  document.addEventListener("pointerdown", handleAudioInteraction, { passive: true });
+  document.addEventListener("touchstart", handleAudioInteraction, { passive: true });
+  document.addEventListener("click", handleAudioInteraction);
+  document.addEventListener("keydown", handleAudioInteraction);
   startButton.addEventListener("click", handleStart);
   pauseButton.addEventListener("click", handlePauseResume);
   resetButton.addEventListener("click", function () {
@@ -99,7 +104,11 @@
   savedTimerList.addEventListener("click", handleSavedTimerClick);
   soundCheckEl.addEventListener("click", handleSoundCheckClick);
   window.addEventListener("beforeunload", saveTimerState);
+  window.addEventListener("focus", handleAppReturn);
+  window.addEventListener("pageshow", handleAppReturn);
+  window.addEventListener("pagehide", handlePageSuspend);
   document.addEventListener("visibilitychange", handleVisibilityChange);
+  document.addEventListener("freeze", handlePageSuspend);
 
   function loadSettings() {
     try {
@@ -195,7 +204,7 @@
   }
 
   async function handleStart() {
-    unlockAudio();
+    await unlockAudio();
     runStatusEl.textContent = "Loading";
     await ensureAudioReady();
 
@@ -217,7 +226,7 @@
   }
 
   async function handlePauseResume() {
-    unlockAudio();
+    await unlockAudio();
     await ensureAudioReady();
 
     if (!state.hasStarted || state.isDone) {
@@ -232,7 +241,7 @@
   }
 
   async function handleSkip() {
-    unlockAudio();
+    await unlockAudio();
     await ensureAudioReady();
 
     if (state.isDone) {
@@ -402,50 +411,84 @@
     runStatusEl.textContent = state.isDone ? "Done" : state.isRunning ? "Running" : state.hasStarted ? "Paused" : "Ready";
   }
 
-  function unlockAudio() {
-    if (!window.AudioContext && !window.webkitAudioContext) {
-      return;
-    }
-
-    if (!state.audioContext) {
-      var AudioContextConstructor = window.AudioContext || window.webkitAudioContext;
-      state.audioContext = new AudioContextConstructor();
-    }
-
-    if (state.audioContext.state === "suspended") {
-      state.audioContext.resume();
-    }
-
-    ensureAudioReady();
+  function handleAudioInteraction() {
+    unlockAudio();
   }
 
-  function ensureAudioReady() {
+  function createAudioContext() {
     if (!window.AudioContext && !window.webkitAudioContext) {
-      return Promise.resolve(false);
+      return null;
     }
 
-    if (!state.audioContext) {
+    if (!state.audioContext || state.audioContext.state === "closed") {
       var AudioContextConstructor = window.AudioContext || window.webkitAudioContext;
       state.audioContext = new AudioContextConstructor();
+      state.audioContext.onstatechange = handleAudioContextStateChange;
     }
 
-    if (state.audioContext.state === "suspended") {
-      state.audioContext.resume();
+    return state.audioContext;
+  }
+
+  async function unlockAudio() {
+    state.audioUnlocked = true;
+    return ensureAudioReady();
+  }
+
+  async function resumeAudioContext() {
+    var audioContext = createAudioContext();
+
+    if (!audioContext) {
+      return false;
+    }
+
+    if (audioContext.state === "running") {
+      return true;
+    }
+
+    try {
+      await audioContext.resume();
+    } catch (error) {
+      return false;
+    }
+
+    return audioContext.state === "running";
+  }
+
+  async function ensureAudioReady() {
+    if (!window.AudioContext && !window.webkitAudioContext) {
+      return false;
+    }
+
+    if (!createAudioContext()) {
+      return false;
     }
 
     if (state.audioReadyPromise) {
-      return state.audioReadyPromise;
+      await state.audioReadyPromise;
+    } else {
+      state.audioReadyPromise = Promise.all(Object.keys(AUDIO_FILES).map(function (name) {
+        return loadAudioBuffer(name);
+      })).then(function () {
+        return true;
+      }).catch(function () {
+        state.audioReadyPromise = null;
+        return false;
+      });
+
+      await state.audioReadyPromise;
     }
 
-    state.audioReadyPromise = Promise.all(Object.keys(AUDIO_FILES).map(function (name) {
-      return loadAudioBuffer(name);
-    })).then(function () {
-      return true;
-    }).catch(function () {
-      return false;
-    });
+    return resumeAudioContext();
+  }
 
-    return state.audioReadyPromise;
+  function handleAudioContextStateChange() {
+    if (!state.audioContext) {
+      return;
+    }
+
+    if (state.audioContext.state === "running" && state.isRunning && document.visibilityState !== "hidden") {
+      rescheduleCurrentAudioCues();
+    }
   }
 
   function loadAudioBuffer(name) {
@@ -483,6 +526,7 @@
         return audioBuffer;
       })
       .catch(function () {
+        delete state.audioBufferPromises[name];
         return null;
       });
 
@@ -526,7 +570,7 @@
     }
 
     if (step.phase === "work" && state.remainingMs >= step.duration * 1000 - 250) {
-      playWhistleStart(0, true);
+      playWhistleStart(0, false);
     }
 
     if (step.phase === "work" && step.duration > 10) {
@@ -538,7 +582,7 @@
     }
 
     if (step.phase === "rest" && previousPhase === "work" && state.remainingMs >= step.duration * 1000 - 250) {
-      playRestHorn(0, true);
+      playRestHorn(0, false);
     }
   }
 
@@ -561,6 +605,11 @@
       return false;
     }
 
+    if (state.audioContext.state !== "running") {
+      ensureAudioReady();
+      return false;
+    }
+
     var now = state.audioContext.currentTime + delaySeconds;
     var source = state.audioContext.createBufferSource();
     var gain = state.audioContext.createGain();
@@ -569,7 +618,12 @@
     gain.gain.setValueAtTime(volume, now);
     source.connect(gain);
     gain.connect(state.audioContext.destination);
-    source.start(now);
+
+    try {
+      source.start(now);
+    } catch (error) {
+      return false;
+    }
 
     if (shouldTrack) {
       state.scheduledCueNodes.push(source);
@@ -606,7 +660,7 @@
       return;
     }
 
-    unlockAudio();
+    await unlockAudio();
     await ensureAudioReady();
 
     if (button.getAttribute("data-manual-cue") === "whistle") {
@@ -621,7 +675,7 @@
       return;
     }
 
-    unlockAudio();
+    await unlockAudio();
     await ensureAudioReady();
 
     if (button.getAttribute("data-sound-check") === "countdown") {
@@ -939,12 +993,72 @@
     }
   }
 
-  function handleVisibilityChange() {
-    saveTimerState();
-
-    if (document.visibilityState === "visible" && state.isRunning) {
-      requestWakeLock();
+  function handlePageSuspend() {
+    if (state.isRunning) {
+      state.remainingMs = Math.max(0, state.targetTime - performance.now());
+      state.hiddenAt = Date.now();
+      clearScheduledCues();
     }
+
+    saveTimerState();
+  }
+
+  function handleVisibilityChange() {
+    if (document.visibilityState === "hidden") {
+      handlePageSuspend();
+      return;
+    }
+
+    handleAppReturn();
+  }
+
+  function handleAppReturn() {
+    if (document.visibilityState === "hidden") {
+      return;
+    }
+
+    if (!state.isRunning) {
+      ensureAudioReady();
+      return;
+    }
+
+    if (state.hiddenAt) {
+      applyElapsedSinceSave(Date.now() - state.hiddenAt);
+      state.hiddenAt = 0;
+    } else {
+      state.remainingMs = Math.max(0, state.targetTime - performance.now());
+    }
+
+    if (state.isDone) {
+      finishWorkout(false);
+      ensureAudioReady().then(function (ready) {
+        if (ready) {
+          playFinishTone();
+        }
+      });
+      return;
+    }
+
+    state.targetTime = performance.now() + state.remainingMs;
+    clearScheduledCues();
+    requestWakeLock();
+    updateDisplay();
+    updateControls();
+    saveTimerState();
+    ensureAudioReady().then(function () {
+      rescheduleCurrentAudioCues();
+    });
+    cancelAnimationFrame(state.rafId);
+    tick();
+  }
+
+  function rescheduleCurrentAudioCues() {
+    if (!state.isRunning || state.isDone || document.visibilityState === "hidden") {
+      return;
+    }
+
+    clearScheduledCues();
+    scheduleCurrentIntervalCues(null);
   }
 
   function formatTime(totalSeconds) {
