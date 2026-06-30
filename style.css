@@ -106,7 +106,7 @@ input {
   display: grid;
   place-items: center;
   align-content: center;
-  gap: 12px;
+  gap: 9px;
   text-align: center;
 }
 
@@ -122,10 +122,10 @@ input {
   margin: 0;
   font-variant-numeric: tabular-nums;
   font-family: ui-monospace, "SF Mono", "Roboto Mono", Menlo, monospace;
-  font-size: clamp(5.5rem, 28vw, 12rem);
+  font-size: clamp(6rem, 30vw, 13rem);
   font-weight: 950;
   letter-spacing: 0;
-  line-height: 0.85;
+  line-height: 0.82;
   text-shadow: 0 0 28px color-mix(in srgb, var(--phase-color, var(--electric)), transparent 46%);
 }
 
@@ -138,9 +138,9 @@ input {
 
 .control-console {
   position: relative;
-  width: min(100%, 388px);
+  width: min(calc(100vw - 36px), 414px);
   aspect-ratio: 1;
-  margin: 0 auto;
+  margin: -4px auto 0;
   display: grid;
   place-items: center;
   isolation: isolate;
@@ -155,7 +155,7 @@ input {
 }
 
 .control-console::before {
-  inset: 4px;
+  inset: 0;
   border-radius: 50%;
   border: 1px solid rgba(255, 255, 255, 0.11);
   background:
@@ -166,7 +166,7 @@ input {
 }
 
 .control-console::after {
-  inset: 96px;
+  inset: 102px;
   border-radius: 50%;
   background:
     radial-gradient(circle at 42% 28%, rgba(255, 255, 255, 0.22), transparent 30%),
@@ -181,7 +181,7 @@ input {
 
 .console-orbit {
   position: absolute;
-  inset: 58px;
+  inset: 50px;
   border-radius: 50%;
   border: 1px solid rgba(255, 255, 255, 0.11);
   background:
@@ -242,8 +242,8 @@ input {
 }
 
 .arc-button {
-  width: 188px;
-  height: 96px;
+  width: 224px;
+  height: 118px;
   z-index: 1;
 }
 
@@ -262,7 +262,7 @@ input {
 }
 
 .arc-reset {
-  top: 4px;
+  top: 0;
   left: 50%;
   border-radius: 999px 999px 44px 44px;
   --control-fill: var(--ready);
@@ -270,40 +270,40 @@ input {
 }
 
 .arc-reset svg {
-  transform: translateY(-10px);
+  transform: translateY(-17px);
 }
 
 .arc-back {
-  left: 0;
+  left: -4px;
   top: 50%;
-  width: 112px;
-  height: 204px;
-  border-radius: 999px 64px 64px 999px;
+  width: 136px;
+  height: 228px;
+  border-radius: 999px 78px 78px 999px;
   --control-fill: var(--electric);
   transform: translateY(-50%);
 }
 
 .arc-back svg {
-  transform: translateX(-22px);
+  transform: translateX(-31px);
 }
 
 .arc-forward {
-  right: 0;
+  right: -4px;
   top: 50%;
-  width: 112px;
-  height: 204px;
-  border-radius: 64px 999px 999px 64px;
+  width: 136px;
+  height: 228px;
+  border-radius: 78px 999px 999px 78px;
   --control-fill: var(--ember);
   transform: translateY(-50%);
 }
 
 .arc-forward svg {
-  transform: translateX(22px);
+  transform: translateX(31px);
 }
 
 .arc-whistle {
   left: 50%;
-  bottom: 4px;
+  bottom: 0;
   border-radius: 44px 44px 999px 999px;
   --control-fill: #10b981;
   transform: translateX(-50%);
@@ -323,12 +323,12 @@ input {
 .arc-whistle svg {
   width: 40px;
   height: 40px;
-  transform: translateY(11px);
+  transform: translateY(17px);
 }
 
 .play-button {
-  width: clamp(148px, 44vw, 178px);
-  height: clamp(148px, 44vw, 178px);
+  width: clamp(150px, 42vw, 174px);
+  height: clamp(150px, 42vw, 174px);
   z-index: 2;
   border-radius: 50%;
   color: #091016;
