@@ -122,7 +122,7 @@ input {
   margin: 0;
   font-variant-numeric: tabular-nums;
   font-family: ui-monospace, "SF Mono", "Roboto Mono", Menlo, monospace;
-  font-size: clamp(6rem, 30vw, 13rem);
+  font-size: clamp(5.75rem, 28.5vw, 12.25rem);
   font-weight: 950;
   letter-spacing: 0;
   line-height: 0.82;
@@ -138,7 +138,7 @@ input {
 
 .control-console {
   position: relative;
-  width: min(calc(100vw - 36px), 414px);
+  width: min(100%, 382px);
   aspect-ratio: 1;
   margin: -4px auto 0;
   display: grid;
@@ -166,7 +166,7 @@ input {
 }
 
 .control-console::after {
-  inset: 102px;
+  inset: 92px;
   border-radius: 50%;
   background:
     radial-gradient(circle at 42% 28%, rgba(255, 255, 255, 0.22), transparent 30%),
@@ -181,7 +181,7 @@ input {
 
 .console-orbit {
   position: absolute;
-  inset: 50px;
+  inset: 48px;
   border-radius: 50%;
   border: 1px solid rgba(255, 255, 255, 0.11);
   background:
@@ -242,8 +242,8 @@ input {
 }
 
 .arc-button {
-  width: 224px;
-  height: 118px;
+  width: 204px;
+  height: 106px;
   z-index: 1;
 }
 
@@ -270,35 +270,35 @@ input {
 }
 
 .arc-reset svg {
-  transform: translateY(-17px);
+  transform: translateY(-14px);
 }
 
 .arc-back {
-  left: -4px;
+  left: 0;
   top: 50%;
-  width: 136px;
-  height: 228px;
-  border-radius: 999px 78px 78px 999px;
+  width: 120px;
+  height: 212px;
+  border-radius: 999px 72px 72px 999px;
   --control-fill: var(--electric);
   transform: translateY(-50%);
 }
 
 .arc-back svg {
-  transform: translateX(-31px);
+  transform: translateX(-27px);
 }
 
 .arc-forward {
-  right: -4px;
+  right: 0;
   top: 50%;
-  width: 136px;
-  height: 228px;
-  border-radius: 78px 999px 999px 78px;
+  width: 120px;
+  height: 212px;
+  border-radius: 72px 999px 999px 72px;
   --control-fill: var(--ember);
   transform: translateY(-50%);
 }
 
 .arc-forward svg {
-  transform: translateX(31px);
+  transform: translateX(27px);
 }
 
 .arc-whistle {
@@ -323,12 +323,12 @@ input {
 .arc-whistle svg {
   width: 40px;
   height: 40px;
-  transform: translateY(17px);
+  transform: translateY(14px);
 }
 
 .play-button {
-  width: clamp(150px, 42vw, 174px);
-  height: clamp(150px, 42vw, 174px);
+  width: clamp(146px, 40vw, 166px);
+  height: clamp(146px, 40vw, 166px);
   z-index: 2;
   border-radius: 50%;
   color: #091016;
