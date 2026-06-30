@@ -181,17 +181,17 @@ input {
 
 .console-orbit {
   position: absolute;
-  inset: 44px;
+  inset: 58px;
   border-radius: 50%;
   border: 1px solid rgba(255, 255, 255, 0.11);
   background:
-    radial-gradient(circle, rgba(0, 0, 0, 0) 0 42%, rgba(255, 255, 255, 0.08) 43%, rgba(0, 0, 0, 0.24) 64%, rgba(0, 0, 0, 0) 65%),
-    conic-gradient(from 130deg, rgba(255, 255, 255, 0.03), color-mix(in srgb, var(--phase-color, var(--electric)), transparent 66%), rgba(255, 255, 255, 0.03));
+    radial-gradient(circle, rgba(0, 0, 0, 0.08) 0 39%, rgba(8, 12, 17, 0.96) 40%, rgba(14, 20, 28, 0.96) 63%, rgba(255, 255, 255, 0.08) 64%, rgba(0, 0, 0, 0) 66%),
+    conic-gradient(from 130deg, rgba(255, 255, 255, 0.03), color-mix(in srgb, var(--phase-color, var(--electric)), transparent 58%), rgba(255, 255, 255, 0.03));
   box-shadow:
     inset 0 0 28px rgba(0, 0, 0, 0.36),
     0 0 30px color-mix(in srgb, var(--phase-color, var(--electric)), transparent 76%);
   pointer-events: none;
-  z-index: 0;
+  z-index: 2;
 }
 
 .arc-button,
@@ -201,10 +201,10 @@ input {
   display: grid;
   place-items: center;
   border: 1px solid rgba(255, 255, 255, 0.16);
-  color: var(--text);
+  color: #ffffff;
   background:
-    radial-gradient(circle at 42% 24%, rgba(255, 255, 255, 0.18), transparent 34%),
-    linear-gradient(145deg, color-mix(in srgb, var(--panel-soft), white 7%), color-mix(in srgb, #06090d, var(--phase-color, var(--electric)) 9%));
+    radial-gradient(circle at 42% 24%, rgba(255, 255, 255, 0.36), transparent 32%),
+    linear-gradient(145deg, color-mix(in srgb, var(--control-fill, var(--electric)), white 16%), color-mix(in srgb, var(--control-fill, var(--electric)), black 24%));
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.18),
     inset 0 -18px 32px rgba(0, 0, 0, 0.18),
@@ -226,7 +226,7 @@ input {
   border-radius: inherit;
   background:
     linear-gradient(150deg, rgba(255, 255, 255, 0.22), transparent 34%),
-    radial-gradient(circle at 50% 100%, color-mix(in srgb, currentColor, transparent 82%), transparent 42%);
+    radial-gradient(circle at 50% 100%, rgba(255, 255, 255, 0.16), transparent 42%);
   pointer-events: none;
   opacity: 0.92;
 }
@@ -237,13 +237,13 @@ input {
   inset: 0;
   pointer-events: none;
   border-radius: inherit;
-  box-shadow: inset 0 0 0 1px color-mix(in srgb, currentColor, transparent 72%);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.2);
   opacity: 0.7;
 }
 
 .arc-button {
-  width: 176px;
-  height: 86px;
+  width: 188px;
+  height: 96px;
   z-index: 1;
 }
 
@@ -265,45 +265,49 @@ input {
   top: 4px;
   left: 50%;
   border-radius: 999px 999px 44px 44px;
-  color: var(--ready);
+  --control-fill: var(--ready);
   transform: translateX(-50%);
-  -webkit-mask: radial-gradient(circle 92px at 50% 122%, transparent 0 74px, #000 75px);
-  mask: radial-gradient(circle 92px at 50% 122%, transparent 0 74px, #000 75px);
+}
+
+.arc-reset svg {
+  transform: translateY(-18px);
 }
 
 .arc-back {
   left: 0;
   top: 50%;
-  width: 88px;
-  height: 184px;
-  border-radius: 999px 50px 50px 999px;
-  color: var(--electric);
+  width: 112px;
+  height: 204px;
+  border-radius: 999px 64px 64px 999px;
+  --control-fill: var(--electric);
   transform: translateY(-50%);
-  -webkit-mask: radial-gradient(circle 98px at 124% 50%, transparent 0 78px, #000 79px);
-  mask: radial-gradient(circle 98px at 124% 50%, transparent 0 78px, #000 79px);
+}
+
+.arc-back svg {
+  transform: translateX(-26px);
 }
 
 .arc-forward {
   right: 0;
   top: 50%;
-  width: 88px;
-  height: 184px;
-  border-radius: 50px 999px 999px 50px;
-  color: var(--ember);
+  width: 112px;
+  height: 204px;
+  border-radius: 64px 999px 999px 64px;
+  --control-fill: var(--ember);
   transform: translateY(-50%);
-  -webkit-mask: radial-gradient(circle 98px at -24% 50%, transparent 0 78px, #000 79px);
-  mask: radial-gradient(circle 98px at -24% 50%, transparent 0 78px, #000 79px);
+}
+
+.arc-forward svg {
+  transform: translateX(26px);
 }
 
 .arc-whistle {
   left: 50%;
   bottom: 4px;
   border-radius: 44px 44px 999px 999px;
-  color: #34d399;
+  --control-fill: #10b981;
   transform: translateX(-50%);
   padding: 0;
-  -webkit-mask: radial-gradient(circle 92px at 50% -22%, transparent 0 74px, #000 75px);
-  mask: radial-gradient(circle 92px at 50% -22%, transparent 0 74px, #000 75px);
 }
 
 .arc-whistle button {
@@ -314,6 +318,10 @@ input {
   border-radius: inherit;
   background: transparent;
   color: inherit;
+}
+
+.arc-whistle svg {
+  transform: translateY(18px);
 }
 
 .play-button {
