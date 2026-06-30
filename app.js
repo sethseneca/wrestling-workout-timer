@@ -5,26 +5,23 @@
   var TIMER_STATE_KEY = "wrestlingWorkoutTimerState";
   var SAVED_TIMERS_KEY = "wrestlingWorkoutSavedTimers";
   var AUDIO_FILES = {
-    three: [
-      { src: "assets/audio/three.m4a?v=20260629-cues7", type: "audio/mp4" }
+    ready: [
+      { src: "assets/audio/ready.m4a?v=20260629-cues8", type: "audio/mp4" }
     ],
-    two: [
-      { src: "assets/audio/two.m4a?v=20260629-cues7", type: "audio/mp4" }
-    ],
-    one: [
-      { src: "assets/audio/one.m4a?v=20260629-cues7", type: "audio/mp4" }
+    set: [
+      { src: "assets/audio/set.m4a?v=20260629-cues8", type: "audio/mp4" }
     ],
     whistle: [
-      { src: "assets/audio/whistle-start.m4a?v=20260629-cues7", type: "audio/mp4" }
+      { src: "assets/audio/whistle-start.m4a?v=20260629-cues8", type: "audio/mp4" }
     ],
     restHorn: [
-      { src: "assets/audio/rest-horn.m4a?v=20260629-cues7", type: "audio/mp4" }
+      { src: "assets/audio/rest-horn.m4a?v=20260629-cues8", type: "audio/mp4" }
     ],
     finalHorn: [
-      { src: "assets/audio/final-horn.m4a?v=20260629-cues7", type: "audio/mp4" }
+      { src: "assets/audio/final-horn.m4a?v=20260629-cues8", type: "audio/mp4" }
     ],
     tenSecondPop: [
-      { src: "assets/audio/ten-second-pop.m4a?v=20260629-cues7", type: "audio/mp4" }
+      { src: "assets/audio/ten-second-pop.m4a?v=20260629-cues8", type: "audio/mp4" }
     ]
   };
   var DEFAULTS = {
@@ -504,8 +501,8 @@
     return candidates[0] ? candidates[0].src : "";
   }
 
-  function playCountdownCue(secondsRemaining, delaySeconds, shouldTrack) {
-    var cueName = secondsRemaining === 3 ? "three" : secondsRemaining === 2 ? "two" : "one";
+  function playPrepCue(secondsRemaining, delaySeconds, shouldTrack) {
+    var cueName = secondsRemaining === 2 ? "ready" : "set";
     playAudioBuffer(cueName, 1, delaySeconds || 0, shouldTrack);
   }
 
@@ -519,11 +516,11 @@
     clearScheduledCues();
 
     if ((step.phase === "ready" || step.phase === "rest") && state.remainingMs >= 1000) {
-      [3, 2, 1].forEach(function (secondsRemaining) {
+      [2, 1].forEach(function (secondsRemaining) {
         var delaySeconds = state.remainingMs / 1000 - secondsRemaining;
 
         if (delaySeconds >= -0.08) {
-          playCountdownCue(secondsRemaining, Math.max(0, delaySeconds), true);
+          playPrepCue(secondsRemaining, Math.max(0, delaySeconds), true);
         }
       });
     }
@@ -615,10 +612,6 @@
     if (button.getAttribute("data-manual-cue") === "whistle") {
       playWhistleStart(0);
     }
-
-    if (button.getAttribute("data-manual-cue") === "horn") {
-      playRestHorn(0);
-    }
   }
 
   async function handleSoundCheckClick(event) {
@@ -632,25 +625,16 @@
     await ensureAudioReady();
 
     if (button.getAttribute("data-sound-check") === "countdown") {
-      playCountdownCue(3, 0);
-      playCountdownCue(2, 1);
-      playCountdownCue(1, 2);
+      playPrepCue(2, 0);
+      playPrepCue(1, 1);
     }
 
     if (button.getAttribute("data-sound-check") === "whistle") {
       playWhistleStart(0);
     }
 
-    if (button.getAttribute("data-sound-check") === "restHorn") {
-      playRestHorn(0);
-    }
-
     if (button.getAttribute("data-sound-check") === "tenSecondPop") {
       playTenSecondWarning(0);
-    }
-
-    if (button.getAttribute("data-sound-check") === "finalHorn") {
-      playFinishTone();
     }
   }
 
