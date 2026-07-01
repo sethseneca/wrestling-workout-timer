@@ -5,23 +5,17 @@
   var TIMER_STATE_KEY = "wrestlingWorkoutTimerState";
   var SAVED_TIMERS_KEY = "wrestlingWorkoutSavedTimers";
   var AUDIO_FILES = {
-    ready: [
-      { src: "assets/audio/ready.m4a?v=20260630-console8", type: "audio/mp4" }
-    ],
-    set: [
-      { src: "assets/audio/set.m4a?v=20260630-console8", type: "audio/mp4" }
-    ],
     whistle: [
-      { src: "assets/audio/whistle-start.m4a?v=20260630-console8", type: "audio/mp4" }
+      { src: "assets/audio/whistle-start.m4a?v=20260630-console9", type: "audio/mp4" }
     ],
     restHorn: [
-      { src: "assets/audio/rest-horn.m4a?v=20260630-console8", type: "audio/mp4" }
+      { src: "assets/audio/rest-horn.m4a?v=20260630-console9", type: "audio/mp4" }
     ],
     finalHorn: [
-      { src: "assets/audio/final-horn.m4a?v=20260630-console8", type: "audio/mp4" }
+      { src: "assets/audio/final-horn.m4a?v=20260630-console9", type: "audio/mp4" }
     ],
     tenSecondPop: [
-      { src: "assets/audio/ten-second-pop.m4a?v=20260630-console8", type: "audio/mp4" }
+      { src: "assets/audio/ten-second-pop.m4a?v=20260630-console9", type: "audio/mp4" }
     ]
   };
   var DEFAULTS = {
@@ -599,8 +593,7 @@
   }
 
   function playPrepCue(secondsRemaining, delaySeconds, shouldTrack) {
-    var cueName = secondsRemaining === 2 ? "ready" : "set";
-    playAudioBuffer(cueName, 1, delaySeconds || 0, shouldTrack);
+    return false;
   }
 
   function scheduleCurrentIntervalCues(previousPhase) {
@@ -730,11 +723,6 @@
 
     await unlockAudio();
     await ensureAudioReady();
-
-    if (button.getAttribute("data-sound-check") === "countdown") {
-      playPrepCue(2, 0);
-      playPrepCue(1, 1);
-    }
 
     if (button.getAttribute("data-sound-check") === "whistle") {
       playWhistleStart(0);
