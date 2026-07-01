@@ -76,6 +76,7 @@
 
   writeSettingsToInputs(state.settings);
   state.savedTimers = loadSavedTimers();
+  preventAppZoom();
 
   if (!restoreTimerState()) {
     resetTimer(false);
@@ -104,6 +105,30 @@
   window.addEventListener("pagehide", handlePageSuspend);
   document.addEventListener("visibilitychange", handleVisibilityChange);
   document.addEventListener("freeze", handlePageSuspend);
+
+  function preventAppZoom() {
+    var lastTouchEnd = 0;
+
+    document.addEventListener("touchend", function (event) {
+      var now = Date.now();
+
+      if (now - lastTouchEnd <= 320) {
+        event.preventDefault();
+      }
+
+      lastTouchEnd = now;
+    }, { passive: false });
+
+    document.addEventListener("dblclick", function (event) {
+      event.preventDefault();
+    }, { passive: false });
+
+    ["gesturestart", "gesturechange", "gestureend"].forEach(function (eventName) {
+      document.addEventListener(eventName, function (event) {
+        event.preventDefault();
+      }, { passive: false });
+    });
+  }
 
   function loadSettings() {
     try {

@@ -24,6 +24,8 @@
 html,
 body {
   min-height: 100%;
+  touch-action: manipulation;
+  overscroll-behavior: none;
 }
 
 body {
@@ -36,6 +38,7 @@ body {
 button,
 input {
   font: inherit;
+  touch-action: manipulation;
 }
 
 .sr-only {
@@ -56,6 +59,7 @@ input {
   display: grid;
   gap: 16px;
   align-content: start;
+  touch-action: manipulation;
   background:
     linear-gradient(rgba(221, 213, 187, 0.028) 1px, transparent 1px),
     linear-gradient(90deg, rgba(221, 213, 187, 0.022) 1px, transparent 1px),
