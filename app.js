@@ -41,6 +41,10 @@
   var saveTimerButton = document.getElementById("saveTimerButton");
   var savedTimerList = document.getElementById("savedTimerList");
   var soundCheckEl = document.getElementById("soundCheck");
+  var settingsToggleButton = document.getElementById("settingsToggleButton");
+  var settingsCloseButton = document.getElementById("settingsCloseButton");
+  var settingsPanel = document.getElementById("settingsPanel");
+  var settingsScrim = document.getElementById("settingsScrim");
 
   var inputs = {
     workMinutes: document.getElementById("workMinutes"),
@@ -95,6 +99,9 @@
   skipBackButton.addEventListener("click", handleSkipBack);
   skipButton.addEventListener("click", handleSkip);
   manualCuesEl.addEventListener("click", handleManualCueClick);
+  settingsToggleButton.addEventListener("click", openSettingsPanel);
+  settingsCloseButton.addEventListener("click", closeSettingsPanel);
+  settingsScrim.addEventListener("click", closeSettingsPanel);
   saveTimerButton.addEventListener("click", handleSaveTimer);
   settingsForm.addEventListener("input", handleSettingsInput);
   savedTimerList.addEventListener("click", handleSavedTimerClick);
@@ -105,6 +112,7 @@
   window.addEventListener("pagehide", handlePageSuspend);
   document.addEventListener("visibilitychange", handleVisibilityChange);
   document.addEventListener("freeze", handlePageSuspend);
+  document.addEventListener("keydown", handleGlobalKeydown);
 
   function preventAppZoom() {
     var lastTouchEnd = 0;
@@ -128,6 +136,30 @@
         event.preventDefault();
       }, { passive: false });
     });
+  }
+
+  function openSettingsPanel() {
+    settingsPanel.classList.add("is-open");
+    settingsPanel.setAttribute("aria-hidden", "false");
+    settingsPanel.removeAttribute("inert");
+    settingsToggleButton.setAttribute("aria-expanded", "true");
+    settingsScrim.hidden = false;
+    settingsCloseButton.focus({ preventScroll: true });
+  }
+
+  function closeSettingsPanel() {
+    settingsPanel.classList.remove("is-open");
+    settingsPanel.setAttribute("aria-hidden", "true");
+    settingsPanel.setAttribute("inert", "");
+    settingsToggleButton.setAttribute("aria-expanded", "false");
+    settingsScrim.hidden = true;
+    settingsToggleButton.focus({ preventScroll: true });
+  }
+
+  function handleGlobalKeydown(event) {
+    if (event.key === "Escape" && settingsPanel.classList.contains("is-open")) {
+      closeSettingsPanel();
+    }
   }
 
   function loadSettings() {

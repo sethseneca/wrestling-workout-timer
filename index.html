@@ -9,18 +9,26 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black">
     <meta name="application-name" content="Wrestling Timer">
     <title>Wrestling Workout Timer</title>
-    <link rel="manifest" href="manifest.webmanifest?v=20260630-console13">
+    <link rel="manifest" href="manifest.webmanifest?v=20260630-console14">
     <link rel="icon" href="assets/icons/icon.svg" type="image/svg+xml">
     <link rel="icon" href="assets/icons/favicon-32.png" sizes="32x32" type="image/png">
     <link rel="apple-touch-icon" href="assets/icons/apple-touch-icon.png">
-    <link rel="stylesheet" href="style.css?v=20260630-console13">
+    <link rel="stylesheet" href="style.css?v=20260630-console14">
   </head>
   <body>
     <main class="app" id="app">
       <section class="timer-panel" aria-labelledby="phaseLabel">
         <div class="brand-row">
           <p class="kicker">Wrestling Workout Timer</p>
-          <span class="status-pill" id="runStatus">Ready</span>
+          <div class="brand-actions">
+            <span class="status-pill" id="runStatus">Ready</span>
+            <button class="settings-toggle" id="settingsToggleButton" type="button" aria-label="Open workout setup" aria-expanded="false" aria-controls="settingsPanel">
+              <svg aria-hidden="true" viewBox="0 0 24 24">
+                <path d="M12 15.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7Z" />
+                <path d="M19.4 15a1.75 1.75 0 0 0 .35 1.93l.05.05a2 2 0 1 1-2.83 2.83l-.05-.05A1.75 1.75 0 0 0 15 19.4a1.75 1.75 0 0 0-1 .6V20a2 2 0 1 1-4 0v-.08a1.75 1.75 0 0 0-1-.52 1.75 1.75 0 0 0-1.93.35l-.05.05a2 2 0 1 1-2.83-2.83l.05-.05A1.75 1.75 0 0 0 4.6 15a1.75 1.75 0 0 0-.6-1H4a2 2 0 1 1 0-4h.08a1.75 1.75 0 0 0 .52-1 1.75 1.75 0 0 0-.35-1.93l-.05-.05a2 2 0 1 1 2.83-2.83l.05.05A1.75 1.75 0 0 0 9 4.6a1.75 1.75 0 0 0 1-.6V4a2 2 0 1 1 4 0v.08a1.75 1.75 0 0 0 1 .52 1.75 1.75 0 0 0 1.93-.35l.05-.05a2 2 0 1 1 2.83 2.83l-.05.05A1.75 1.75 0 0 0 19.4 9c.2.32.4.65.6 1H20a2 2 0 1 1 0 4h-.08c-.12.35-.3.68-.52 1Z" />
+              </svg>
+            </button>
+          </div>
         </div>
 
         <div class="timer-display">
@@ -77,8 +85,18 @@
         </div>
       </section>
 
-      <section class="settings-panel" aria-labelledby="settingsTitle">
-        <h1 id="settingsTitle">Workout Setup</h1>
+      <button class="settings-scrim" id="settingsScrim" type="button" aria-label="Close workout setup" hidden></button>
+
+      <section class="settings-panel" id="settingsPanel" aria-hidden="true" aria-labelledby="settingsTitle" aria-modal="true" inert role="dialog">
+        <div class="settings-header">
+          <h1 id="settingsTitle">Workout Setup</h1>
+          <button class="settings-close" id="settingsCloseButton" type="button" aria-label="Close workout setup">
+            <svg aria-hidden="true" viewBox="0 0 24 24">
+              <path d="M18 6 6 18" />
+              <path d="m6 6 12 12" />
+            </svg>
+          </button>
+        </div>
 
         <form id="settingsForm">
           <fieldset class="duration-field">
@@ -151,6 +169,6 @@
       </section>
     </main>
 
-    <script src="app.js?v=20260630-console10" defer></script>
+    <script src="app.js?v=20260630-console14" defer></script>
   </body>
 </html>

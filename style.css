@@ -23,7 +23,10 @@
 
 html,
 body {
+  width: 100%;
+  height: 100%;
   min-height: 100%;
+  overflow: hidden;
   touch-action: manipulation;
   overscroll-behavior: none;
 }
@@ -54,12 +57,15 @@ input {
 }
 
 .app {
-  min-height: 100vh;
+  width: 100%;
+  height: 100dvh;
+  min-height: 100dvh;
   padding: calc(16px + env(safe-area-inset-top)) calc(16px + env(safe-area-inset-right)) calc(16px + env(safe-area-inset-bottom)) calc(16px + env(safe-area-inset-left));
   display: grid;
-  gap: 16px;
-  align-content: start;
+  place-items: stretch center;
+  gap: 0;
   touch-action: manipulation;
+  overflow: hidden;
   background:
     linear-gradient(rgba(221, 213, 187, 0.028) 1px, transparent 1px),
     linear-gradient(90deg, rgba(221, 213, 187, 0.022) 1px, transparent 1px),
@@ -80,11 +86,13 @@ input {
 }
 
 .timer-panel {
-  min-height: 58vh;
+  width: min(100%, 560px);
+  height: 100%;
+  min-height: 0;
   padding: 18px;
   display: grid;
-  grid-template-rows: auto 1fr auto;
-  gap: 18px;
+  grid-template-rows: auto auto minmax(0, 1fr);
+  gap: 12px;
 }
 
 .brand-row {
@@ -94,17 +102,27 @@ input {
   gap: 12px;
 }
 
+.brand-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
 .kicker {
+  min-width: 0;
   margin: 0;
   color: var(--muted);
-  font-size: 0.84rem;
+  font-size: 0.78rem;
   font-weight: 800;
   letter-spacing: 0;
   text-transform: uppercase;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .status-pill {
-  min-width: 76px;
+  min-width: 68px;
   padding: 7px 10px;
   border-radius: 999px;
   border: 1px solid rgba(244, 241, 232, 0.12);
@@ -115,11 +133,39 @@ input {
   text-align: center;
 }
 
+.settings-toggle,
+.settings-close {
+  min-width: 0;
+  min-height: 0;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.07);
+  color: var(--text);
+}
+
+.settings-toggle {
+  width: 38px;
+  height: 38px;
+  border-color: rgba(244, 241, 232, 0.16);
+}
+
+.settings-toggle svg,
+.settings-close svg {
+  width: 22px;
+  height: 22px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2.2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
 .timer-display {
   display: grid;
   place-items: center;
-  align-content: center;
-  gap: 9px;
+  align-content: start;
+  gap: 6px;
   text-align: center;
 }
 
@@ -153,9 +199,10 @@ input {
   position: relative;
   width: min(100%, 350px);
   aspect-ratio: 1;
-  margin: -4px auto 0;
+  margin: 0 auto;
   display: grid;
   place-items: center;
+  align-self: center;
   isolation: isolate;
   filter: drop-shadow(0 22px 44px rgba(0, 0, 0, 0.54));
 }
@@ -485,8 +532,66 @@ button.primary {
   transform: translateX(-50%) translateY(1px);
 }
 
+.settings-scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 10;
+  min-height: 0;
+  border: 0;
+  border-radius: 0;
+  background: rgba(0, 0, 0, 0.48);
+  opacity: 0;
+  transition: opacity 180ms ease;
+}
+
+.settings-scrim:not([hidden]) {
+  opacity: 1;
+}
+
 .settings-panel {
+  position: fixed;
+  left: max(12px, env(safe-area-inset-left));
+  right: max(12px, env(safe-area-inset-right));
+  bottom: max(12px, env(safe-area-inset-bottom));
+  z-index: 11;
+  max-width: 560px;
+  max-height: min(78dvh, 680px);
+  margin: 0 auto;
   padding: 16px;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  transform: translateY(calc(100% + 24px));
+  opacity: 0;
+  pointer-events: none;
+  transition:
+    transform 220ms ease,
+    opacity 180ms ease;
+}
+
+.settings-panel.is-open {
+  transform: translateY(0);
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.settings-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.settings-close {
+  width: 38px;
+  height: 38px;
+  border-color: rgba(244, 241, 232, 0.14);
+}
+
+.settings-panel form {
+  min-height: 0;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: 2px 1px 4px;
 }
 
 h1,
@@ -724,14 +829,35 @@ input {
   }
 
   .timer-panel {
+    width: calc(100vw - 32px - env(safe-area-inset-left) - env(safe-area-inset-right));
+    max-width: calc(100vw - 32px - env(safe-area-inset-left) - env(safe-area-inset-right));
     overflow: hidden;
     padding: 16px;
   }
 
-  .timer-panel,
-  .settings-panel {
-    width: 100%;
-    justify-self: stretch;
+  .kicker {
+    max-width: 150px;
+    font-size: 0.68rem;
+  }
+
+  .brand-actions {
+    gap: 6px;
+  }
+
+  .status-pill {
+    min-width: 62px;
+    padding: 6px 8px;
+    font-size: 0.72rem;
+  }
+
+  .settings-toggle {
+    width: 34px;
+    height: 34px;
+  }
+
+  .settings-toggle svg {
+    width: 19px;
+    height: 19px;
   }
 
   .phase-label {
@@ -743,26 +869,23 @@ input {
   }
 
   .control-console {
-    width: min(100%, 330px);
+    width: min(100%, 320px);
     margin-top: -2px;
   }
 }
 
 @media (min-width: 820px) {
   .app {
-    grid-template-columns: minmax(0, 1fr) 340px;
-    align-items: stretch;
     padding: 24px;
   }
 
   .timer-panel {
-    min-height: calc(100vh - 48px);
+    width: min(100%, 720px);
+    height: 100%;
     padding: 24px;
   }
 
   .settings-panel {
-    align-self: start;
-    position: sticky;
-    top: 24px;
+    max-width: 520px;
   }
 }
