@@ -57,10 +57,11 @@ input {
 }
 
 .app {
+  position: relative;
   width: 100%;
   height: 100dvh;
   min-height: 100dvh;
-  padding: calc(16px + env(safe-area-inset-top)) calc(16px + env(safe-area-inset-right)) calc(16px + env(safe-area-inset-bottom)) calc(16px + env(safe-area-inset-left));
+  padding: calc(16px + env(safe-area-inset-top)) calc(8px + env(safe-area-inset-right)) calc(16px + env(safe-area-inset-bottom)) calc(8px + env(safe-area-inset-left));
   display: grid;
   place-items: stretch center;
   gap: 0;
@@ -86,7 +87,7 @@ input {
 }
 
 .timer-panel {
-  width: min(100%, 560px);
+  width: min(100%, 640px);
   height: 100%;
   min-height: 0;
   padding: 18px;
@@ -97,8 +98,8 @@ input {
     linear-gradient(180deg, rgba(0, 0, 0, 0.06), rgba(0, 0, 0, 0.2));
   box-shadow: none;
   display: grid;
-  grid-template-rows: auto auto auto;
-  align-content: start;
+  grid-template-rows: auto auto minmax(0, 1fr);
+  align-content: stretch;
   gap: 12px;
 }
 
@@ -140,7 +141,6 @@ input {
   text-align: center;
 }
 
-.settings-toggle,
 .settings-close {
   min-width: 0;
   min-height: 0;
@@ -152,15 +152,27 @@ input {
 }
 
 .settings-toggle {
-  width: 38px;
-  height: 38px;
+  position: absolute;
+  right: 18px;
+  bottom: 18px;
+  right: max(18px, env(safe-area-inset-right));
+  bottom: max(18px, env(safe-area-inset-bottom));
+  z-index: 9;
+  width: 54px;
+  height: 54px;
+  min-width: 0;
+  min-height: 0;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
   border-color: rgba(244, 241, 232, 0.16);
   background:
     linear-gradient(180deg, rgba(244, 241, 232, 0.09), rgba(0, 0, 0, 0.16)),
     rgba(7, 10, 8, 0.74);
+  color: var(--text);
   box-shadow:
     inset 0 0 0 1px rgba(255, 255, 255, 0.05),
-    0 8px 18px rgba(0, 0, 0, 0.25);
+    0 14px 32px rgba(0, 0, 0, 0.38);
 }
 
 .settings-toggle svg,
@@ -178,27 +190,51 @@ input {
   display: grid;
   place-items: center;
   align-content: start;
-  gap: 6px;
+  gap: 4px;
   text-align: center;
 }
 
 .phase-label {
+  max-width: 100%;
   margin: 0;
-  font-size: clamp(2rem, 11vw, 5rem);
+  font-size: clamp(2.2rem, 11.6vw, 5.4rem);
   font-weight: 950;
   letter-spacing: 0;
   line-height: 0.95;
+  white-space: nowrap;
+}
+
+.timer-readout {
+  width: fit-content;
+  max-width: 100%;
+  position: relative;
+  display: grid;
+  place-items: center;
 }
 
 .countdown {
+  max-width: 100%;
   margin: 0;
   font-variant-numeric: tabular-nums;
-  font-family: ui-monospace, "SF Mono", "Roboto Mono", Menlo, monospace;
-  font-size: clamp(5.05rem, 24vw, 11.3rem);
+  font-family: Impact, "Arial Black", ui-monospace, "SF Mono", "Roboto Mono", Menlo, monospace;
+  font-size: clamp(5.45rem, 25.5vw, 11.8rem);
   font-weight: 950;
   letter-spacing: 0;
-  line-height: 0.82;
+  line-height: 0.78;
   text-shadow: 0 0 20px color-mix(in srgb, var(--phase-color, var(--ready)), transparent 66%);
+}
+
+.countdown-fraction {
+  position: absolute;
+  right: 0.04em;
+  bottom: 0.32em;
+  color: color-mix(in srgb, var(--phase-color, var(--ready)), var(--text) 32%);
+  font-family: ui-monospace, "SF Mono", "Roboto Mono", Menlo, monospace;
+  font-size: clamp(0.95rem, 4.8vw, 1.55rem);
+  font-weight: 950;
+  line-height: 1;
+  opacity: 0.78;
+  text-shadow: 0 0 14px color-mix(in srgb, var(--phase-color, var(--ready)), transparent 70%);
 }
 
 .round-counter {
@@ -212,10 +248,10 @@ input {
   position: relative;
   width: min(100%, 336px);
   aspect-ratio: 1;
-  margin: clamp(16px, 4dvh, 34px) auto 0;
+  margin: 0 auto clamp(44px, 7dvh, 76px);
   display: grid;
   place-items: center;
-  align-self: start;
+  align-self: end;
   isolation: isolate;
   filter: drop-shadow(0 16px 30px rgba(0, 0, 0, 0.46));
 }
@@ -517,6 +553,31 @@ button:focus-visible,
 input:focus-visible {
   outline: 3px solid rgba(255, 255, 255, 0.8);
   outline-offset: 3px;
+}
+
+button.settings-toggle {
+  position: absolute;
+  right: 18px;
+  bottom: 18px;
+  right: max(18px, env(safe-area-inset-right));
+  bottom: max(18px, env(safe-area-inset-bottom));
+  z-index: 30;
+  width: 54px;
+  height: 54px;
+  min-width: 0;
+  min-height: 0;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border-radius: 50%;
+  border-color: rgba(244, 241, 232, 0.16);
+  background:
+    linear-gradient(180deg, rgba(244, 241, 232, 0.09), rgba(0, 0, 0, 0.16)),
+    rgba(7, 10, 8, 0.84);
+  color: var(--text);
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.05),
+    0 14px 32px rgba(0, 0, 0, 0.38);
 }
 
 button:disabled {
@@ -840,13 +901,15 @@ input {
   .app {
     overflow-x: hidden;
     padding-top: 16px;
+    padding-right: calc(8px + env(safe-area-inset-right));
+    padding-left: calc(8px + env(safe-area-inset-left));
   }
 
   .timer-panel {
-    width: calc(100vw - 32px - env(safe-area-inset-left) - env(safe-area-inset-right));
-    max-width: calc(100vw - 32px - env(safe-area-inset-left) - env(safe-area-inset-right));
+    width: calc(100vw - 16px - env(safe-area-inset-left) - env(safe-area-inset-right));
+    max-width: calc(100vw - 16px - env(safe-area-inset-left) - env(safe-area-inset-right));
     overflow: hidden;
-    padding: 16px;
+    padding: 16px 8px;
   }
 
   .kicker {
@@ -865,26 +928,37 @@ input {
   }
 
   .settings-toggle {
-    width: 34px;
-    height: 34px;
+    width: 56px;
+    height: 56px;
+    right: 18px;
+    bottom: 18px;
+    right: max(18px, env(safe-area-inset-right));
+    bottom: max(18px, env(safe-area-inset-bottom));
   }
 
   .settings-toggle svg {
-    width: 19px;
-    height: 19px;
+    width: 25px;
+    height: 25px;
   }
 
   .phase-label {
-    font-size: clamp(2rem, 8.8vw, 3.6rem);
+    font-size: clamp(2.25rem, 9.4vw, 3.55rem);
   }
 
   .countdown {
-    font-size: clamp(4.65rem, 19.2vw, 7.1rem);
+    font-size: clamp(5.1rem, 21.8vw, 7.45rem);
+  }
+
+  .countdown-fraction {
+    right: 0.04em;
+    bottom: 0.28em;
+    font-size: clamp(0.82rem, 3.25vw, 1.12rem);
   }
 
   .control-console {
     width: min(100%, 308px);
-    margin-top: clamp(18px, 4dvh, 30px);
+    margin-bottom: clamp(58px, 9dvh, 92px);
+    margin-top: clamp(16px, 3dvh, 24px);
   }
 }
 

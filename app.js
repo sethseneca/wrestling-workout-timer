@@ -27,6 +27,7 @@
 
   var app = document.getElementById("app");
   var countdownEl = document.getElementById("countdown");
+  var countdownFractionEl = document.getElementById("countdownFraction");
   var phaseLabelEl = document.getElementById("phaseLabel");
   var roundCounterEl = document.getElementById("roundCounter");
   var runStatusEl = document.getElementById("runStatus");
@@ -483,6 +484,7 @@
     app.className = "app phase-done";
     phaseLabelEl.textContent = "DONE";
     countdownEl.textContent = "00:00";
+    countdownFractionEl.textContent = ".00";
     roundCounterEl.textContent = "Round " + state.settings.rounds + " of " + state.settings.rounds;
     runStatusEl.textContent = "Done";
     if (shouldPlayTone) {
@@ -501,6 +503,7 @@
     app.className = "app phase-" + phase;
     phaseLabelEl.textContent = label;
     countdownEl.textContent = formatTime(Math.ceil(state.remainingMs / 1000));
+    countdownFractionEl.textContent = formatFraction(state.remainingMs);
     roundCounterEl.textContent = "Round " + round + " of " + state.settings.rounds;
     runStatusEl.textContent = state.isRunning ? "Running" : state.hasStarted ? "Paused" : "Ready";
   }
@@ -1164,6 +1167,12 @@
     var minutes = Math.floor(seconds / 60);
     var remainder = seconds % 60;
     return String(minutes).padStart(2, "0") + ":" + String(remainder).padStart(2, "0");
+  }
+
+  function formatFraction(totalMs) {
+    var ms = Math.max(0, Math.floor(totalMs));
+    var hundredths = Math.floor(ms % 1000 / 10);
+    return "." + String(hundredths).padStart(2, "0");
   }
 
   function formatShortDuration(totalSeconds) {
