@@ -900,7 +900,7 @@ input {
 @media (max-width: 600px) {
   .app {
     overflow-x: hidden;
-    padding-top: calc(28px + env(safe-area-inset-top));
+    padding-top: calc(14px + env(safe-area-inset-top));
     padding-right: calc(8px + env(safe-area-inset-right));
     padding-left: calc(8px + env(safe-area-inset-left));
   }
@@ -957,7 +957,7 @@ input {
 
   .control-console {
     width: min(100%, 308px);
-    margin-bottom: clamp(58px, 9dvh, 92px);
+    margin-bottom: clamp(42px, 7dvh, 72px);
     margin-top: clamp(16px, 3dvh, 24px);
   }
 }
