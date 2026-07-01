@@ -207,9 +207,10 @@ input {
 .timer-readout {
   width: fit-content;
   max-width: 100%;
-  position: relative;
-  display: grid;
-  place-items: center;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 0.12em;
 }
 
 .countdown {
@@ -225,16 +226,14 @@ input {
 }
 
 .countdown-fraction {
-  position: absolute;
-  right: 0.04em;
-  bottom: 0.38em;
-  color: color-mix(in srgb, var(--text), var(--phase-color, var(--ready)) 26%);
+  color: color-mix(in srgb, var(--phase-color, var(--ready)), white 44%);
   font-family: ui-monospace, "SF Mono", "Roboto Mono", Menlo, monospace;
-  font-size: clamp(0.72rem, 3.3vw, 1.12rem);
+  font-size: clamp(0.95rem, 4.2vw, 1.42rem);
   font-weight: 950;
   line-height: 1;
-  opacity: 0.62;
-  text-shadow: 0 0 10px color-mix(in srgb, var(--phase-color, var(--ready)), transparent 78%);
+  margin-bottom: 0.3em;
+  opacity: 0.9;
+  text-shadow: 0 0 12px color-mix(in srgb, var(--phase-color, var(--ready)), transparent 66%);
 }
 
 .round-counter {
@@ -841,6 +840,19 @@ input {
   --phase-color: var(--done);
 }
 
+.phase-ready,
+.phase-work,
+.phase-rest,
+.phase-done {
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--phase-color), transparent 78%) 0, color-mix(in srgb, var(--phase-color), transparent 92%) 16%, transparent 44%),
+    linear-gradient(180deg, rgba(221, 213, 187, 0.05), transparent 18%, rgba(0, 0, 0, 0.24) 100%),
+    repeating-linear-gradient(0deg, transparent 0 31px, rgba(221, 213, 187, 0.026) 31px 32px),
+    repeating-linear-gradient(90deg, transparent 0 31px, rgba(221, 213, 187, 0.018) 31px 32px),
+    repeating-linear-gradient(135deg, rgba(221, 213, 187, 0.014) 0 1px, transparent 1px 18px),
+    linear-gradient(180deg, #11150e 0%, #070b08 48%, #020302 100%);
+}
+
 .phase-ready .timer-panel,
 .phase-work .timer-panel,
 .phase-rest .timer-panel,
@@ -930,10 +942,17 @@ input {
   .settings-toggle {
     width: 56px;
     height: 56px;
-    right: 18px;
-    bottom: 18px;
+    right: 16px;
+    bottom: 6px;
     right: max(18px, env(safe-area-inset-right));
-    bottom: max(18px, env(safe-area-inset-bottom));
+    bottom: max(6px, env(safe-area-inset-bottom));
+  }
+
+  button.settings-toggle {
+    right: 16px;
+    bottom: 6px;
+    right: max(18px, env(safe-area-inset-right));
+    bottom: max(6px, env(safe-area-inset-bottom));
   }
 
   .settings-toggle svg {
@@ -950,9 +969,8 @@ input {
   }
 
   .countdown-fraction {
-    right: 0.04em;
-    bottom: 0.36em;
-    font-size: clamp(0.68rem, 2.7vw, 0.95rem);
+    font-size: clamp(0.86rem, 3.65vw, 1.2rem);
+    margin-bottom: 0.34em;
   }
 
   .control-console {
