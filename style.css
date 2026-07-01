@@ -1,10 +1,10 @@
 :root {
-  --bg: #050706;
-  --panel: #0b100d;
-  --panel-soft: #151b14;
+  --bg: #030604;
+  --panel: #090d0b;
+  --panel-soft: #121813;
   --text: #f3efe4;
   --muted: #a9ac9b;
-  --line: rgba(221, 213, 187, 0.18);
+  --line: rgba(221, 213, 187, 0.14);
   --work: #d64239;
   --rest: #3c8a60;
   --ready: #d99b2d;
@@ -14,7 +14,7 @@
   --ember: #8f3d34;
   --button: #151a13;
   --button-active: #ded5bd;
-  --shadow: 0 24px 70px rgba(0, 0, 0, 0.48);
+  --shadow: 0 24px 70px rgba(0, 0, 0, 0.5);
 }
 
 * {
@@ -67,14 +67,14 @@ input {
   touch-action: manipulation;
   overflow: hidden;
   background:
-    linear-gradient(rgba(221, 213, 187, 0.028) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(221, 213, 187, 0.022) 1px, transparent 1px),
-    radial-gradient(circle at 50% 0%, rgba(217, 155, 45, 0.13), transparent 30%),
-    linear-gradient(180deg, #10140f 0%, var(--bg) 54%, #030403 100%);
-  background-size: 34px 34px, 34px 34px, auto, auto;
+    linear-gradient(180deg, rgba(221, 213, 187, 0.05), transparent 18%, rgba(0, 0, 0, 0.24) 100%),
+    repeating-linear-gradient(0deg, transparent 0 31px, rgba(221, 213, 187, 0.026) 31px 32px),
+    repeating-linear-gradient(90deg, transparent 0 31px, rgba(221, 213, 187, 0.018) 31px 32px),
+    repeating-linear-gradient(135deg, rgba(221, 213, 187, 0.014) 0 1px, transparent 1px 18px),
+    linear-gradient(180deg, #11150e 0%, #070b08 48%, #020302 100%);
+  background-size: auto, 32px 32px, 32px 32px, 18px 18px, auto;
 }
 
-.timer-panel,
 .settings-panel {
   border: 1px solid var(--line);
   background:
@@ -90,6 +90,12 @@ input {
   height: 100%;
   min-height: 0;
   padding: 18px;
+  border: 0;
+  border-radius: 0;
+  background:
+    linear-gradient(180deg, rgba(244, 241, 232, 0.045), transparent 19%),
+    linear-gradient(180deg, rgba(0, 0, 0, 0.06), rgba(0, 0, 0, 0.2));
+  box-shadow: none;
   display: grid;
   grid-template-rows: auto auto auto;
   align-content: start;
@@ -149,6 +155,12 @@ input {
   width: 38px;
   height: 38px;
   border-color: rgba(244, 241, 232, 0.16);
+  background:
+    linear-gradient(180deg, rgba(244, 241, 232, 0.09), rgba(0, 0, 0, 0.16)),
+    rgba(7, 10, 8, 0.74);
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.05),
+    0 8px 18px rgba(0, 0, 0, 0.25);
 }
 
 .settings-toggle svg,
@@ -205,7 +217,7 @@ input {
   place-items: center;
   align-self: start;
   isolation: isolate;
-  filter: drop-shadow(0 18px 34px rgba(0, 0, 0, 0.5));
+  filter: drop-shadow(0 16px 30px rgba(0, 0, 0, 0.46));
 }
 
 .control-console::before,
@@ -218,12 +230,12 @@ input {
 .control-console::before {
   inset: 0;
   border-radius: 50%;
-  border: 1px solid rgba(221, 213, 187, 0.15);
+  border: 1px solid rgba(221, 213, 187, 0.09);
   background:
     radial-gradient(circle, transparent 0 42%, rgba(0, 0, 0, 0.64) 43% 53%, transparent 54%),
-    conic-gradient(from -45deg, rgba(126, 94, 36, 0.2) 0 11%, transparent 11% 14%, rgba(60, 78, 57, 0.18) 14% 25%, transparent 25% 29%, rgba(47, 65, 69, 0.2) 29% 40%, transparent 40% 43%, rgba(92, 47, 43, 0.2) 43% 54%, transparent 54% 100%),
-    radial-gradient(circle at 50% 50%, #111812 0 34%, #070a08 35% 58%, #151b14 59% 71%, #060806 72% 100%);
-  opacity: 0.96;
+    conic-gradient(from -45deg, rgba(116, 93, 41, 0.16) 0 11%, transparent 11% 14%, rgba(58, 75, 57, 0.14) 14% 25%, transparent 25% 29%, rgba(45, 62, 66, 0.16) 29% 40%, transparent 40% 43%, rgba(84, 43, 40, 0.16) 43% 54%, transparent 54% 100%),
+    radial-gradient(circle at 50% 50%, #0f1510 0 34%, #050806 35% 58%, #10160f 59% 71%, #030403 72% 100%);
+  opacity: 0.9;
 }
 
 .control-console::after {
@@ -261,16 +273,16 @@ input {
   min-height: 0;
   display: grid;
   place-items: center;
-  border: 1px solid rgba(221, 213, 187, 0.24);
+  border: 1px solid rgba(221, 213, 187, 0.17);
   color: #ffffff;
   background:
     linear-gradient(135deg, rgba(255, 255, 255, 0.08), transparent 30%),
     linear-gradient(180deg, color-mix(in srgb, var(--control-fill, var(--electric)), #d6cfb8 5%), color-mix(in srgb, var(--control-fill, var(--electric)), black 42%));
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.16),
+    inset 0 1px 0 rgba(255, 255, 255, 0.12),
     inset 0 -10px 0 rgba(0, 0, 0, 0.17),
     inset 0 0 0 1px rgba(0, 0, 0, 0.32),
-    0 14px 24px rgba(0, 0, 0, 0.38);
+    0 12px 22px rgba(0, 0, 0, 0.34);
   transition:
     transform 160ms ease,
     background 180ms ease,
@@ -400,9 +412,9 @@ input {
   border-radius: 50%;
   color: #07100e;
   background:
-    radial-gradient(circle at 38% 30%, rgba(255, 255, 255, 0.38), transparent 25%),
-    linear-gradient(145deg, #e1d9c2 0%, #b8c5b5 48%, #687b69 100%);
-  border: 2px solid rgba(221, 213, 187, 0.54);
+    radial-gradient(circle at 38% 30%, rgba(255, 255, 255, 0.28), transparent 25%),
+    linear-gradient(145deg, #d6d1be 0%, #aeb9aa 48%, #60705f 100%);
+  border: 2px solid rgba(221, 213, 187, 0.42);
   box-shadow:
     inset 0 0 0 10px rgba(0, 0, 0, 0.1),
     inset 0 -14px 26px rgba(0, 0, 0, 0.2),
@@ -772,12 +784,10 @@ input {
 .phase-work .timer-panel,
 .phase-rest .timer-panel,
 .phase-done .timer-panel {
-  border-color: color-mix(in srgb, var(--phase-color), #d6cfb8 18%);
   background:
-    linear-gradient(180deg, color-mix(in srgb, var(--phase-color), transparent 88%), transparent 38%),
-    linear-gradient(135deg, rgba(221, 213, 187, 0.08), transparent 18%, transparent 82%, rgba(221, 213, 187, 0.035)),
-    linear-gradient(180deg, rgba(244, 241, 232, 0.03), rgba(255, 255, 255, 0.006)),
-    rgba(11, 16, 13, 0.97);
+    linear-gradient(180deg, color-mix(in srgb, var(--phase-color), transparent 91%), transparent 34%),
+    linear-gradient(180deg, rgba(244, 241, 232, 0.045), transparent 19%),
+    linear-gradient(180deg, rgba(0, 0, 0, 0.04), rgba(0, 0, 0, 0.22));
 }
 
 .phase-ready .phase-label,
@@ -791,8 +801,11 @@ input {
 .phase-work .status-pill,
 .phase-rest .status-pill,
 .phase-done .status-pill {
-  background: var(--phase-color);
+  border-color: color-mix(in srgb, var(--phase-color), white 14%);
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--phase-color), white 8%), color-mix(in srgb, var(--phase-color), black 14%));
   color: var(--text);
+  box-shadow: 0 8px 18px color-mix(in srgb, var(--phase-color), transparent 72%);
 }
 
 @keyframes play-pulse {
