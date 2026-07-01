@@ -55,7 +55,7 @@ input {
 
 .app {
   min-height: 100vh;
-  padding: 16px;
+  padding: calc(16px + env(safe-area-inset-top)) calc(16px + env(safe-area-inset-right)) calc(16px + env(safe-area-inset-bottom)) calc(16px + env(safe-area-inset-left));
   display: grid;
   gap: 16px;
   align-content: start;
@@ -720,6 +720,7 @@ input {
 @media (max-width: 600px) {
   .app {
     overflow-x: hidden;
+    padding-top: calc(24px + env(safe-area-inset-top));
   }
 
   .timer-panel {
