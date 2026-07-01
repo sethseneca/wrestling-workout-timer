@@ -227,14 +227,14 @@ input {
 .countdown-fraction {
   position: absolute;
   right: 0.04em;
-  bottom: 0.32em;
-  color: color-mix(in srgb, var(--phase-color, var(--ready)), var(--text) 32%);
+  bottom: 0.38em;
+  color: color-mix(in srgb, var(--text), var(--phase-color, var(--ready)) 26%);
   font-family: ui-monospace, "SF Mono", "Roboto Mono", Menlo, monospace;
-  font-size: clamp(0.95rem, 4.8vw, 1.55rem);
+  font-size: clamp(0.72rem, 3.3vw, 1.12rem);
   font-weight: 950;
   line-height: 1;
-  opacity: 0.78;
-  text-shadow: 0 0 14px color-mix(in srgb, var(--phase-color, var(--ready)), transparent 70%);
+  opacity: 0.62;
+  text-shadow: 0 0 10px color-mix(in srgb, var(--phase-color, var(--ready)), transparent 78%);
 }
 
 .round-counter {
@@ -900,7 +900,7 @@ input {
 @media (max-width: 600px) {
   .app {
     overflow-x: hidden;
-    padding-top: 16px;
+    padding-top: calc(28px + env(safe-area-inset-top));
     padding-right: calc(8px + env(safe-area-inset-right));
     padding-left: calc(8px + env(safe-area-inset-left));
   }
@@ -951,8 +951,8 @@ input {
 
   .countdown-fraction {
     right: 0.04em;
-    bottom: 0.28em;
-    font-size: clamp(0.82rem, 3.25vw, 1.12rem);
+    bottom: 0.36em;
+    font-size: clamp(0.68rem, 2.7vw, 0.95rem);
   }
 
   .control-console {
