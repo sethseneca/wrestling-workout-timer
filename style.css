@@ -729,8 +729,8 @@ input {
 
   .timer-panel,
   .settings-panel {
-    max-width: 370px;
-    justify-self: start;
+    width: 100%;
+    justify-self: stretch;
   }
 
   .phase-label {
