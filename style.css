@@ -208,30 +208,43 @@ input {
   width: fit-content;
   max-width: 100%;
   display: flex;
-  align-items: flex-end;
+  align-items: baseline;
   justify-content: center;
-  gap: 0.12em;
+  gap: clamp(0.12rem, 0.8vw, 0.34rem);
 }
 
 .countdown {
   max-width: 100%;
   margin: 0;
+  display: flex;
+  align-items: baseline;
+  gap: clamp(0.06rem, 0.55vw, 0.22rem);
   font-variant-numeric: tabular-nums;
   font-family: Impact, "Arial Black", ui-monospace, "SF Mono", "Roboto Mono", Menlo, monospace;
-  font-size: clamp(5.45rem, 25.5vw, 11.8rem);
   font-weight: 950;
   letter-spacing: 0;
   line-height: 0.78;
   text-shadow: 0 0 20px color-mix(in srgb, var(--phase-color, var(--ready)), transparent 66%);
 }
 
+.countdown-minutes,
+.countdown-separator {
+  font-size: clamp(3.15rem, 14vw, 7.2rem);
+  font-weight: 900;
+  opacity: 0.9;
+}
+
+.countdown-seconds {
+  font-size: clamp(5.5rem, 26vw, 12rem);
+}
+
 .countdown-fraction {
   color: color-mix(in srgb, var(--phase-color, var(--ready)), white 44%);
   font-family: ui-monospace, "SF Mono", "Roboto Mono", Menlo, monospace;
-  font-size: clamp(0.95rem, 4.2vw, 1.42rem);
+  font-size: clamp(1.15rem, 5.1vw, 1.8rem);
   font-weight: 950;
   line-height: 1;
-  margin-bottom: 0.3em;
+  margin-bottom: 0.18em;
   opacity: 0.9;
   text-shadow: 0 0 12px color-mix(in srgb, var(--phase-color, var(--ready)), transparent 66%);
 }
@@ -964,13 +977,18 @@ input {
     font-size: clamp(2.25rem, 9.4vw, 3.55rem);
   }
 
-  .countdown {
-    font-size: clamp(5.1rem, 21.8vw, 7.45rem);
+  .countdown-minutes,
+  .countdown-separator {
+    font-size: clamp(3rem, 12vw, 4.45rem);
+  }
+
+  .countdown-seconds {
+    font-size: clamp(5.2rem, 22.5vw, 7.85rem);
   }
 
   .countdown-fraction {
-    font-size: clamp(0.86rem, 3.65vw, 1.2rem);
-    margin-bottom: 0.34em;
+    font-size: clamp(1rem, 4.2vw, 1.42rem);
+    margin-bottom: 0.18em;
   }
 
   .control-console {

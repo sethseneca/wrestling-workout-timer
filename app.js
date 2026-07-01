@@ -27,6 +27,8 @@
 
   var app = document.getElementById("app");
   var countdownEl = document.getElementById("countdown");
+  var countdownMinutesEl = document.getElementById("countdownMinutes");
+  var countdownSecondsEl = document.getElementById("countdownSeconds");
   var countdownFractionEl = document.getElementById("countdownFraction");
   var phaseLabelEl = document.getElementById("phaseLabel");
   var roundCounterEl = document.getElementById("roundCounter");
@@ -483,7 +485,7 @@
     state.remainingMs = 0;
     app.className = "app phase-done";
     phaseLabelEl.textContent = "DONE";
-    countdownEl.textContent = "00:00";
+    setCountdownTime(0);
     countdownFractionEl.textContent = ".00";
     roundCounterEl.textContent = "Round " + state.settings.rounds + " of " + state.settings.rounds;
     runStatusEl.textContent = "Done";
@@ -502,7 +504,7 @@
 
     app.className = "app phase-" + phase;
     phaseLabelEl.textContent = label;
-    countdownEl.textContent = formatTime(Math.ceil(state.remainingMs / 1000));
+    setCountdownTime(Math.ceil(state.remainingMs / 1000));
     countdownFractionEl.textContent = formatFraction(state.remainingMs);
     roundCounterEl.textContent = "Round " + round + " of " + state.settings.rounds;
     runStatusEl.textContent = state.isRunning ? "Running" : state.hasStarted ? "Paused" : "Ready";
@@ -1162,11 +1164,21 @@
     scheduleCurrentIntervalCues(null);
   }
 
-  function formatTime(totalSeconds) {
+  function setCountdownTime(totalSeconds) {
+    var parts = formatTimeParts(totalSeconds);
+    countdownMinutesEl.textContent = parts.minutes;
+    countdownSecondsEl.textContent = parts.seconds;
+    countdownEl.setAttribute("aria-label", parts.minutes + ":" + parts.seconds);
+  }
+
+  function formatTimeParts(totalSeconds) {
     var seconds = Math.max(0, totalSeconds);
     var minutes = Math.floor(seconds / 60);
     var remainder = seconds % 60;
-    return String(minutes).padStart(2, "0") + ":" + String(remainder).padStart(2, "0");
+    return {
+      minutes: String(minutes).padStart(2, "0"),
+      seconds: String(remainder).padStart(2, "0")
+    };
   }
 
   function formatFraction(totalMs) {
