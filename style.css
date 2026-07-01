@@ -720,7 +720,7 @@ input {
 @media (max-width: 600px) {
   .app {
     overflow-x: hidden;
-    padding-top: calc(24px + env(safe-area-inset-top));
+    padding-top: 16px;
   }
 
   .timer-panel {
