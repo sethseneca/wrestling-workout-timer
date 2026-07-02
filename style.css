@@ -326,7 +326,7 @@ input {
   place-items: center;
   border: 0;
   border-radius: 999px;
-  color: #d1d1d1;
+  color: #888888;
   background: transparent;
   box-shadow: none;
   transition: color 160ms ease, transform 160ms ease;
@@ -391,7 +391,7 @@ input {
 .play-button .play-icon {
   width: 64px;
   height: 64px;
-  transform: translateX(3px);
+  transform: translateX(4px);
 }
 
 .play-button .play-icon path {
@@ -428,7 +428,7 @@ input {
 .arc-button:hover,
 .arc-button:focus-visible,
 .arc-whistle button:focus-visible {
-  color: #ffffff;
+  color: #a0a0a0;
   box-shadow: none;
 }
 
