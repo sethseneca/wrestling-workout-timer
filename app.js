@@ -26,7 +26,7 @@
   };
 
   var app = document.getElementById("app");
-  var timerPanel = document.querySelector(".timer-panel");
+  var kickerEl = document.querySelector(".kicker");
   var countdownEl = document.getElementById("countdown");
   var phaseLabelEl = document.getElementById("phaseLabel");
   var roundCounterEl = document.getElementById("roundCounter");
@@ -45,7 +45,6 @@
   var settingsCloseButton = document.getElementById("settingsCloseButton");
   var settingsPanel = document.getElementById("settingsPanel");
   var settingsScrim = document.getElementById("settingsScrim");
-  var drainMask = createDrainMask();
 
   var inputs = {
     workMinutes: document.getElementById("workMinutes"),
@@ -56,36 +55,6 @@
     readySeconds: document.getElementById("readySeconds"),
     rounds: document.getElementById("rounds")
   };
-
-  function createDrainMask() {
-    var mask = document.createElement("div");
-    var panel = timerPanel.cloneNode(true);
-
-    mask.className = "timer-mask";
-    mask.setAttribute("aria-hidden", "true");
-    mask.inert = true;
-    panel.classList.add("timer-panel-overlay");
-    panel.removeAttribute("aria-labelledby");
-    panel.querySelectorAll("[id]").forEach(function (element) {
-      element.removeAttribute("id");
-    });
-    panel.querySelectorAll("button, input, [tabindex]").forEach(function (element) {
-      element.setAttribute("tabindex", "-1");
-    });
-
-    mask.appendChild(panel);
-    timerPanel.insertAdjacentElement("afterend", mask);
-
-    return {
-      phaseLabel: mask.querySelector(".phase-label"),
-      countdown: mask.querySelector(".countdown"),
-      roundCounter: mask.querySelector(".round-counter"),
-      startButton: mask.querySelector(".play-button"),
-      skipBackButton: mask.querySelector(".arc-back"),
-      skipButton: mask.querySelector(".arc-forward"),
-      resetButton: mask.querySelector(".arc-reset")
-    };
-  }
 
   var state = {
     settings: loadSettings(),
@@ -109,6 +78,16 @@
     hiddenAt: 0
   };
 
+  var maskTargets = [
+    kickerEl,
+    settingsToggleButton,
+    phaseLabelEl,
+    countdownEl,
+    roundCounterEl
+  ];
+
+  setupElementMasks();
+
   writeSettingsToInputs(state.settings);
   state.savedTimers = loadSavedTimers();
   preventAppZoom();
@@ -118,6 +97,46 @@
   }
 
   renderSavedTimers();
+
+  function setupElementMasks() {
+    kickerEl.dataset.maskText = kickerEl.textContent;
+    phaseLabelEl.dataset.maskText = phaseLabelEl.textContent;
+    countdownEl.dataset.maskText = countdownEl.textContent;
+    roundCounterEl.dataset.maskText = roundCounterEl.textContent;
+
+    [kickerEl, phaseLabelEl, countdownEl, roundCounterEl].forEach(function (element) {
+      element.classList.add("mask-text");
+    });
+
+    settingsToggleButton.classList.add("mask-icon");
+    settingsToggleButton.querySelectorAll("svg").forEach(function (svg) {
+      var clone = svg.cloneNode(true);
+      clone.classList.add("mask-svg");
+      clone.setAttribute("aria-hidden", "true");
+      settingsToggleButton.appendChild(clone);
+    });
+
+    updateElementMasks();
+  }
+
+  function syncMaskText(element, text) {
+    element.dataset.maskText = text;
+  }
+
+  function updateElementMasks() {
+    var fill = parseFloat(getComputedStyle(app).getPropertyValue("--drain-fill")) || 0;
+    var lineY = window.innerHeight * (1 - clamp(fill / 100, 0, 1));
+
+    maskTargets.forEach(function (element) {
+      if (!element) {
+        return;
+      }
+
+      var rect = element.getBoundingClientRect();
+      var maskTop = rect.height > 0 ? clamp((lineY - rect.top) / rect.height, 0, 1) * 100 : 100;
+      element.style.setProperty("--mask-top", maskTop.toFixed(3) + "%");
+    });
+  }
 
   document.addEventListener("pointerdown", handleAudioInteraction, { passive: true });
   document.addEventListener("touchstart", handleAudioInteraction, { passive: true });
@@ -141,6 +160,11 @@
   window.addEventListener("beforeunload", saveTimerState);
   window.addEventListener("focus", handleAppReturn);
   window.addEventListener("pageshow", handleAppReturn);
+  window.addEventListener("resize", updateElementMasks);
+  window.addEventListener("orientationchange", updateElementMasks);
+  if (document.fonts && document.fonts.ready) {
+    document.fonts.ready.then(updateElementMasks);
+  }
   window.addEventListener("pagehide", handlePageSuspend);
   document.addEventListener("visibilitychange", handleVisibilityChange);
   document.addEventListener("freeze", handlePageSuspend);
@@ -533,10 +557,11 @@
     app.className = "app phase-done";
     app.style.setProperty("--drain-fill", "0%");
     phaseLabelEl.textContent = "DONE";
-    drainMask.phaseLabel.textContent = "DONE";
+    syncMaskText(phaseLabelEl, "DONE");
     setCountdownTime(0);
     roundCounterEl.textContent = "Round " + state.settings.rounds + " of " + state.settings.rounds;
-    drainMask.roundCounter.textContent = roundCounterEl.textContent;
+    syncMaskText(roundCounterEl, roundCounterEl.textContent);
+    updateElementMasks();
     if (shouldPlayTone) {
       playFinishTone();
     }
@@ -552,31 +577,28 @@
 
     app.className = "app phase-" + phase;
     phaseLabelEl.textContent = label;
-    drainMask.phaseLabel.textContent = label;
+    syncMaskText(phaseLabelEl, label);
     setCountdownTime(Math.ceil(state.remainingMs / 1000));
     updateDrainProgress(step);
     roundCounterEl.textContent = "Round " + round + " of " + state.settings.rounds;
-    drainMask.roundCounter.textContent = roundCounterEl.textContent;
+    syncMaskText(roundCounterEl, roundCounterEl.textContent);
+    updateElementMasks();
   }
 
   function updateDrainProgress(step) {
     var totalMs = step && step.duration ? step.duration * 1000 : 0;
     var fill = totalMs > 0 ? clamp(state.remainingMs / totalMs, 0, 1) : 0;
     app.style.setProperty("--drain-fill", (fill * 100).toFixed(3) + "%");
+    updateElementMasks();
   }
 
   function updateControls() {
     startButton.disabled = false;
     startButton.classList.toggle("is-running", state.isRunning);
-    drainMask.startButton.disabled = false;
-    drainMask.startButton.classList.toggle("is-running", state.isRunning);
     startButton.setAttribute("aria-label", state.isRunning ? "Pause timer" : state.hasStarted && !state.isDone ? "Resume timer" : "Start timer");
     playButtonLabel.textContent = state.isRunning ? "Pause" : state.hasStarted && !state.isDone ? "Resume" : "Start";
     skipBackButton.disabled = state.isDone || (!state.hasStarted && !state.sequence.length);
     skipButton.disabled = state.isDone;
-    drainMask.skipBackButton.disabled = skipBackButton.disabled;
-    drainMask.skipButton.disabled = skipButton.disabled;
-    drainMask.resetButton.disabled = resetButton.disabled;
   }
 
   function handleAudioInteraction() {
@@ -1226,7 +1248,7 @@
   function setCountdownTime(totalSeconds) {
     var time = formatTimeString(totalSeconds);
     countdownEl.textContent = time;
-    drainMask.countdown.textContent = time;
+    syncMaskText(countdownEl, time);
     countdownEl.setAttribute("aria-label", time);
   }
 
