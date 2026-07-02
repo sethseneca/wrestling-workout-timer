@@ -27,8 +27,6 @@
 
   var app = document.getElementById("app");
   var countdownEl = document.getElementById("countdown");
-  var countdownMinutesEl = document.getElementById("countdownMinutes");
-  var countdownSecondsEl = document.getElementById("countdownSeconds");
   var phaseLabelEl = document.getElementById("phaseLabel");
   var roundCounterEl = document.getElementById("roundCounter");
   var startButton = document.getElementById("startButton");
@@ -501,6 +499,8 @@
     state.isDone = true;
     state.remainingMs = 0;
     app.className = "app phase-done";
+    app.style.setProperty("--drain-fill", "0%");
+    app.classList.remove("is-drain-behind-timer");
     phaseLabelEl.textContent = "DONE";
     setCountdownTime(0);
     roundCounterEl.textContent = "Round " + state.settings.rounds + " of " + state.settings.rounds;
@@ -520,7 +520,15 @@
     app.className = "app phase-" + phase;
     phaseLabelEl.textContent = label;
     setCountdownTime(Math.ceil(state.remainingMs / 1000));
+    updateDrainProgress(step);
     roundCounterEl.textContent = "Round " + round + " of " + state.settings.rounds;
+  }
+
+  function updateDrainProgress(step) {
+    var totalMs = step && step.duration ? step.duration * 1000 : 0;
+    var fill = totalMs > 0 ? clamp(state.remainingMs / totalMs, 0, 1) : 0;
+    app.style.setProperty("--drain-fill", (fill * 100).toFixed(3) + "%");
+    app.classList.toggle("is-drain-behind-timer", fill > 0.42 && !!step);
   }
 
   function updateControls() {
@@ -1177,20 +1185,16 @@
   }
 
   function setCountdownTime(totalSeconds) {
-    var parts = formatTimeParts(totalSeconds);
-    countdownMinutesEl.textContent = parts.minutes;
-    countdownSecondsEl.textContent = parts.seconds;
-    countdownEl.setAttribute("aria-label", parts.minutes + ":" + parts.seconds);
+    var time = formatTimeString(totalSeconds);
+    countdownEl.textContent = time;
+    countdownEl.setAttribute("aria-label", time);
   }
 
-  function formatTimeParts(totalSeconds) {
+  function formatTimeString(totalSeconds) {
     var seconds = Math.max(0, totalSeconds);
     var minutes = Math.floor(seconds / 60);
     var remainder = seconds % 60;
-    return {
-      minutes: String(minutes).padStart(2, "0"),
-      seconds: String(remainder).padStart(2, "0")
-    };
+    return String(minutes).padStart(2, "0") + ":" + String(remainder).padStart(2, "0");
   }
 
   function formatShortDuration(totalSeconds) {
