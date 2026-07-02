@@ -18,6 +18,8 @@
       { src: "assets/audio/ten-second-pop.m4a?v=20260630-console9", type: "audio/mp4" }
     ]
   };
+  var SILENT_AUDIO_SRC = "data:audio/wav;base64,UklGRgwEAABXQVZFZm10IBAAAAABAAEA6AMAAOgDAAABAAgAZGF0YegDAACAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICA";
+  SILENT_AUDIO_SRC = "data:audio/mp4;base64,AAAAHGZ0eXBNNEEgAAAAAE00QSBtcDQyaXNvbQAAA25tb292AAAAbG12aGQAAAAA5mx4guZseIIAAB9AAAAoAAABAAABAAAAAAAAAAAAAAAAAQAAAAAAAAAAAAAAAAAAAAEAAAAAAAAAAAAAAAAAAEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACAAACAHRyYWsAAABcdGtoZAAAAAfmbHiC5mx4ggAAAAEAAAAAAAAoAAAAAAAAAAAAAAAAAAEAAAAAAQAAAAAAAAAAAAAAAAAAAAEAAAAAAAAAAAAAAAAAAEAAAAAAAAAAAAAAAAAAAZxtZGlhAAAAIG1kaGQAAAAA5mx4guZseIIAAB9AAAAoAAAAAAAAAAAiaGRscgAAAAAAAAAAc291bgAAAAAAAAAAAAAAAAAAAAABUm1pbmYAAAAQc21oZAAAAAAAAAAAAAAAJGRpbmYAAAAcZHJlZgAAAAAAAAABAAAADHVybCAAAAABAAABFnN0YmwAAAB2c3RzZAAAAAAAAAABAAAAZm1wNGEAAAAAAAAAAQAAAAAAAAAAAAIAEAAAAAAfQAAAAAAAM2VzZHMAAAAAA4CAgCIAAAAEgICAFEAUABgAAAAA4AAAPoAFgICAAhWIBoCAgAECAAAAD3NidGQAAAAASTE2AAAAGHN0dHMAAAAAAAAAAQAAAAoAAAQAAAAAKHN0c2MAAAAAAAAAAgAAAAEAAAAEAAAAAQAAAAMAAAACAAAAAQAAADxzdHN6AAAAAAAAAAAAAAAKAAAABAAAAAQAAAAEAAAABAAAAAQAAAAEAAAABAAAAAQAAAAEAAAABAAAABxzdGNvAAAAAAAAAAMAABAAAAAQEAAAECAAAAD6dWR0YQAAAPJtZXRhAAAAAAAAACJoZGxyAAAAAAAAAABtZGlyYXBwbAAAAAAAAAAAAAAAAADEaWxzdAAAALwtLS0tAAAAHG1lYW4AAAAAY29tLmFwcGxlLmlUdW5lcwAAABRuYW1lAAAAAGlUdW5TTVBCAAAAhGRhdGEAAAABAAAAACAwMDAwMDAwMCAwMDAwMDg0MCAwMDAwMDA4MCAwMDAwMDAwMDAwMDAxRjQwIDAwMDAwMDAwIDAwMDAwMDAwIDAwMDAwMDAwIDAwMDAwMDAwIDAwMDAwMDAwIDAwMDAwMDAwIDAwMDAwMDAwIDAwMDAwMDAwAAAMbmZyZWUAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAwbWRhdADQAAcA0AAHANAABwDQAAcA0AAHANAABwDQAAcA0AAHANAABwDQAAc=";
   var DEFAULTS = {
     workSeconds: 30,
     restSeconds: 15,
@@ -62,6 +64,7 @@
     currentIndex: 0,
     remainingMs: 0,
     targetTime: 0,
+    targetWallTime: 0,
     rafId: 0,
     isRunning: false,
     hasStarted: false,
@@ -71,6 +74,8 @@
     audioBufferPromises: {},
     audioReadyPromise: null,
     audioUnlocked: false,
+    silentAudio: null,
+    silentAudioActive: false,
     scheduledCueNodes: [],
     wakeLock: null,
     savedTimers: [],
@@ -332,6 +337,8 @@
   }
 
   async function handlePlayPause() {
+    startSilentAudioLoop();
+
     if (state.hasStarted && !state.isDone) {
       await handlePauseResume();
       return;
@@ -422,10 +429,12 @@
       return;
     }
 
+    startSilentAudioLoop();
     cancelAnimationFrame(state.rafId);
     clearScheduledCues();
     state.isRunning = true;
     state.targetTime = performance.now() + state.remainingMs;
+    state.targetWallTime = Date.now() + state.remainingMs;
     scheduleCurrentIntervalCues(null);
     requestWakeLock();
     tick();
@@ -434,10 +443,11 @@
   }
 
   function pauseRunning() {
-    state.remainingMs = Math.max(0, state.targetTime - performance.now());
+    state.remainingMs = getRunningRemainingMs();
     state.isRunning = false;
     cancelAnimationFrame(state.rafId);
     clearScheduledCues();
+    stopSilentAudioLoop();
     releaseWakeLock();
     updateDisplay();
     updateControls();
@@ -447,6 +457,7 @@
   function resetTimer(shouldSave) {
     cancelAnimationFrame(state.rafId);
     clearScheduledCues();
+    stopSilentAudioLoop();
     releaseWakeLock();
 
     state.settings = readSettingsFromInputs();
@@ -479,6 +490,7 @@
 
     if (state.isRunning) {
       state.targetTime = performance.now() + state.remainingMs;
+      state.targetWallTime = Date.now() + state.remainingMs;
       scheduleCurrentIntervalCues(previousPhase);
     }
 
@@ -490,7 +502,7 @@
       return;
     }
 
-    state.remainingMs = Math.max(0, state.targetTime - performance.now());
+    state.remainingMs = getRunningRemainingMs();
     updateDisplay();
     saveTimerStateThrottled();
 
@@ -550,6 +562,7 @@
   function finishWorkout(shouldPlayTone) {
     cancelAnimationFrame(state.rafId);
     clearScheduledCues();
+    stopSilentAudioLoop();
     releaseWakeLock();
     state.isRunning = false;
     state.hasStarted = true;
@@ -600,6 +613,83 @@
     playButtonLabel.textContent = state.isRunning ? "Pause" : state.hasStarted && !state.isDone ? "Resume" : "Start";
     skipBackButton.disabled = state.isDone || (!state.hasStarted && !state.sequence.length);
     skipButton.disabled = state.isDone;
+  }
+
+  function getRunningRemainingMs() {
+    if (!state.isRunning) {
+      return state.remainingMs;
+    }
+
+    if (state.targetWallTime) {
+      return Math.max(0, state.targetWallTime - Date.now());
+    }
+
+    return Math.max(0, state.targetTime - performance.now());
+  }
+
+  function ensureSilentAudioElement() {
+    if (state.silentAudio) {
+      return state.silentAudio;
+    }
+
+    var audio = document.createElement("audio");
+    audio.src = SILENT_AUDIO_SRC;
+    audio.loop = true;
+    audio.preload = "auto";
+    audio.setAttribute("loop", "");
+    audio.setAttribute("playsinline", "");
+    audio.setAttribute("webkit-playsinline", "");
+    audio.setAttribute("aria-hidden", "true");
+    audio.style.position = "fixed";
+    audio.style.width = "1px";
+    audio.style.height = "1px";
+    audio.style.opacity = "0";
+    audio.style.pointerEvents = "none";
+    audio.style.left = "-9999px";
+    audio.style.top = "-9999px";
+    document.body.appendChild(audio);
+    state.silentAudio = audio;
+
+    return audio;
+  }
+
+  function startSilentAudioLoop() {
+    var audio = ensureSilentAudioElement();
+
+    if (!audio || state.silentAudioActive) {
+      return;
+    }
+
+    state.silentAudioActive = true;
+
+    try {
+      audio.currentTime = 0;
+      var playPromise = audio.play();
+
+      if (playPromise && typeof playPromise.catch === "function") {
+        playPromise.catch(function () {
+          state.silentAudioActive = false;
+        });
+      }
+    } catch (error) {
+      state.silentAudioActive = false;
+    }
+  }
+
+  function stopSilentAudioLoop() {
+    if (!state.silentAudio) {
+      state.silentAudioActive = false;
+      return;
+    }
+
+    try {
+      state.silentAudio.pause();
+      state.silentAudio.currentTime = 0;
+    } catch (error) {
+      return;
+    } finally {
+      state.silentAudioActive = false;
+    }
   }
 
   function handleAudioInteraction() {
@@ -749,30 +839,43 @@
 
     clearScheduledCues();
 
-    if ((step.phase === "ready" || step.phase === "rest") && state.remainingMs >= 1000) {
-      [2, 1].forEach(function (secondsRemaining) {
-        var delaySeconds = state.remainingMs / 1000 - secondsRemaining;
+    var delayOffset = 0;
 
-        if (delaySeconds >= -0.08) {
-          playPrepCue(secondsRemaining, Math.max(0, delaySeconds), true);
-        }
-      });
-    }
+    for (var index = state.currentIndex; index < state.sequence.length; index += 1) {
+      var scheduledStep = state.sequence[index];
+      var isCurrentStep = index === state.currentIndex;
+      var remainingSeconds = isCurrentStep ? state.remainingMs / 1000 : scheduledStep.duration;
+      var elapsedInStep = scheduledStep.duration - remainingSeconds;
+      var previousStepPhase = index > 0 ? state.sequence[index - 1].phase : previousPhase;
+      var isAtStepStart = !isCurrentStep || elapsedInStep <= 0.25;
 
-    if (step.phase === "work" && state.remainingMs >= step.duration * 1000 - 250) {
-      playWhistleStart(0, false);
-    }
+      if ((scheduledStep.phase === "ready" || scheduledStep.phase === "rest") && remainingSeconds >= 1) {
+        [2, 1].forEach(function (secondsRemaining) {
+          var prepDelay = delayOffset + remainingSeconds - secondsRemaining;
 
-    if (step.phase === "work" && step.duration > 10) {
-      var warningDelay = state.remainingMs / 1000 - 10;
-
-      if (warningDelay >= -0.08) {
-        playTenSecondWarning(Math.max(0, warningDelay), true);
+          if (prepDelay >= -0.08) {
+            playPrepCue(secondsRemaining, Math.max(0, prepDelay), true);
+          }
+        });
       }
-    }
 
-    if (step.phase === "rest" && previousPhase === "work" && state.remainingMs >= step.duration * 1000 - 250) {
-      playRestHorn(0, false);
+      if (scheduledStep.phase === "work" && isAtStepStart) {
+        playWhistleStart(Math.max(0, delayOffset), true);
+      }
+
+      if (scheduledStep.phase === "work" && scheduledStep.duration > 10) {
+        var warningDelay = delayOffset + remainingSeconds - 10;
+
+        if (warningDelay >= -0.08) {
+          playTenSecondWarning(Math.max(0, warningDelay), true);
+        }
+      }
+
+      if (scheduledStep.phase === "rest" && previousStepPhase === "work" && isAtStepStart) {
+        playRestHorn(Math.max(0, delayOffset), true);
+      }
+
+      delayOffset += remainingSeconds;
     }
   }
 
@@ -958,7 +1061,7 @@
   }
 
   function saveTimerState() {
-    var remainingMs = state.isRunning ? Math.max(0, state.targetTime - performance.now()) : state.remainingMs;
+    var remainingMs = getRunningRemainingMs();
 
     localStorage.setItem(TIMER_STATE_KEY, JSON.stringify({
       settings: state.settings,
@@ -1195,9 +1298,8 @@
 
   function handlePageSuspend() {
     if (state.isRunning) {
-      state.remainingMs = Math.max(0, state.targetTime - performance.now());
+      state.remainingMs = getRunningRemainingMs();
       state.hiddenAt = Date.now();
-      clearScheduledCues();
     }
 
     saveTimerState();
@@ -1226,7 +1328,7 @@
       applyElapsedSinceSave(Date.now() - state.hiddenAt);
       state.hiddenAt = 0;
     } else {
-      state.remainingMs = Math.max(0, state.targetTime - performance.now());
+      state.remainingMs = getRunningRemainingMs();
     }
 
     if (state.isDone) {
@@ -1240,6 +1342,7 @@
     }
 
     state.targetTime = performance.now() + state.remainingMs;
+    state.targetWallTime = Date.now() + state.remainingMs;
     clearScheduledCues();
     requestWakeLock();
     updateDisplay();
