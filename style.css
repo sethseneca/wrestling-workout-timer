@@ -88,7 +88,7 @@ input {
     repeating-linear-gradient(0deg, transparent 0 31px, rgba(5, 7, 6, 0.05) 31px 32px),
     repeating-linear-gradient(90deg, transparent 0 31px, rgba(5, 7, 6, 0.045) 31px 32px),
     var(--phase-color);
-  clip-path: inset(calc(100% - var(--drain-fill)) 0 0 0);
+  clip-path: inset(0 0 calc(100% - var(--drain-fill)) 0);
   transition: background-color 160ms ease;
 }
 
@@ -180,14 +180,25 @@ input {
   box-shadow: none;
 }
 
-.mask-text::after {
-  content: attr(data-mask-text);
-  position: absolute;
-  inset: 0;
-  z-index: 2;
-  color: #050706;
-  clip-path: inset(var(--mask-top, 100%) 0 0 0);
-  pointer-events: none;
+.mask-text {
+  --mask-light: var(--text);
+  color: var(--mask-light);
+  background-image: linear-gradient(
+    to bottom,
+    #050706 0 var(--mask-top, 0%),
+    var(--mask-light) var(--mask-top, 0%) 100%
+  );
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.kicker.mask-text {
+  --mask-light: color-mix(in srgb, var(--label-ink), transparent 16%);
+}
+
+.round-counter.mask-text {
+  --mask-light: color-mix(in srgb, var(--label-ink), transparent 26%);
 }
 
 .mask-svg {
@@ -196,7 +207,7 @@ input {
   z-index: 2;
   margin: auto;
   color: #050706;
-  clip-path: inset(var(--mask-top, 100%) 0 0 0);
+  clip-path: inset(0 0 calc(100% - var(--mask-top, 0%)) 0);
   pointer-events: none;
 }
 
