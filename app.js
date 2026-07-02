@@ -29,10 +29,8 @@
   var countdownEl = document.getElementById("countdown");
   var countdownMinutesEl = document.getElementById("countdownMinutes");
   var countdownSecondsEl = document.getElementById("countdownSeconds");
-  var countdownFractionEl = document.getElementById("countdownFraction");
   var phaseLabelEl = document.getElementById("phaseLabel");
   var roundCounterEl = document.getElementById("roundCounter");
-  var runStatusEl = document.getElementById("runStatus");
   var startButton = document.getElementById("startButton");
   var playButtonLabel = document.getElementById("playButtonLabel");
   var skipBackButton = document.getElementById("skipBackButton");
@@ -269,7 +267,6 @@
 
   async function handleStart() {
     await unlockAudio();
-    runStatusEl.textContent = "Loading";
     await ensureAudioReady();
 
     if (state.isDone) {
@@ -486,9 +483,7 @@
     app.className = "app phase-done";
     phaseLabelEl.textContent = "DONE";
     setCountdownTime(0);
-    countdownFractionEl.textContent = ".00";
     roundCounterEl.textContent = "Round " + state.settings.rounds + " of " + state.settings.rounds;
-    runStatusEl.textContent = "Done";
     if (shouldPlayTone) {
       playFinishTone();
     }
@@ -505,9 +500,7 @@
     app.className = "app phase-" + phase;
     phaseLabelEl.textContent = label;
     setCountdownTime(Math.ceil(state.remainingMs / 1000));
-    countdownFractionEl.textContent = formatFraction(state.remainingMs);
     roundCounterEl.textContent = "Round " + round + " of " + state.settings.rounds;
-    runStatusEl.textContent = state.isRunning ? "Running" : state.hasStarted ? "Paused" : "Ready";
   }
 
   function updateControls() {
@@ -517,7 +510,6 @@
     playButtonLabel.textContent = state.isRunning ? "Pause" : state.hasStarted && !state.isDone ? "Resume" : "Start";
     skipBackButton.disabled = state.isDone || (!state.hasStarted && !state.sequence.length);
     skipButton.disabled = state.isDone;
-    runStatusEl.textContent = state.isDone ? "Done" : state.isRunning ? "Running" : state.hasStarted ? "Paused" : "Ready";
   }
 
   function handleAudioInteraction() {
@@ -1179,12 +1171,6 @@
       minutes: String(minutes).padStart(2, "0"),
       seconds: String(remainder).padStart(2, "0")
     };
-  }
-
-  function formatFraction(totalMs) {
-    var ms = Math.max(0, Math.floor(totalMs));
-    var hundredths = Math.floor(ms % 1000 / 10);
-    return "." + String(hundredths).padStart(2, "0");
   }
 
   function formatShortDuration(totalSeconds) {

@@ -1,19 +1,18 @@
 :root {
-  --bg: #030604;
-  --panel: #090d0b;
-  --panel-soft: #121813;
-  --text: #f3efe4;
-  --muted: #a9ac9b;
-  --line: rgba(221, 213, 187, 0.14);
-  --work: #d64239;
-  --rest: #3c8a60;
-  --ready: #d99b2d;
-  --done: #4f7185;
-  --electric: #6f8790;
-  --violet: #536148;
-  --ember: #8f3d34;
-  --button: #151a13;
-  --button-active: #ded5bd;
+  --bg: #050505;
+  --panel: #090a09;
+  --panel-soft: #111310;
+  --text: #f5f0e7;
+  --muted: #8d9188;
+  --line: rgba(245, 240, 231, 0.1);
+  --work: #f04a45;
+  --rest: #39d27d;
+  --ready: #9a8052;
+  --done: #72808a;
+  --control: #151715;
+  --control-soft: #20231f;
+  --button: #111311;
+  --button-active: #f5f0e7;
   --shadow: 0 24px 70px rgba(0, 0, 0, 0.5);
 }
 
@@ -35,7 +34,7 @@ body {
   margin: 0;
   background: var(--bg);
   color: var(--text);
-  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-family: Montserrat, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
 }
 
 button,
@@ -68,11 +67,10 @@ input {
   touch-action: manipulation;
   overflow: hidden;
   background:
-    linear-gradient(180deg, rgba(221, 213, 187, 0.05), transparent 18%, rgba(0, 0, 0, 0.24) 100%),
-    repeating-linear-gradient(0deg, transparent 0 31px, rgba(221, 213, 187, 0.026) 31px 32px),
-    repeating-linear-gradient(90deg, transparent 0 31px, rgba(221, 213, 187, 0.018) 31px 32px),
-    repeating-linear-gradient(135deg, rgba(221, 213, 187, 0.014) 0 1px, transparent 1px 18px),
-    linear-gradient(180deg, #11150e 0%, #070b08 48%, #020302 100%);
+    linear-gradient(180deg, rgba(245, 240, 231, 0.018), transparent 16%, rgba(0, 0, 0, 0.36) 100%),
+    repeating-linear-gradient(0deg, transparent 0 31px, rgba(245, 240, 231, 0.012) 31px 32px),
+    repeating-linear-gradient(90deg, transparent 0 31px, rgba(245, 240, 231, 0.01) 31px 32px),
+    linear-gradient(180deg, #0b0b0a 0%, #050505 54%, #020202 100%);
   background-size: auto, 32px 32px, 32px 32px, 18px 18px, auto;
 }
 
@@ -93,9 +91,7 @@ input {
   padding: 18px;
   border: 0;
   border-radius: 0;
-  background:
-    linear-gradient(180deg, rgba(244, 241, 232, 0.045), transparent 19%),
-    linear-gradient(180deg, rgba(0, 0, 0, 0.06), rgba(0, 0, 0, 0.2));
+  background: transparent;
   box-shadow: none;
   display: grid;
   grid-template-rows: auto minmax(0, 1fr) auto;
@@ -119,26 +115,14 @@ input {
 .kicker {
   min-width: 0;
   margin: 0;
-  color: var(--muted);
-  font-size: 0.78rem;
-  font-weight: 800;
-  letter-spacing: 0;
+  color: color-mix(in srgb, var(--text), transparent 24%);
+  font-size: 0.72rem;
+  font-weight: 900;
+  letter-spacing: 0.12em;
   text-transform: uppercase;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-}
-
-.status-pill {
-  min-width: 68px;
-  padding: 7px 10px;
-  border-radius: 999px;
-  border: 1px solid rgba(244, 241, 232, 0.12);
-  background: rgba(255, 255, 255, 0.07);
-  color: var(--text);
-  font-size: 0.78rem;
-  font-weight: 800;
-  text-align: center;
 }
 
 .settings-close {
@@ -152,27 +136,19 @@ input {
 }
 
 .settings-toggle {
-  position: absolute;
-  right: 18px;
-  bottom: 18px;
-  right: max(18px, env(safe-area-inset-right));
-  bottom: max(18px, env(safe-area-inset-bottom));
-  z-index: 9;
-  width: 54px;
-  height: 54px;
+  position: static;
+  z-index: 2;
+  width: 42px;
+  height: 42px;
   min-width: 0;
   min-height: 0;
   display: grid;
   place-items: center;
   border-radius: 50%;
-  border-color: rgba(244, 241, 232, 0.16);
-  background:
-    linear-gradient(180deg, rgba(244, 241, 232, 0.09), rgba(0, 0, 0, 0.16)),
-    rgba(7, 10, 8, 0.74);
-  color: var(--text);
-  box-shadow:
-    inset 0 0 0 1px rgba(255, 255, 255, 0.05),
-    0 14px 32px rgba(0, 0, 0, 0.38);
+  border-color: rgba(245, 240, 231, 0.13);
+  background: rgba(5, 5, 5, 0.42);
+  color: color-mix(in srgb, var(--text), transparent 12%);
+  box-shadow: none;
 }
 
 .settings-toggle svg,
@@ -198,6 +174,7 @@ input {
 .phase-label {
   max-width: 100%;
   margin: 0;
+  font-family: Montserrat, ui-sans-serif, system-ui, sans-serif;
   font-size: clamp(2.2rem, 11.6vw, 5.4rem);
   font-weight: 950;
   letter-spacing: 0;
@@ -221,33 +198,22 @@ input {
   align-items: baseline;
   gap: clamp(0.06rem, 0.55vw, 0.22rem);
   font-variant-numeric: tabular-nums;
-  font-family: Impact, "Arial Black", ui-monospace, "SF Mono", "Roboto Mono", Menlo, monospace;
-  font-weight: 950;
+  font-family: "Bebas Neue", Impact, "Arial Black", ui-monospace, "SF Mono", "Roboto Mono", Menlo, monospace;
+  font-weight: 400;
   letter-spacing: 0;
   line-height: 0.78;
-  text-shadow: 0 0 20px color-mix(in srgb, var(--phase-color, var(--ready)), transparent 66%);
+  text-shadow: 0 8px 18px rgba(0, 0, 0, 0.38);
 }
 
 .countdown-minutes,
 .countdown-separator {
   font-size: clamp(3.15rem, 14vw, 7.2rem);
-  font-weight: 900;
+  font-weight: 400;
   opacity: 0.9;
 }
 
 .countdown-seconds {
   font-size: clamp(5.5rem, 26vw, 12rem);
-}
-
-.countdown-fraction {
-  color: color-mix(in srgb, var(--phase-color, var(--ready)), white 44%);
-  font-family: ui-monospace, "SF Mono", "Roboto Mono", Menlo, monospace;
-  font-size: clamp(1.15rem, 5.1vw, 1.8rem);
-  font-weight: 950;
-  line-height: 1;
-  margin-bottom: 0.18em;
-  opacity: 0.9;
-  text-shadow: 0 0 12px color-mix(in srgb, var(--phase-color, var(--ready)), transparent 66%);
 }
 
 .round-counter {
@@ -279,24 +245,21 @@ input {
 .control-console::before {
   inset: 0;
   border-radius: 50%;
-  border: 1px solid rgba(221, 213, 187, 0.09);
+  border: 1px solid rgba(245, 240, 231, 0.08);
   background:
-    radial-gradient(circle, transparent 0 42%, rgba(0, 0, 0, 0.64) 43% 53%, transparent 54%),
-    conic-gradient(from -45deg, rgba(116, 93, 41, 0.16) 0 11%, transparent 11% 14%, rgba(58, 75, 57, 0.14) 14% 25%, transparent 25% 29%, rgba(45, 62, 66, 0.16) 29% 40%, transparent 40% 43%, rgba(84, 43, 40, 0.16) 43% 54%, transparent 54% 100%),
-    radial-gradient(circle at 50% 50%, #0f1510 0 34%, #050806 35% 58%, #10160f 59% 71%, #030403 72% 100%);
-  opacity: 0.9;
+    radial-gradient(circle, transparent 0 42%, rgba(0, 0, 0, 0.72) 43% 53%, transparent 54%),
+    radial-gradient(circle at 50% 50%, #141614 0 34%, #060706 35% 58%, #10110f 59% 71%, #020202 72% 100%);
+  opacity: 0.96;
 }
 
 .control-console::after {
   inset: 96px;
   border-radius: 50%;
   background:
-    repeating-conic-gradient(from 0deg, rgba(221, 213, 187, 0.16) 0deg 2deg, transparent 2deg 18deg),
-    radial-gradient(circle, #0b1110 0 55%, #1a221b 56% 64%, #060806 65% 100%);
-  border: 1px solid rgba(221, 213, 187, 0.22);
+    radial-gradient(circle, #080908 0 58%, #151714 59% 67%, #030303 68% 100%);
+  border: 1px solid rgba(245, 240, 231, 0.12);
   box-shadow:
-    inset 0 0 0 8px rgba(0, 0, 0, 0.32),
-    inset 0 0 18px rgba(0, 0, 0, 0.72),
+    inset 0 0 0 8px rgba(0, 0, 0, 0.44),
     0 0 0 1px rgba(0, 0, 0, 0.72);
 }
 
@@ -304,14 +267,14 @@ input {
   position: absolute;
   inset: 42px;
   border-radius: 50%;
-  border: 12px solid rgba(9, 13, 11, 0.96);
+  border: 12px solid rgba(5, 5, 5, 0.96);
   background:
-    radial-gradient(circle, transparent 0 46%, rgba(221, 213, 187, 0.1) 47% 49%, transparent 50%),
-    conic-gradient(from 0deg, rgba(221, 213, 187, 0.09), rgba(221, 213, 187, 0.02), rgba(221, 213, 187, 0.09));
+    radial-gradient(circle, transparent 0 46%, rgba(245, 240, 231, 0.045) 47% 49%, transparent 50%),
+    #080908;
   box-shadow:
-    inset 0 0 0 1px rgba(221, 213, 187, 0.14),
-    inset 0 0 30px rgba(0, 0, 0, 0.74),
-    0 0 0 1px rgba(221, 213, 187, 0.12);
+    inset 0 0 0 1px rgba(245, 240, 231, 0.08),
+    inset 0 0 22px rgba(0, 0, 0, 0.78),
+    0 0 0 1px rgba(245, 240, 231, 0.07);
   pointer-events: none;
   z-index: 1;
 }
@@ -322,16 +285,12 @@ input {
   min-height: 0;
   display: grid;
   place-items: center;
-  border: 1px solid rgba(221, 213, 187, 0.17);
-  color: #ffffff;
-  background:
-    linear-gradient(135deg, rgba(255, 255, 255, 0.08), transparent 30%),
-    linear-gradient(180deg, color-mix(in srgb, var(--control-fill, var(--electric)), #d6cfb8 5%), color-mix(in srgb, var(--control-fill, var(--electric)), black 42%));
+  border: 1px solid rgba(245, 240, 231, 0.12);
+  color: color-mix(in srgb, var(--text), transparent 8%);
+  background: color-mix(in srgb, var(--control), black 8%);
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.12),
-    inset 0 -10px 0 rgba(0, 0, 0, 0.17),
-    inset 0 0 0 1px rgba(0, 0, 0, 0.32),
-    0 12px 22px rgba(0, 0, 0, 0.34);
+    inset 0 0 0 1px rgba(0, 0, 0, 0.38),
+    0 10px 22px rgba(0, 0, 0, 0.34);
   transition:
     transform 160ms ease,
     background 180ms ease,
@@ -347,21 +306,13 @@ input {
   position: absolute;
   inset: 5px;
   border-radius: inherit;
-  background:
-    linear-gradient(135deg, rgba(255, 255, 255, 0.09), transparent 42%),
-    linear-gradient(180deg, transparent, rgba(0, 0, 0, 0.12));
+  background: rgba(245, 240, 231, 0.018);
   pointer-events: none;
   opacity: 0.82;
 }
 
 .arc-button::after {
-  content: "";
-  position: absolute;
-  inset: 10px;
-  pointer-events: none;
-  border-radius: inherit;
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  opacity: 0.72;
+  content: none;
 }
 
 .arc-button {
@@ -388,7 +339,6 @@ input {
   top: 13px;
   left: 50%;
   border-radius: 14px 14px 8px 8px;
-  --control-fill: #80601f;
   clip-path: polygon(16% 0, 84% 0, 100% 66%, 76% 100%, 24% 100%, 0 66%);
   transform: translateX(-50%);
 }
@@ -403,7 +353,6 @@ input {
   width: 86px;
   height: 174px;
   border-radius: 14px 8px 8px 14px;
-  --control-fill: #344d54;
   clip-path: polygon(0 18%, 62% 0, 100% 16%, 72% 50%, 100% 84%, 62% 100%, 0 82%);
   transform: translateY(-50%);
 }
@@ -418,7 +367,6 @@ input {
   width: 86px;
   height: 174px;
   border-radius: 8px 14px 14px 8px;
-  --control-fill: #693832;
   clip-path: polygon(100% 18%, 38% 0, 0 16%, 28% 50%, 0 84%, 38% 100%, 100% 82%);
   transform: translateY(-50%);
 }
@@ -431,7 +379,6 @@ input {
   left: 50%;
   bottom: 13px;
   border-radius: 8px 8px 14px 14px;
-  --control-fill: #356747;
   clip-path: polygon(24% 0, 76% 0, 100% 34%, 84% 100%, 16% 100%, 0 34%);
   transform: translateX(-50%);
   padding: 0;
@@ -459,17 +406,13 @@ input {
   height: clamp(122px, 34vw, 142px);
   z-index: 3;
   border-radius: 50%;
-  color: #07100e;
-  background:
-    radial-gradient(circle at 38% 30%, rgba(255, 255, 255, 0.28), transparent 25%),
-    linear-gradient(145deg, #d6d1be 0%, #aeb9aa 48%, #60705f 100%);
-  border: 2px solid rgba(221, 213, 187, 0.42);
+  color: #050505;
+  background: var(--text);
+  border: 2px solid rgba(245, 240, 231, 0.28);
   box-shadow:
-    inset 0 0 0 10px rgba(0, 0, 0, 0.1),
-    inset 0 -14px 26px rgba(0, 0, 0, 0.2),
-    0 0 0 11px #07100e,
-    0 0 0 14px rgba(221, 213, 187, 0.17),
-    0 16px 30px rgba(0, 0, 0, 0.54);
+    0 0 0 11px #050505,
+    0 0 0 14px rgba(245, 240, 231, 0.1),
+    0 16px 30px rgba(0, 0, 0, 0.5);
 }
 
 .play-button .play-icon {
@@ -490,11 +433,9 @@ input {
 }
 
 .play-button.is-running {
-  background:
-    linear-gradient(135deg, rgba(255, 255, 255, 0.16), transparent 35%),
-    linear-gradient(145deg, color-mix(in srgb, var(--phase-color, var(--work)), #ded5bd 9%), color-mix(in srgb, var(--phase-color, var(--work)), black 30%));
-  color: #ffffff;
-  border-color: color-mix(in srgb, var(--phase-color, var(--work)), white 42%);
+  background: var(--text);
+  color: #050505;
+  border-color: rgba(245, 240, 231, 0.28);
   animation: play-pulse 1.3s ease-in-out infinite;
 }
 
@@ -509,13 +450,10 @@ input {
 .arc-button:hover,
 .arc-button:focus-visible,
 .arc-whistle button:focus-visible {
-  border-color: color-mix(in srgb, currentColor, white 28%);
+  border-color: rgba(245, 240, 231, 0.24);
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.2),
-    inset 0 -10px 0 rgba(0, 0, 0, 0.14),
-    inset 0 0 0 1px rgba(0, 0, 0, 0.28),
-    0 0 22px color-mix(in srgb, var(--control-fill, white), transparent 55%),
-    0 16px 28px rgba(0, 0, 0, 0.42);
+    inset 0 0 0 1px rgba(0, 0, 0, 0.34),
+    0 14px 26px rgba(0, 0, 0, 0.42);
 }
 
 .arc-reset:hover,
@@ -566,31 +504,6 @@ button:focus-visible,
 input:focus-visible {
   outline: 3px solid rgba(255, 255, 255, 0.8);
   outline-offset: 3px;
-}
-
-button.settings-toggle {
-  position: absolute;
-  right: 18px;
-  bottom: 18px;
-  right: max(18px, env(safe-area-inset-right));
-  bottom: max(18px, env(safe-area-inset-bottom));
-  z-index: 30;
-  width: 54px;
-  height: 54px;
-  min-width: 0;
-  min-height: 0;
-  display: grid;
-  place-items: center;
-  padding: 0;
-  border-radius: 50%;
-  border-color: rgba(244, 241, 232, 0.16);
-  background:
-    linear-gradient(180deg, rgba(244, 241, 232, 0.09), rgba(0, 0, 0, 0.16)),
-    rgba(7, 10, 8, 0.84);
-  color: var(--text);
-  box-shadow:
-    inset 0 0 0 1px rgba(255, 255, 255, 0.05),
-    0 14px 32px rgba(0, 0, 0, 0.38);
 }
 
 button:disabled {
@@ -859,22 +772,11 @@ input {
 .phase-rest,
 .phase-done {
   background:
-    linear-gradient(180deg, color-mix(in srgb, var(--phase-color), transparent 78%) 0, color-mix(in srgb, var(--phase-color), transparent 92%) 16%, transparent 44%),
-    linear-gradient(180deg, rgba(221, 213, 187, 0.05), transparent 18%, rgba(0, 0, 0, 0.24) 100%),
-    repeating-linear-gradient(0deg, transparent 0 31px, rgba(221, 213, 187, 0.026) 31px 32px),
-    repeating-linear-gradient(90deg, transparent 0 31px, rgba(221, 213, 187, 0.018) 31px 32px),
-    repeating-linear-gradient(135deg, rgba(221, 213, 187, 0.014) 0 1px, transparent 1px 18px),
-    linear-gradient(180deg, #11150e 0%, #070b08 48%, #020302 100%);
-}
-
-.phase-ready .timer-panel,
-.phase-work .timer-panel,
-.phase-rest .timer-panel,
-.phase-done .timer-panel {
-  background:
-    linear-gradient(180deg, color-mix(in srgb, var(--phase-color), transparent 91%), transparent 34%),
-    linear-gradient(180deg, rgba(244, 241, 232, 0.045), transparent 19%),
-    linear-gradient(180deg, rgba(0, 0, 0, 0.04), rgba(0, 0, 0, 0.22));
+    linear-gradient(180deg, color-mix(in srgb, var(--phase-color), transparent 90%) 0, transparent 34%),
+    linear-gradient(180deg, rgba(245, 240, 231, 0.018), transparent 16%, rgba(0, 0, 0, 0.36) 100%),
+    repeating-linear-gradient(0deg, transparent 0 31px, rgba(245, 240, 231, 0.012) 31px 32px),
+    repeating-linear-gradient(90deg, transparent 0 31px, rgba(245, 240, 231, 0.01) 31px 32px),
+    linear-gradient(180deg, #0b0b0a 0%, #050505 54%, #020202 100%);
 }
 
 .phase-ready .phase-label,
@@ -884,35 +786,20 @@ input {
   color: color-mix(in srgb, var(--phase-color), white 18%);
 }
 
-.phase-ready .status-pill,
-.phase-work .status-pill,
-.phase-rest .status-pill,
-.phase-done .status-pill {
-  border-color: color-mix(in srgb, var(--phase-color), white 14%);
-  background:
-    linear-gradient(180deg, color-mix(in srgb, var(--phase-color), white 8%), color-mix(in srgb, var(--phase-color), black 14%));
-  color: var(--text);
-  box-shadow: 0 8px 18px color-mix(in srgb, var(--phase-color), transparent 72%);
-}
-
 @keyframes play-pulse {
   0%,
   100% {
     box-shadow:
-      inset 0 0 0 10px rgba(0, 0, 0, 0.1),
-      inset 0 -14px 26px rgba(0, 0, 0, 0.2),
-      0 0 0 11px #07100e,
-      0 0 0 14px color-mix(in srgb, var(--phase-color, var(--work)), transparent 84%),
-      0 18px 38px rgba(0, 0, 0, 0.58);
+      0 0 0 11px #050505,
+      0 0 0 14px rgba(245, 240, 231, 0.1),
+      0 16px 30px rgba(0, 0, 0, 0.5);
   }
 
   50% {
     box-shadow:
-      inset 0 0 0 10px rgba(0, 0, 0, 0.08),
-      inset 0 -14px 26px rgba(0, 0, 0, 0.18),
-      0 0 0 11px #07100e,
-      0 0 0 17px color-mix(in srgb, var(--phase-color, var(--work)), transparent 78%),
-      0 18px 38px rgba(0, 0, 0, 0.58);
+      0 0 0 11px #050505,
+      0 0 0 16px rgba(245, 240, 231, 0.14),
+      0 16px 30px rgba(0, 0, 0, 0.5);
   }
 }
 
@@ -948,26 +835,9 @@ input {
     gap: 6px;
   }
 
-  .status-pill {
-    min-width: 62px;
-    padding: 6px 8px;
-    font-size: 0.72rem;
-  }
-
   .settings-toggle {
-    width: 56px;
-    height: 56px;
-    right: 16px;
-    bottom: 6px;
-    right: max(18px, env(safe-area-inset-right));
-    bottom: max(6px, env(safe-area-inset-bottom));
-  }
-
-  button.settings-toggle {
-    right: 16px;
-    bottom: 6px;
-    right: max(18px, env(safe-area-inset-right));
-    bottom: max(6px, env(safe-area-inset-bottom));
+    width: 40px;
+    height: 40px;
   }
 
   .settings-toggle svg {
@@ -986,11 +856,6 @@ input {
 
   .countdown-seconds {
     font-size: clamp(5.2rem, 22.5vw, 7.85rem);
-  }
-
-  .countdown-fraction {
-    font-size: clamp(1rem, 4.2vw, 1.42rem);
-    margin-bottom: 0.18em;
   }
 
   .control-console {
