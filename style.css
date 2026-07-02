@@ -389,9 +389,9 @@ input {
 }
 
 .play-button .play-icon {
-  width: 48px;
-  height: 48px;
-  transform: translateX(2px);
+  width: 64px;
+  height: 64px;
+  transform: translateX(3px);
 }
 
 .play-button .play-icon path {
@@ -401,8 +401,8 @@ input {
 
 .play-button .pause-icon {
   display: none;
-  width: 48px;
-  height: 48px;
+  width: 64px;
+  height: 64px;
   stroke: none;
 }
 
@@ -844,9 +844,9 @@ input {
   }
 
   .play-button {
-    width: 86px;
-    flex-basis: 86px;
-    min-height: 86px;
+    width: 96px;
+    flex-basis: 96px;
+    min-height: 96px;
   }
 
   .arc-button svg,
@@ -857,8 +857,8 @@ input {
 
   .play-button .play-icon,
   .play-button .pause-icon {
-    width: 44px;
-    height: 44px;
+    width: 60px;
+    height: 60px;
   }
 
   .settings-panel {
