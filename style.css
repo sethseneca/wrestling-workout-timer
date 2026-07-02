@@ -532,6 +532,86 @@ button.primary {
   transform: translateX(-50%) translateY(1px);
 }
 
+.control-console {
+  width: min(100%, 372px);
+  height: 116px;
+  aspect-ratio: auto;
+  grid-template-columns: 52px 52px minmax(88px, 1fr) 52px 52px;
+  gap: 8px;
+  padding: 12px;
+  border-radius: 999px;
+  border: 1px solid rgba(245, 240, 231, 0.1);
+  background: rgba(10, 11, 10, 0.84);
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.025),
+    0 18px 36px rgba(0, 0, 0, 0.42);
+}
+
+.control-console::before,
+.control-console::after,
+.console-orbit {
+  display: none;
+}
+
+.arc-button,
+.play-button,
+.arc-reset,
+.arc-back,
+.arc-forward,
+.arc-whistle {
+  position: static;
+  width: 52px;
+  height: 52px;
+  clip-path: none;
+  border-radius: 50%;
+  transform: none;
+  padding: 0;
+}
+
+.arc-whistle {
+  display: grid;
+}
+
+.arc-whistle button {
+  clip-path: none;
+  border-radius: 50%;
+}
+
+.play-button {
+  justify-self: center;
+  width: 88px;
+  height: 88px;
+}
+
+.arc-reset svg,
+.arc-back svg,
+.arc-forward svg,
+.arc-whistle svg {
+  width: 28px;
+  height: 28px;
+  transform: none;
+}
+
+.play-button .play-icon,
+.play-button .pause-icon {
+  width: 46px;
+  height: 46px;
+}
+
+.arc-button:hover,
+.arc-button:focus-visible,
+.arc-whistle:hover,
+.arc-whistle:focus-within,
+.arc-whistle button:focus-visible,
+.arc-reset:hover,
+.arc-reset:focus-visible,
+.arc-back:hover,
+.arc-back:focus-visible,
+.arc-forward:hover,
+.arc-forward:focus-visible {
+  transform: none;
+}
+
 .settings-scrim {
   position: fixed;
   inset: 0;
@@ -888,9 +968,33 @@ input {
   }
 
   .control-console {
-    width: min(100%, 308px);
+    width: min(100%, 336px);
+    height: 104px;
+    grid-template-columns: 44px 44px minmax(76px, 1fr) 44px 44px;
+    gap: 7px;
+    padding: 10px;
     margin-top: clamp(4px, 0.8dvh, 10px);
     margin-bottom: clamp(28px, 4.8dvh, 56px);
+  }
+
+  .arc-button,
+  .arc-reset,
+  .arc-back,
+  .arc-forward,
+  .arc-whistle {
+    width: 44px;
+    height: 44px;
+  }
+
+  .play-button {
+    width: 78px;
+    height: 78px;
+  }
+
+  .arc-button svg,
+  .arc-whistle svg {
+    width: 24px;
+    height: 24px;
   }
 }
 
