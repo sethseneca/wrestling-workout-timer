@@ -6,7 +6,7 @@
   var SAVED_TIMERS_KEY = "wrestlingWorkoutSavedTimers";
   var AUDIO_FILES = {
     whistle: [
-      { src: "assets/audio/whistle-start.m4a?v=20260630-console9", type: "audio/mp4" }
+      { src: "assets/audio/whistle-start.m4a?v=20260702-sustained1", type: "audio/mp4" }
     ],
     restHorn: [
       { src: "assets/audio/rest-horn.m4a?v=20260630-console9", type: "audio/mp4" }
