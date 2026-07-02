@@ -104,6 +104,7 @@
   settingsCloseButton.addEventListener("click", closeSettingsPanel);
   settingsScrim.addEventListener("click", closeSettingsPanel);
   saveTimerButton.addEventListener("click", handleSaveTimer);
+  settingsForm.addEventListener("click", handleSettingsStepperClick);
   settingsForm.addEventListener("input", handleSettingsInput);
   savedTimerList.addEventListener("click", handleSavedTimerClick);
   soundCheckEl.addEventListener("click", handleSoundCheckClick);
@@ -221,6 +222,25 @@
     } else {
       saveTimerState();
     }
+  }
+
+  function handleSettingsStepperClick(event) {
+    var button = event.target.closest("[data-stepper-target]");
+    if (!button) {
+      return;
+    }
+
+    var target = inputs[button.dataset.stepperTarget];
+    if (!target) {
+      return;
+    }
+
+    var delta = toNumber(button.dataset.stepperDelta, 0);
+    var min = toNumber(target.min, 0);
+    var max = toNumber(target.max, 99);
+    var current = toNumber(target.value, min);
+    target.value = clamp(current + delta, min, max);
+    target.dispatchEvent(new Event("input", { bubbles: true }));
   }
 
   function buildSequence(settings) {

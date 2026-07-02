@@ -77,11 +77,11 @@ input {
 .settings-panel {
   border: 1px solid var(--line);
   background:
-    linear-gradient(135deg, rgba(221, 213, 187, 0.08), transparent 18%, transparent 82%, rgba(221, 213, 187, 0.035)),
-    linear-gradient(180deg, rgba(255, 255, 255, 0.03), rgba(255, 255, 255, 0.006)),
-    rgba(11, 16, 13, 0.97);
-  border-radius: 8px;
+    linear-gradient(180deg, rgba(245, 240, 231, 0.055), rgba(245, 240, 231, 0.01)),
+    rgba(8, 9, 8, 0.84);
+  border-radius: 18px 18px 8px 8px;
   box-shadow: var(--shadow);
+  backdrop-filter: blur(18px);
 }
 
 .timer-panel {
@@ -555,9 +555,9 @@ button.primary {
   bottom: max(12px, env(safe-area-inset-bottom));
   z-index: 11;
   max-width: 560px;
-  max-height: min(78dvh, 680px);
+  max-height: min(70dvh, 620px);
   margin: 0 auto;
-  padding: 16px;
+  padding: 18px 16px 16px;
   display: grid;
   grid-template-rows: auto minmax(0, 1fr);
   transform: translateY(calc(100% + 24px));
@@ -740,11 +740,40 @@ input {
   min-height: 50px;
   border: 1px solid var(--line);
   border-radius: 8px;
-  background: rgba(0, 0, 0, 0.25);
+  background: rgba(0, 0, 0, 0.34);
   color: var(--text);
   font-size: 1.2rem;
   font-weight: 900;
   text-align: center;
+}
+
+.stepper-control {
+  display: grid;
+  grid-template-columns: 46px minmax(0, 1fr) 46px;
+  gap: 6px;
+}
+
+.stepper-control button {
+  min-height: 52px;
+  border-radius: 8px;
+  border-color: rgba(245, 240, 231, 0.11);
+  background: rgba(245, 240, 231, 0.055);
+  color: var(--text);
+  font-family: "Bebas Neue", Impact, sans-serif;
+  font-size: 1.8rem;
+  font-weight: 400;
+  line-height: 1;
+}
+
+.stepper-control input {
+  min-height: 52px;
+  font-family: "Bebas Neue", Impact, sans-serif;
+  font-size: 2rem;
+  font-weight: 400;
+}
+
+.stepper-control-wide {
+  grid-template-columns: 64px minmax(0, 1fr) 64px;
 }
 
 .round-field {

@@ -9,14 +9,14 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black">
     <meta name="application-name" content="Wrestling Timer">
     <title>Wrestling Workout Timer</title>
-    <link rel="manifest" href="manifest.webmanifest?v=20260702-premium01">
+    <link rel="manifest" href="manifest.webmanifest?v=20260702-premium02">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Montserrat:wght@700;800;900&display=swap" rel="stylesheet">
     <link rel="icon" href="assets/icons/icon.svg" type="image/svg+xml">
     <link rel="icon" href="assets/icons/favicon-32.png" sizes="32x32" type="image/png">
     <link rel="apple-touch-icon" href="assets/icons/apple-touch-icon.png">
-    <link rel="stylesheet" href="style.css?v=20260702-premium01">
+    <link rel="stylesheet" href="style.css?v=20260702-premium02">
   </head>
   <body>
     <main class="app" id="app">
@@ -112,11 +112,19 @@
             <div class="time-inputs">
               <label>
                 <span>Min</span>
-                <input id="workMinutes" inputmode="numeric" min="0" max="59" type="number" value="0">
+                <div class="stepper-control">
+                  <button type="button" data-stepper-target="workMinutes" data-stepper-delta="-1" aria-label="Decrease work minutes">-</button>
+                  <input id="workMinutes" inputmode="numeric" min="0" max="59" type="number" value="0">
+                  <button type="button" data-stepper-target="workMinutes" data-stepper-delta="1" aria-label="Increase work minutes">+</button>
+                </div>
               </label>
               <label>
                 <span>Sec</span>
-                <input id="workSeconds" inputmode="numeric" min="0" max="59" step="5" type="number" value="30">
+                <div class="stepper-control">
+                  <button type="button" data-stepper-target="workSeconds" data-stepper-delta="-5" aria-label="Decrease work seconds">-</button>
+                  <input id="workSeconds" inputmode="numeric" min="0" max="59" step="5" type="number" value="30">
+                  <button type="button" data-stepper-target="workSeconds" data-stepper-delta="5" aria-label="Increase work seconds">+</button>
+                </div>
               </label>
             </div>
           </fieldset>
@@ -126,11 +134,19 @@
             <div class="time-inputs">
               <label>
                 <span>Min</span>
-                <input id="restMinutes" inputmode="numeric" min="0" max="59" type="number" value="0">
+                <div class="stepper-control">
+                  <button type="button" data-stepper-target="restMinutes" data-stepper-delta="-1" aria-label="Decrease rest minutes">-</button>
+                  <input id="restMinutes" inputmode="numeric" min="0" max="59" type="number" value="0">
+                  <button type="button" data-stepper-target="restMinutes" data-stepper-delta="1" aria-label="Increase rest minutes">+</button>
+                </div>
               </label>
               <label>
                 <span>Sec</span>
-                <input id="restSeconds" inputmode="numeric" min="0" max="59" step="5" type="number" value="15">
+                <div class="stepper-control">
+                  <button type="button" data-stepper-target="restSeconds" data-stepper-delta="-5" aria-label="Decrease rest seconds">-</button>
+                  <input id="restSeconds" inputmode="numeric" min="0" max="59" step="5" type="number" value="15">
+                  <button type="button" data-stepper-target="restSeconds" data-stepper-delta="5" aria-label="Increase rest seconds">+</button>
+                </div>
               </label>
             </div>
           </fieldset>
@@ -140,18 +156,30 @@
             <div class="time-inputs">
               <label>
                 <span>Min</span>
-                <input id="readyMinutes" inputmode="numeric" min="0" max="59" type="number" value="0">
+                <div class="stepper-control">
+                  <button type="button" data-stepper-target="readyMinutes" data-stepper-delta="-1" aria-label="Decrease ready minutes">-</button>
+                  <input id="readyMinutes" inputmode="numeric" min="0" max="59" type="number" value="0">
+                  <button type="button" data-stepper-target="readyMinutes" data-stepper-delta="1" aria-label="Increase ready minutes">+</button>
+                </div>
               </label>
               <label>
                 <span>Sec</span>
-                <input id="readySeconds" inputmode="numeric" min="0" max="59" step="5" type="number" value="10">
+                <div class="stepper-control">
+                  <button type="button" data-stepper-target="readySeconds" data-stepper-delta="-5" aria-label="Decrease ready seconds">-</button>
+                  <input id="readySeconds" inputmode="numeric" min="0" max="59" step="5" type="number" value="10">
+                  <button type="button" data-stepper-target="readySeconds" data-stepper-delta="5" aria-label="Increase ready seconds">+</button>
+                </div>
               </label>
             </div>
           </fieldset>
 
           <label class="round-field">
             <span>Rounds</span>
-            <input id="rounds" inputmode="numeric" min="1" max="99" type="number" value="8">
+            <div class="stepper-control stepper-control-wide">
+              <button type="button" data-stepper-target="rounds" data-stepper-delta="-1" aria-label="Decrease rounds">-</button>
+              <input id="rounds" inputmode="numeric" min="1" max="99" type="number" value="8">
+              <button type="button" data-stepper-target="rounds" data-stepper-delta="1" aria-label="Increase rounds">+</button>
+            </div>
           </label>
 
           <section class="timer-library" aria-labelledby="savedTimersTitle">
@@ -177,6 +205,6 @@
       </section>
     </main>
 
-    <script src="app.js?v=20260702-premium01" defer></script>
+    <script src="app.js?v=20260702-premium02" defer></script>
   </body>
 </html>
