@@ -389,8 +389,8 @@ input {
 }
 
 .play-button .play-icon {
-  width: 64px;
-  height: 64px;
+  width: 60px;
+  height: 60px;
   transform: translateX(4px);
 }
 
@@ -401,8 +401,8 @@ input {
 
 .play-button .pause-icon {
   display: none;
-  width: 64px;
-  height: 64px;
+  width: 60px;
+  height: 60px;
   stroke: none;
 }
 
