@@ -295,17 +295,17 @@ input {
 .control-console {
   position: relative;
   width: min(100%, 560px);
-  min-height: 104px;
+  min-height: 112px;
   margin: clamp(10px, 2dvh, 22px) auto max(12px, env(safe-area-inset-bottom));
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr)) minmax(92px, 1.2fr) repeat(2, minmax(0, 1fr));
+  display: flex;
+  justify-content: space-evenly;
   align-items: center;
-  gap: 0;
-  padding: 12px;
-  border: 1px solid rgba(247, 243, 234, 0.08);
+  gap: clamp(4px, 1vw, 12px);
+  padding: 16px clamp(18px, 5vw, 32px);
+  border: 1px solid rgba(247, 243, 234, 0.07);
   border-radius: 999px;
-  background: rgba(7, 8, 7, 0.88);
-  backdrop-filter: blur(14px);
+  background: #0a0a0a;
+  backdrop-filter: none;
   align-self: start;
   isolation: isolate;
   filter: none;
@@ -318,14 +318,15 @@ input {
 .arc-button,
 .play-button {
   position: static;
-  width: 100%;
+  width: 80px;
+  flex: 0 0 80px;
   min-width: 0;
   min-height: 80px;
   display: grid;
   place-items: center;
   border: 0;
   border-radius: 999px;
-  color: rgba(247, 243, 234, 0.82);
+  color: #d1d1d1;
   background: transparent;
   box-shadow: none;
   transition: color 160ms ease, transform 160ms ease;
@@ -349,7 +350,7 @@ input {
   height: 30px;
   fill: none;
   stroke: currentColor;
-  stroke-width: 2.1;
+  stroke-width: 2;
   stroke-linecap: round;
   stroke-linejoin: round;
   filter: none;
@@ -366,51 +367,53 @@ input {
 }
 
 .arc-whistle svg {
-  width: 32px;
-  height: 32px;
+  width: 30px;
+  height: 30px;
   transform: none;
 }
 
 .play-button {
   position: relative;
-  width: 100%;
-  min-height: 88px;
+  width: 96px;
+  flex-basis: 96px;
+  min-height: 96px;
   z-index: 3;
-  color: var(--text);
+  color: #ffffff;
   background: transparent;
   border: 0;
   box-shadow: none;
 }
 
 .play-button::after {
-  content: "";
-  position: absolute;
-  inset: 8px;
-  border-radius: 999px;
-  border: 1px solid rgba(247, 243, 234, 0.12);
-  pointer-events: none;
+  content: none;
 }
 
 .play-button .play-icon {
-  width: 54px;
-  height: 54px;
-  margin-left: 5px;
+  width: 48px;
+  height: 48px;
+  transform: translateX(2px);
 }
 
 .play-button .play-icon path {
-  fill: currentColor;
+  fill: #ffffff;
   stroke: none;
 }
 
 .play-button .pause-icon {
   display: none;
-  width: 54px;
-  height: 54px;
+  width: 48px;
+  height: 48px;
+  stroke: none;
+}
+
+.play-button .pause-icon path {
+  fill: #ffffff;
+  stroke: none;
 }
 
 .play-button.is-running {
   background: transparent;
-  color: var(--text);
+  color: #ffffff;
   border-color: transparent;
 }
 
@@ -425,7 +428,7 @@ input {
 .arc-button:hover,
 .arc-button:focus-visible,
 .arc-whistle button:focus-visible {
-  color: var(--text);
+  color: #ffffff;
   box-shadow: none;
 }
 
@@ -826,22 +829,36 @@ input {
 
   .control-console {
     width: min(100%, 430px);
-    min-height: 104px;
-    grid-template-columns: repeat(2, minmax(0, 1fr)) minmax(92px, 1.12fr) repeat(2, minmax(0, 1fr));
-    gap: 0;
-    padding: 10px;
+    min-height: 108px;
+    gap: 2px;
+    padding: 14px 16px;
     margin-top: clamp(8px, 1.5dvh, 14px);
     margin-bottom: max(10px, env(safe-area-inset-bottom));
   }
 
+  .arc-button,
   .play-button {
-    min-height: 84px;
+    width: 64px;
+    flex-basis: 64px;
+    min-height: 80px;
+  }
+
+  .play-button {
+    width: 86px;
+    flex-basis: 86px;
+    min-height: 86px;
   }
 
   .arc-button svg,
   .arc-whistle svg {
     width: 28px;
     height: 28px;
+  }
+
+  .play-button .play-icon,
+  .play-button .pause-icon {
+    width: 44px;
+    height: 44px;
   }
 
   .settings-panel {
