@@ -790,13 +790,28 @@
     playAudioBuffer("restHorn", 1, delaySeconds || 0, shouldTrack);
   }
 
-  function playAudioBuffer(name, volume, delaySeconds, shouldTrack) {
+  function playAudioBuffer(name, volume, delaySeconds, shouldTrack, isRetry) {
     if (!state.audioContext || !state.audioBuffers[name]) {
+      if (!isRetry) {
+        ensureAudioReady().then(function (ready) {
+          if (ready) {
+            playAudioBuffer(name, volume, delaySeconds, shouldTrack, true);
+          }
+        });
+      }
+
       return false;
     }
 
     if (state.audioContext.state !== "running") {
-      ensureAudioReady();
+      if (!isRetry) {
+        ensureAudioReady().then(function (ready) {
+          if (ready) {
+            playAudioBuffer(name, volume, delaySeconds, shouldTrack, true);
+          }
+        });
+      }
+
       return false;
     }
 
