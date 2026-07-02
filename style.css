@@ -58,7 +58,7 @@ input {
 .app {
   position: relative;
   --phase-color: transparent;
-  --drain-fill: 0%;
+  --drain-pct: 0%;
   --timer-ink: var(--text);
   --label-ink: var(--text);
   width: 100%;
@@ -84,11 +84,11 @@ input {
 
 .app::before {
   z-index: 0;
-  background:
-    repeating-linear-gradient(0deg, transparent 0 31px, rgba(5, 7, 6, 0.05) 31px 32px),
-    repeating-linear-gradient(90deg, transparent 0 31px, rgba(5, 7, 6, 0.045) 31px 32px),
-    var(--phase-color);
-  clip-path: inset(0 0 calc(100% - var(--drain-fill)) 0);
+  background: linear-gradient(
+    to bottom,
+    #0f0f0f var(--drain-pct),
+    var(--phase-color) var(--drain-pct)
+  );
   transition: background-color 160ms ease;
 }
 
@@ -185,12 +185,35 @@ input {
   color: var(--mask-light);
   background-image: linear-gradient(
     to bottom,
-    #050706 0 var(--mask-top, 0%),
-    var(--mask-light) var(--mask-top, 0%) 100%
+    #ffffff 0 var(--mask-top, 0%),
+    #0f0f0f var(--mask-top, 0%) 100%
   );
   background-clip: text;
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
+}
+
+.phase-label.mask-text,
+.countdown.mask-text,
+.round-counter.mask-text {
+  padding-top: 0.1em;
+  padding-bottom: 0.1em;
+  line-height: 1.1;
+}
+
+.phase-label.mask-text {
+  margin-top: -0.16em;
+  margin-bottom: -0.16em;
+}
+
+.countdown.mask-text {
+  margin-top: -0.26em;
+  margin-bottom: -0.26em;
+}
+
+.round-counter.mask-text {
+  margin-top: -0.12em;
+  margin-bottom: -0.12em;
 }
 
 .kicker.mask-text {
@@ -206,8 +229,8 @@ input {
   inset: 0;
   z-index: 2;
   margin: auto;
-  color: #050706;
-  clip-path: inset(0 0 calc(100% - var(--mask-top, 0%)) 0);
+  color: #0f0f0f;
+  clip-path: inset(var(--mask-top, 0%) 0 0 0);
   pointer-events: none;
 }
 

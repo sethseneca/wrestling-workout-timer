@@ -124,9 +124,9 @@
   }
 
   function updateElementMasks() {
-    var fill = parseFloat(getComputedStyle(app).getPropertyValue("--drain-fill")) || 0;
+    var elapsed = parseFloat(getComputedStyle(app).getPropertyValue("--drain-pct")) || 0;
     var appRect = app.getBoundingClientRect();
-    var lineY = appRect.top + appRect.height * clamp(fill / 100, 0, 1);
+    var lineY = appRect.top + appRect.height * clamp(elapsed / 100, 0, 1);
 
     maskTargets.forEach(function (element) {
       if (!element) {
@@ -556,7 +556,7 @@
     state.isDone = true;
     state.remainingMs = 0;
     app.className = "app phase-done";
-    app.style.setProperty("--drain-fill", "0%");
+    app.style.setProperty("--drain-pct", "100%");
     phaseLabelEl.textContent = "DONE";
     syncMaskText(phaseLabelEl, "DONE");
     setCountdownTime(0);
@@ -588,8 +588,8 @@
 
   function updateDrainProgress(step) {
     var totalMs = step && step.duration ? step.duration * 1000 : 0;
-    var fill = totalMs > 0 ? clamp(state.remainingMs / totalMs, 0, 1) : 0;
-    app.style.setProperty("--drain-fill", (fill * 100).toFixed(3) + "%");
+    var elapsed = totalMs > 0 ? clamp(1 - state.remainingMs / totalMs, 0, 1) : 1;
+    app.style.setProperty("--drain-pct", (elapsed * 100).toFixed(3) + "%");
     updateElementMasks();
   }
 
