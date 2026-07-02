@@ -125,7 +125,8 @@
 
   function updateElementMasks() {
     var fill = parseFloat(getComputedStyle(app).getPropertyValue("--drain-fill")) || 0;
-    var lineY = window.innerHeight * (1 - clamp(fill / 100, 0, 1));
+    var appRect = app.getBoundingClientRect();
+    var lineY = appRect.top + appRect.height * (1 - clamp(fill / 100, 0, 1));
 
     maskTargets.forEach(function (element) {
       if (!element) {
