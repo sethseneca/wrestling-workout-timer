@@ -26,6 +26,8 @@
     readySeconds: 10,
     rounds: 8
   };
+  var AudioContextConstructor = window.AudioContext || window.webkitAudioContext;
+  var audioCtx = AudioContextConstructor ? new AudioContextConstructor() : null;
 
   var app = document.getElementById("app");
   var kickerEl = document.querySelector(".kicker");
@@ -69,7 +71,7 @@
     isRunning: false,
     hasStarted: false,
     isDone: false,
-    audioContext: null,
+    audioContext: audioCtx,
     audioBuffers: {},
     audioBufferPromises: {},
     audioReadyPromise: null,
@@ -91,6 +93,10 @@
     roundCounterEl
   ];
 
+  if (audioCtx) {
+    audioCtx.onstatechange = handleAudioContextStateChange;
+  }
+
   setupElementMasks();
 
   writeSettingsToInputs(state.settings);
@@ -102,6 +108,7 @@
   }
 
   renderSavedTimers();
+  primeAudioBuffers();
 
   function setupElementMasks() {
     kickerEl.dataset.maskText = kickerEl.textContent;
@@ -337,6 +344,7 @@
   }
 
   async function handlePlayPause() {
+    resumeAudioContext();
     startSilentAudioLoop();
 
     if (state.hasStarted && !state.isDone) {
@@ -657,10 +665,12 @@
     var audio = ensureSilentAudioElement();
 
     if (!audio || state.silentAudioActive) {
+      activateMediaSession();
       return;
     }
 
     state.silentAudioActive = true;
+    activateMediaSession();
 
     try {
       audio.currentTime = 0;
@@ -679,6 +689,7 @@
   function stopSilentAudioLoop() {
     if (!state.silentAudio) {
       state.silentAudioActive = false;
+      deactivateMediaSession();
       return;
     }
 
@@ -689,6 +700,38 @@
       return;
     } finally {
       state.silentAudioActive = false;
+      deactivateMediaSession();
+    }
+  }
+
+  function activateMediaSession() {
+    if (!("mediaSession" in navigator)) {
+      return;
+    }
+
+    try {
+      if (window.MediaMetadata) {
+        navigator.mediaSession.metadata = new MediaMetadata({
+          title: "Wrestling Timer",
+          artist: "Workout In Progress"
+        });
+      }
+
+      navigator.mediaSession.playbackState = "playing";
+    } catch (error) {
+      return;
+    }
+  }
+
+  function deactivateMediaSession() {
+    if (!("mediaSession" in navigator)) {
+      return;
+    }
+
+    try {
+      navigator.mediaSession.playbackState = "paused";
+    } catch (error) {
+      return;
     }
   }
 
@@ -697,21 +740,17 @@
   }
 
   function createAudioContext() {
-    if (!window.AudioContext && !window.webkitAudioContext) {
+    if (!audioCtx) {
       return null;
     }
 
-    if (!state.audioContext || state.audioContext.state === "closed") {
-      var AudioContextConstructor = window.AudioContext || window.webkitAudioContext;
-      state.audioContext = new AudioContextConstructor();
-      state.audioContext.onstatechange = handleAudioContextStateChange;
-    }
-
+    state.audioContext = audioCtx;
     return state.audioContext;
   }
 
   async function unlockAudio() {
     state.audioUnlocked = true;
+    await resumeAudioContext();
     return ensureAudioReady();
   }
 
@@ -736,17 +775,21 @@
   }
 
   async function ensureAudioReady() {
-    if (!window.AudioContext && !window.webkitAudioContext) {
-      return false;
-    }
-
     if (!createAudioContext()) {
       return false;
     }
 
-    if (state.audioReadyPromise) {
-      await state.audioReadyPromise;
-    } else {
+    await primeAudioBuffers();
+
+    return resumeAudioContext();
+  }
+
+  function primeAudioBuffers() {
+    if (!createAudioContext() || !window.fetch) {
+      return Promise.resolve(false);
+    }
+
+    if (!state.audioReadyPromise) {
       state.audioReadyPromise = Promise.all(Object.keys(AUDIO_FILES).map(function (name) {
         return loadAudioBuffer(name);
       })).then(function () {
@@ -755,11 +798,9 @@
         state.audioReadyPromise = null;
         return false;
       });
-
-      await state.audioReadyPromise;
     }
 
-    return resumeAudioContext();
+    return state.audioReadyPromise;
   }
 
   function handleAudioContextStateChange() {
@@ -815,14 +856,6 @@
   }
 
   function chooseAudioSource(candidates) {
-    var testAudio = document.createElement("audio");
-
-    for (var index = 0; index < candidates.length; index += 1) {
-      if (!candidates[index].type || testAudio.canPlayType(candidates[index].type)) {
-        return candidates[index].src;
-      }
-    }
-
     return candidates[0] ? candidates[0].src : "";
   }
 
