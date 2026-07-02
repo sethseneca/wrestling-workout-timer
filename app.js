@@ -18,8 +18,6 @@
       { src: "assets/audio/ten-second-pop.m4a?v=20260630-console9", type: "audio/mp4" }
     ]
   };
-  var SILENT_AUDIO_SRC = "data:audio/wav;base64,UklGRgwEAABXQVZFZm10IBAAAAABAAEA6AMAAOgDAAABAAgAZGF0YegDAACAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICA";
-  SILENT_AUDIO_SRC = "data:audio/mp4;base64,AAAAHGZ0eXBNNEEgAAAAAE00QSBtcDQyaXNvbQAAA25tb292AAAAbG12aGQAAAAA5mx4guZseIIAAB9AAAAoAAABAAABAAAAAAAAAAAAAAAAAQAAAAAAAAAAAAAAAAAAAAEAAAAAAAAAAAAAAAAAAEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACAAACAHRyYWsAAABcdGtoZAAAAAfmbHiC5mx4ggAAAAEAAAAAAAAoAAAAAAAAAAAAAAAAAAEAAAAAAQAAAAAAAAAAAAAAAAAAAAEAAAAAAAAAAAAAAAAAAEAAAAAAAAAAAAAAAAAAAZxtZGlhAAAAIG1kaGQAAAAA5mx4guZseIIAAB9AAAAoAAAAAAAAAAAiaGRscgAAAAAAAAAAc291bgAAAAAAAAAAAAAAAAAAAAABUm1pbmYAAAAQc21oZAAAAAAAAAAAAAAAJGRpbmYAAAAcZHJlZgAAAAAAAAABAAAADHVybCAAAAABAAABFnN0YmwAAAB2c3RzZAAAAAAAAAABAAAAZm1wNGEAAAAAAAAAAQAAAAAAAAAAAAIAEAAAAAAfQAAAAAAAM2VzZHMAAAAAA4CAgCIAAAAEgICAFEAUABgAAAAA4AAAPoAFgICAAhWIBoCAgAECAAAAD3NidGQAAAAASTE2AAAAGHN0dHMAAAAAAAAAAQAAAAoAAAQAAAAAKHN0c2MAAAAAAAAAAgAAAAEAAAAEAAAAAQAAAAMAAAACAAAAAQAAADxzdHN6AAAAAAAAAAAAAAAKAAAABAAAAAQAAAAEAAAABAAAAAQAAAAEAAAABAAAAAQAAAAEAAAABAAAABxzdGNvAAAAAAAAAAMAABAAAAAQEAAAECAAAAD6dWR0YQAAAPJtZXRhAAAAAAAAACJoZGxyAAAAAAAAAABtZGlyYXBwbAAAAAAAAAAAAAAAAADEaWxzdAAAALwtLS0tAAAAHG1lYW4AAAAAY29tLmFwcGxlLmlUdW5lcwAAABRuYW1lAAAAAGlUdW5TTVBCAAAAhGRhdGEAAAABAAAAACAwMDAwMDAwMCAwMDAwMDg0MCAwMDAwMDA4MCAwMDAwMDAwMDAwMDAxRjQwIDAwMDAwMDAwIDAwMDAwMDAwIDAwMDAwMDAwIDAwMDAwMDAwIDAwMDAwMDAwIDAwMDAwMDAwIDAwMDAwMDAwIDAwMDAwMDAwAAAMbmZyZWUAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAwbWRhdADQAAcA0AAHANAABwDQAAcA0AAHANAABwDQAAcA0AAHANAABwDQAAc=";
   var DEFAULTS = {
     workSeconds: 30,
     restSeconds: 15,
@@ -76,9 +74,8 @@
     audioBufferPromises: {},
     audioReadyPromise: null,
     audioUnlocked: false,
-    silentAudio: null,
-    silentAudioActive: false,
     scheduledCueNodes: [],
+    tenSecondWarningKey: null,
     wakeLock: null,
     savedTimers: [],
     lastStateSave: 0,
@@ -92,10 +89,6 @@
     countdownEl,
     roundCounterEl
   ];
-
-  if (audioCtx) {
-    audioCtx.onstatechange = handleAudioContextStateChange;
-  }
 
   setupElementMasks();
 
@@ -345,7 +338,6 @@
 
   async function handlePlayPause() {
     resumeAudioContext();
-    startSilentAudioLoop();
 
     if (state.hasStarted && !state.isDone) {
       await handlePauseResume();
@@ -437,13 +429,12 @@
       return;
     }
 
-    startSilentAudioLoop();
     cancelAnimationFrame(state.rafId);
     clearScheduledCues();
     state.isRunning = true;
     state.targetTime = performance.now() + state.remainingMs;
     state.targetWallTime = Date.now() + state.remainingMs;
-    scheduleCurrentIntervalCues(null);
+    playCurrentStepStartCue(null);
     requestWakeLock();
     tick();
     updateControls();
@@ -455,7 +446,6 @@
     state.isRunning = false;
     cancelAnimationFrame(state.rafId);
     clearScheduledCues();
-    stopSilentAudioLoop();
     releaseWakeLock();
     updateDisplay();
     updateControls();
@@ -465,7 +455,6 @@
   function resetTimer(shouldSave) {
     cancelAnimationFrame(state.rafId);
     clearScheduledCues();
-    stopSilentAudioLoop();
     releaseWakeLock();
 
     state.settings = readSettingsFromInputs();
@@ -479,6 +468,7 @@
     state.hasStarted = false;
     state.isRunning = false;
     state.isDone = false;
+    state.tenSecondWarningKey = null;
     setCurrentStep(0, null);
     updateControls();
     saveTimerState();
@@ -494,12 +484,13 @@
 
     state.currentIndex = index;
     state.remainingMs = step.duration * 1000;
+    state.tenSecondWarningKey = null;
     updateDisplay();
 
     if (state.isRunning) {
       state.targetTime = performance.now() + state.remainingMs;
       state.targetWallTime = Date.now() + state.remainingMs;
-      scheduleCurrentIntervalCues(previousPhase);
+      playCurrentStepStartCue(previousPhase);
     }
 
     saveTimerState();
@@ -513,6 +504,7 @@
     state.remainingMs = getRunningRemainingMs();
     updateDisplay();
     saveTimerStateThrottled();
+    maybePlayTenSecondWarning();
 
     if (state.remainingMs <= 0) {
       advanceInterval(false);
@@ -570,7 +562,6 @@
   function finishWorkout(shouldPlayTone) {
     cancelAnimationFrame(state.rafId);
     clearScheduledCues();
-    stopSilentAudioLoop();
     releaseWakeLock();
     state.isRunning = false;
     state.hasStarted = true;
@@ -633,106 +624,6 @@
     }
 
     return Math.max(0, state.targetTime - performance.now());
-  }
-
-  function ensureSilentAudioElement() {
-    if (state.silentAudio) {
-      return state.silentAudio;
-    }
-
-    var audio = document.createElement("audio");
-    audio.src = SILENT_AUDIO_SRC;
-    audio.loop = true;
-    audio.preload = "auto";
-    audio.setAttribute("loop", "");
-    audio.setAttribute("playsinline", "");
-    audio.setAttribute("webkit-playsinline", "");
-    audio.setAttribute("aria-hidden", "true");
-    audio.style.position = "fixed";
-    audio.style.width = "1px";
-    audio.style.height = "1px";
-    audio.style.opacity = "0";
-    audio.style.pointerEvents = "none";
-    audio.style.left = "-9999px";
-    audio.style.top = "-9999px";
-    document.body.appendChild(audio);
-    state.silentAudio = audio;
-
-    return audio;
-  }
-
-  function startSilentAudioLoop() {
-    var audio = ensureSilentAudioElement();
-
-    if (!audio || state.silentAudioActive) {
-      activateMediaSession();
-      return;
-    }
-
-    state.silentAudioActive = true;
-    activateMediaSession();
-
-    try {
-      audio.currentTime = 0;
-      var playPromise = audio.play();
-
-      if (playPromise && typeof playPromise.catch === "function") {
-        playPromise.catch(function () {
-          state.silentAudioActive = false;
-        });
-      }
-    } catch (error) {
-      state.silentAudioActive = false;
-    }
-  }
-
-  function stopSilentAudioLoop() {
-    if (!state.silentAudio) {
-      state.silentAudioActive = false;
-      deactivateMediaSession();
-      return;
-    }
-
-    try {
-      state.silentAudio.pause();
-      state.silentAudio.currentTime = 0;
-    } catch (error) {
-      return;
-    } finally {
-      state.silentAudioActive = false;
-      deactivateMediaSession();
-    }
-  }
-
-  function activateMediaSession() {
-    if (!("mediaSession" in navigator)) {
-      return;
-    }
-
-    try {
-      if (window.MediaMetadata) {
-        navigator.mediaSession.metadata = new MediaMetadata({
-          title: "Wrestling Timer",
-          artist: "Workout In Progress"
-        });
-      }
-
-      navigator.mediaSession.playbackState = "playing";
-    } catch (error) {
-      return;
-    }
-  }
-
-  function deactivateMediaSession() {
-    if (!("mediaSession" in navigator)) {
-      return;
-    }
-
-    try {
-      navigator.mediaSession.playbackState = "paused";
-    } catch (error) {
-      return;
-    }
   }
 
   function handleAudioInteraction() {
@@ -803,16 +694,6 @@
     return state.audioReadyPromise;
   }
 
-  function handleAudioContextStateChange() {
-    if (!state.audioContext) {
-      return;
-    }
-
-    if (state.audioContext.state === "running" && state.isRunning && document.visibilityState !== "hidden") {
-      rescheduleCurrentAudioCues();
-    }
-  }
-
   function loadAudioBuffer(name) {
     if (state.audioBuffers[name]) {
       return Promise.resolve(state.audioBuffers[name]);
@@ -859,57 +740,42 @@
     return candidates[0] ? candidates[0].src : "";
   }
 
-  function playPrepCue(secondsRemaining, delaySeconds, shouldTrack) {
-    return false;
-  }
-
-  function scheduleCurrentIntervalCues(previousPhase) {
+  function playCurrentStepStartCue(previousPhase) {
     var step = state.sequence[state.currentIndex];
 
-    if (!step || !state.audioContext) {
+    if (!step || document.visibilityState === "hidden") {
       return;
     }
 
-    clearScheduledCues();
+    var elapsedInStep = step.duration - state.remainingMs / 1000;
+    var isAtStepStart = elapsedInStep <= 0.25;
 
-    var delayOffset = 0;
-
-    for (var index = state.currentIndex; index < state.sequence.length; index += 1) {
-      var scheduledStep = state.sequence[index];
-      var isCurrentStep = index === state.currentIndex;
-      var remainingSeconds = isCurrentStep ? state.remainingMs / 1000 : scheduledStep.duration;
-      var elapsedInStep = scheduledStep.duration - remainingSeconds;
-      var previousStepPhase = index > 0 ? state.sequence[index - 1].phase : previousPhase;
-      var isAtStepStart = !isCurrentStep || elapsedInStep <= 0.25;
-
-      if ((scheduledStep.phase === "ready" || scheduledStep.phase === "rest") && remainingSeconds >= 1) {
-        [2, 1].forEach(function (secondsRemaining) {
-          var prepDelay = delayOffset + remainingSeconds - secondsRemaining;
-
-          if (prepDelay >= -0.08) {
-            playPrepCue(secondsRemaining, Math.max(0, prepDelay), true);
-          }
-        });
-      }
-
-      if (scheduledStep.phase === "work" && isAtStepStart) {
-        playWhistleStart(Math.max(0, delayOffset), true);
-      }
-
-      if (scheduledStep.phase === "work" && scheduledStep.duration > 10) {
-        var warningDelay = delayOffset + remainingSeconds - 10;
-
-        if (warningDelay >= -0.08) {
-          playTenSecondWarning(Math.max(0, warningDelay), true);
-        }
-      }
-
-      if (scheduledStep.phase === "rest" && previousStepPhase === "work" && isAtStepStart) {
-        playRestHorn(Math.max(0, delayOffset), true);
-      }
-
-      delayOffset += remainingSeconds;
+    if (step.phase === "work" && isAtStepStart) {
+      playWhistleStart(0);
     }
+
+    if (step.phase === "rest" && previousPhase === "work" && isAtStepStart) {
+      playRestHorn(0);
+    }
+  }
+
+  function maybePlayTenSecondWarning() {
+    var step = state.sequence[state.currentIndex];
+
+    if (!step || step.phase !== "work" || step.duration <= 10 || document.visibilityState === "hidden") {
+      return;
+    }
+
+    if (state.remainingMs > 10000 || state.remainingMs <= 0) {
+      return;
+    }
+
+    if (state.tenSecondWarningKey === state.currentIndex) {
+      return;
+    }
+
+    state.tenSecondWarningKey = state.currentIndex;
+    playTenSecondWarning(0);
   }
 
   function playWhistleStart(delaySeconds, shouldTrack) {
@@ -1130,6 +996,7 @@
 
       state.currentIndex += 1;
       state.remainingMs = state.sequence[state.currentIndex].duration * 1000;
+      state.tenSecondWarningKey = null;
     }
 
     state.remainingMs = Math.max(0, state.remainingMs - remainingElapsed);
@@ -1381,20 +1248,8 @@
     updateDisplay();
     updateControls();
     saveTimerState();
-    ensureAudioReady().then(function () {
-      rescheduleCurrentAudioCues();
-    });
     cancelAnimationFrame(state.rafId);
     tick();
-  }
-
-  function rescheduleCurrentAudioCues() {
-    if (!state.isRunning || state.isDone || document.visibilityState === "hidden") {
-      return;
-    }
-
-    clearScheduledCues();
-    scheduleCurrentIntervalCues(null);
   }
 
   function setCountdownTime(totalSeconds) {
