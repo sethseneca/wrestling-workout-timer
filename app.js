@@ -25,7 +25,7 @@
     rounds: 8
   };
   var AudioContextConstructor = window.AudioContext || window.webkitAudioContext;
-  var audioCtx = AudioContextConstructor ? new AudioContextConstructor() : null;
+  var audioCtx = null;
 
   var app = document.getElementById("app");
   var kickerEl = document.querySelector(".kicker");
@@ -69,11 +69,14 @@
     isRunning: false,
     hasStarted: false,
     isDone: false,
-    audioContext: audioCtx,
+    audioContext: null,
     audioBuffers: {},
     audioBufferPromises: {},
+    audioData: {},
+    audioDataPromises: {},
     audioReadyPromise: null,
     audioUnlocked: false,
+    fallbackAudio: {},
     scheduledCueNodes: [],
     tenSecondWarningKey: null,
     wakeLock: null,
@@ -101,7 +104,7 @@
   }
 
   renderSavedTimers();
-  primeAudioBuffers();
+  primeAudioData();
 
   function setupElementMasks() {
     kickerEl.dataset.maskText = kickerEl.textContent;
@@ -631,8 +634,13 @@
   }
 
   function createAudioContext() {
-    if (!audioCtx) {
+    if (!AudioContextConstructor) {
       return null;
+    }
+
+    if (!audioCtx || audioCtx.state === "closed") {
+      audioCtx = new AudioContextConstructor();
+      resetDecodedAudioBuffers();
     }
 
     state.audioContext = audioCtx;
@@ -641,11 +649,12 @@
 
   async function unlockAudio() {
     state.audioUnlocked = true;
+    unlockFallbackAudio();
     await resumeAudioContext();
     return ensureAudioReady();
   }
 
-  async function resumeAudioContext() {
+  async function resumeAudioContext(shouldRecreate) {
     var audioContext = createAudioContext();
 
     if (!audioContext) {
@@ -659,10 +668,23 @@
     try {
       await audioContext.resume();
     } catch (error) {
-      return false;
+      if (shouldRecreate !== false) {
+        return recreateAudioContext().then(function () {
+          return resumeAudioContext(false);
+        });
+      }
     }
 
-    return audioContext.state === "running";
+    if (audioContext.state === "running") {
+      return true;
+    }
+
+    if (shouldRecreate !== false && audioContext.state === "closed") {
+      await recreateAudioContext();
+      return resumeAudioContext(false);
+    }
+
+    return false;
   }
 
   async function ensureAudioReady() {
@@ -694,6 +716,20 @@
     return state.audioReadyPromise;
   }
 
+  function primeAudioData() {
+    if (!window.fetch) {
+      return Promise.resolve(false);
+    }
+
+    return Promise.all(Object.keys(AUDIO_FILES).map(function (name) {
+      return loadAudioData(name);
+    })).then(function () {
+      return true;
+    }).catch(function () {
+      return false;
+    });
+  }
+
   function loadAudioBuffer(name) {
     if (state.audioBuffers[name]) {
       return Promise.resolve(state.audioBuffers[name]);
@@ -707,24 +743,22 @@
       return Promise.resolve(null);
     }
 
-    var source = chooseAudioSource(AUDIO_FILES[name]);
+    var audioContext = state.audioContext;
 
-    if (!source) {
-      return Promise.resolve(null);
-    }
-
-    state.audioBufferPromises[name] = fetch(source)
-      .then(function (response) {
-        if (!response.ok) {
-          throw new Error("Audio file failed to load");
+    state.audioBufferPromises[name] = loadAudioData(name)
+      .then(function (arrayBuffer) {
+        if (!arrayBuffer || audioContext.state === "closed") {
+          return null;
         }
 
-        return response.arrayBuffer();
-      })
-      .then(function (arrayBuffer) {
-        return state.audioContext.decodeAudioData(arrayBuffer);
+        return audioContext.decodeAudioData(arrayBuffer.slice(0));
       })
       .then(function (audioBuffer) {
+        if (audioContext !== state.audioContext) {
+          delete state.audioBufferPromises[name];
+          return loadAudioBuffer(name);
+        }
+
         state.audioBuffers[name] = audioBuffer;
         return audioBuffer;
       })
@@ -736,8 +770,164 @@
     return state.audioBufferPromises[name];
   }
 
+  function loadAudioData(name) {
+    if (state.audioData[name]) {
+      return Promise.resolve(state.audioData[name]);
+    }
+
+    if (state.audioDataPromises[name]) {
+      return state.audioDataPromises[name];
+    }
+
+    if (!window.fetch) {
+      return Promise.resolve(null);
+    }
+
+    var source = chooseAudioSource(AUDIO_FILES[name]);
+
+    if (!source) {
+      return Promise.resolve(null);
+    }
+
+    state.audioDataPromises[name] = fetch(source)
+      .then(function (response) {
+        if (!response.ok) {
+          throw new Error("Audio file failed to load");
+        }
+
+        return response.arrayBuffer();
+      })
+      .then(function (arrayBuffer) {
+        state.audioData[name] = arrayBuffer;
+        return arrayBuffer;
+      })
+      .catch(function () {
+        delete state.audioDataPromises[name];
+        return null;
+      });
+
+    return state.audioDataPromises[name];
+  }
+
+  function resetDecodedAudioBuffers() {
+    state.audioBuffers = {};
+    state.audioBufferPromises = {};
+    state.audioReadyPromise = null;
+  }
+
+  async function recreateAudioContext() {
+    if (!AudioContextConstructor) {
+      return null;
+    }
+
+    clearScheduledCues();
+
+    try {
+      if (audioCtx && audioCtx.state !== "closed") {
+        await audioCtx.close();
+      }
+    } catch (error) {
+      // A broken context is already unusable, so continue with a fresh one.
+    }
+
+    audioCtx = new AudioContextConstructor();
+    state.audioContext = audioCtx;
+    resetDecodedAudioBuffers();
+    return audioCtx;
+  }
+
   function chooseAudioSource(candidates) {
     return candidates[0] ? candidates[0].src : "";
+  }
+
+  function ensureFallbackAudio(name) {
+    if (state.fallbackAudio[name]) {
+      return state.fallbackAudio[name];
+    }
+
+    var source = chooseAudioSource(AUDIO_FILES[name]);
+
+    if (!source) {
+      return null;
+    }
+
+    var audio = document.createElement("audio");
+    audio.src = source;
+    audio.preload = "auto";
+    audio.setAttribute("playsinline", "");
+    audio.setAttribute("webkit-playsinline", "");
+    audio.setAttribute("aria-hidden", "true");
+    audio.style.display = "none";
+    document.body.appendChild(audio);
+    state.fallbackAudio[name] = audio;
+    return audio;
+  }
+
+  function unlockFallbackAudio() {
+    Object.keys(AUDIO_FILES).forEach(function (name) {
+      var audio = ensureFallbackAudio(name);
+
+      if (!audio) {
+        return;
+      }
+
+      if (audio.dataset.unlocked === "true") {
+        return;
+      }
+
+      try {
+        audio.load();
+        audio.muted = true;
+
+        var playPromise = audio.play();
+
+        if (playPromise && typeof playPromise.then === "function") {
+          playPromise.then(function () {
+            audio.pause();
+            audio.currentTime = 0;
+            audio.muted = false;
+            audio.dataset.unlocked = "true";
+          }).catch(function () {
+            audio.muted = false;
+          });
+        } else {
+          audio.pause();
+          audio.currentTime = 0;
+          audio.muted = false;
+          audio.dataset.unlocked = "true";
+        }
+      } catch (error) {
+        audio.muted = false;
+        return;
+      }
+    });
+  }
+
+  function playFallbackAudio(name, volume) {
+    var baseAudio = ensureFallbackAudio(name);
+
+    if (!baseAudio) {
+      return false;
+    }
+
+    var audio = baseAudio.paused || baseAudio.ended ? baseAudio : baseAudio.cloneNode(true);
+    audio.volume = volume;
+    audio.muted = false;
+
+    try {
+      audio.currentTime = 0;
+      var playPromise = audio.play();
+
+      if (playPromise && typeof playPromise.catch === "function") {
+        playPromise.catch(function () {
+          return false;
+        });
+      }
+    } catch (error) {
+      return false;
+    }
+
+    return true;
   }
 
   function playCurrentStepStartCue(previousPhase) {
@@ -792,26 +982,36 @@
     playAudioBuffer("restHorn", 1, delaySeconds || 0, shouldTrack);
   }
 
-  function playAudioBuffer(name, volume, delaySeconds, shouldTrack, isRetry) {
+  function playAudioBuffer(name, volume, delaySeconds, shouldTrack, attempt) {
+    attempt = attempt || 0;
+
     if (!state.audioContext || !state.audioBuffers[name]) {
-      if (!isRetry) {
-        ensureAudioReady().then(function (ready) {
+      if (attempt < 2) {
+        recoverAudioForPlayback().then(function (ready) {
           if (ready) {
-            playAudioBuffer(name, volume, delaySeconds, shouldTrack, true);
+            playAudioBuffer(name, volume, delaySeconds, shouldTrack, attempt + 1);
+          } else {
+            playDelayedFallbackAudio(name, volume, delaySeconds);
           }
         });
+      } else {
+        playDelayedFallbackAudio(name, volume, delaySeconds);
       }
 
       return false;
     }
 
     if (state.audioContext.state !== "running") {
-      if (!isRetry) {
-        ensureAudioReady().then(function (ready) {
+      if (attempt < 2) {
+        recoverAudioForPlayback().then(function (ready) {
           if (ready) {
-            playAudioBuffer(name, volume, delaySeconds, shouldTrack, true);
+            playAudioBuffer(name, volume, delaySeconds, shouldTrack, attempt + 1);
+          } else {
+            playDelayedFallbackAudio(name, volume, delaySeconds);
           }
         });
+      } else {
+        playDelayedFallbackAudio(name, volume, delaySeconds);
       }
 
       return false;
@@ -829,6 +1029,18 @@
     try {
       source.start(now);
     } catch (error) {
+      if (attempt < 2) {
+        recoverAudioForPlayback(true).then(function (ready) {
+          if (ready) {
+            playAudioBuffer(name, volume, delaySeconds, shouldTrack, attempt + 1);
+          } else {
+            playDelayedFallbackAudio(name, volume, delaySeconds);
+          }
+        });
+      } else {
+        playDelayedFallbackAudio(name, volume, delaySeconds);
+      }
+
       return false;
     }
 
@@ -842,6 +1054,32 @@
     }
 
     return true;
+  }
+
+  async function recoverAudioForPlayback(shouldForceRecreate) {
+    if (shouldForceRecreate || (state.audioContext && state.audioContext.state === "closed")) {
+      await recreateAudioContext();
+    }
+
+    if (!await ensureAudioReady()) {
+      await recreateAudioContext();
+      return ensureAudioReady();
+    }
+
+    return true;
+  }
+
+  function playDelayedFallbackAudio(name, volume, delaySeconds) {
+    var delayMs = Math.max(0, delaySeconds || 0) * 1000;
+
+    if (delayMs > 0) {
+      window.setTimeout(function () {
+        playFallbackAudio(name, volume);
+      }, delayMs);
+      return true;
+    }
+
+    return playFallbackAudio(name, volume);
   }
 
   function clearScheduledCues() {
