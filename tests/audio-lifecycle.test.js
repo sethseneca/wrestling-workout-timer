@@ -329,14 +329,15 @@ test("falls back to the peak limiter when soft saturation is unavailable", async
   assert.equal(harness.audioContexts[0].compressorCount, 1);
 });
 
-test("replaces an interrupted context when the app returns", async () => {
-  const harness = createHarness([{ close: "hang" }, {}]);
+test("rebuilds an interrupted context only after its resume fails", async () => {
+  const harness = createHarness([{}, {}]);
   harness.api.setAudioTimeout(20);
   assert.equal(await harness.api.unlockAudio(), true);
   await harness.api.handleStart();
   assert.equal(harness.api.state.isRunning, true);
 
   const originalContext = harness.audioContexts[0];
+  originalContext.behavior.resume = "reject";
   originalContext.state = "interrupted";
   harness.api.handleAudioContextStateChange({ target: originalContext });
   assert.equal(harness.api.state.audioNeedsRecovery, true);
@@ -344,9 +345,8 @@ test("replaces an interrupted context when the app returns", async () => {
   harness.document.visibilityState = "hidden";
   harness.api.handleVisibilityChange();
   harness.document.visibilityState = "visible";
-  harness.api.handleVisibilityChange();
+  assert.equal(await harness.api.handleVisibilityChange(), true);
 
-  assert.equal(await harness.api.recoverAudioForPlayback(true), true);
   assert.equal(harness.audioContexts.length, 2);
   assert.equal(harness.api.state.audioContext, harness.audioContexts[1]);
   assert.equal(harness.api.state.audioContext.state, "running");
@@ -356,18 +356,33 @@ test("replaces an interrupted context when the app returns", async () => {
   assert.equal(harness.audioContexts[1].startedSources.length, 1);
 });
 
-test("a focus round-trip replaces a context even when it still reports running", async () => {
-  const harness = createHarness([{}, {}]);
+test("a focus round-trip keeps an already running context", async () => {
+  const harness = createHarness([{}]);
   assert.equal(await harness.api.unlockAudio(), true);
-  assert.equal(harness.api.state.audioContext.state, "running");
+  const originalContext = harness.api.state.audioContext;
+  assert.equal(originalContext.state, "running");
 
   harness.windowEvents.get("blur")();
   assert.equal(harness.api.state.audioNeedsRecovery, true);
-  harness.windowEvents.get("focus")();
+  assert.equal(await harness.windowEvents.get("focus")(), true);
 
-  assert.equal(await harness.api.recoverAudioForPlayback(true), true);
-  assert.equal(harness.audioContexts.length, 2);
-  assert.equal(harness.api.state.audioContext, harness.audioContexts[1]);
+  assert.equal(harness.audioContexts.length, 1);
+  assert.equal(harness.api.state.audioContext, originalContext);
+  assert.equal(harness.api.state.audioNeedsRecovery, false);
+});
+
+test("an interrupted context resumes without replacement when WebKit allows it", async () => {
+  const harness = createHarness([{}]);
+  assert.equal(await harness.api.unlockAudio(), true);
+  const originalContext = harness.api.state.audioContext;
+  originalContext.state = "interrupted";
+  harness.api.handleAudioContextStateChange({ target: originalContext });
+
+  assert.equal(await harness.api.handleAppReturn(), true);
+  assert.equal(harness.audioContexts.length, 1);
+  assert.equal(harness.api.state.audioContext, originalContext);
+  assert.equal(originalContext.state, "running");
+  assert.equal(harness.api.state.audioNeedsRecovery, false);
 });
 
 test("a stuck resume times out and the next user gesture recovers", async () => {

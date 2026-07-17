@@ -753,7 +753,7 @@
     var isReady = await unlockAudio();
 
     if (!isReady) {
-      showAudioResumeNotice("Tap play again to restore sound");
+      showAudioResumeNotice("Tap anywhere to restore sound");
       return false;
     }
 
@@ -1184,10 +1184,8 @@
       var audioContext = state.audioContext;
       var shouldReplaceContext = Boolean(
         shouldForceRecreate ||
-        state.audioNeedsRecovery ||
         !audioContext ||
-        audioContext.state === "closed" ||
-        audioContext.state === "interrupted"
+        audioContext.state === "closed"
       );
 
       if (shouldReplaceContext) {
@@ -1598,7 +1596,7 @@
       return;
     }
 
-    handleAppReturn();
+    return handleAppReturn();
   }
 
   function handleAppReturn() {
@@ -1611,11 +1609,20 @@
       (state.audioNeedsRecovery || !state.audioContext || state.audioContext.state !== "running")
     );
     var audioRecovery = shouldRecoverAudio
-      ? recoverAudioForPlayback(true)
+      ? recoverAudioForPlayback()
       : Promise.resolve(Boolean(state.audioContext && state.audioContext.state === "running"));
+    audioRecovery = audioRecovery.then(function (ready) {
+      if (ready) {
+        hideAudioResumeNotice();
+      } else if (state.audioUnlocked || state.restoredRunningWithoutAudio) {
+        showAudioResumeNotice("Tap anywhere to restore sound");
+      }
+
+      return ready;
+    });
 
     if (!state.isRunning) {
-      return;
+      return audioRecovery;
     }
 
     if (state.hiddenAt) {
@@ -1627,12 +1634,11 @@
 
     if (state.isDone) {
       finishWorkout(false);
-      audioRecovery.then(function (ready) {
+      return audioRecovery.then(function (ready) {
         if (ready) {
           playFinishWhistle();
         }
       });
-      return;
     }
 
     state.targetTime = performance.now() + state.remainingMs;
@@ -1644,6 +1650,7 @@
     saveTimerState();
     clearTickSchedule();
     tick();
+    return audioRecovery;
   }
 
   function setCountdownTime(totalSeconds) {

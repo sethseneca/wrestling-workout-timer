@@ -30,7 +30,7 @@ Wrestling Workout Timer - a wrestling workout and interval timer app.
 - Do not set up Cloudways yet.
 - Version 1 should remain a static responsive web app deployable to GitHub Pages as-is.
 - Timer cues use Web Audio only, with an explicit ambient audio session so other music can keep playing.
-- On blur, background, or interruption, the old audio context is replaced and buffers are decoded into the fresh context.
+- On a normal app return, the existing authorized audio context resumes first; it is replaced and buffers are decoded again only when resume actually fails.
 - WebKit operations have a bounded timeout because iOS can leave `AudioContext.resume()` unresolved after suspension.
 - Hidden HTML media fallbacks are intentionally excluded because their playback session can interrupt other audio.
 - A cold PWA reload restores elapsed time and keeps the countdown running from wall-clock time while a notice requests one gesture to unlock sound.
@@ -43,7 +43,7 @@ Wrestling Workout Timer - a wrestling workout and interval timer app.
 
 ## Platform Boundary
 
-iOS suspends Web Audio while a PWA is actually backgrounded. The timer restores elapsed time and audio on return; true background cue playback requires a native iOS wrapper.
+iOS suspends Web Audio while a PWA is actually backgrounded. A normal return can resume the existing authorized context automatically, but a full PWA reload still needs one gesture because the new page has no authorized audio session. True background cue playback requires a native iOS wrapper.
 
 ## Next Step
 

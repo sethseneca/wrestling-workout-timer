@@ -154,7 +154,7 @@ async function main() {
     `--remote-debugging-port=${debugPort}`,
     `--user-data-dir=${chromeProfile}`,
     "about:blank"
-  ], { stdio: "ignore" });
+  ], { stdio: "ignore", detached: true });
 
   try {
     await waitForJson(`http://127.0.0.1:${debugPort}/json/version`);
@@ -185,6 +185,7 @@ async function main() {
           }));
         }
         window.__audioStarts = 0;
+        window.__audioContextCount = 0;
         window.__audioGains = [];
         window.__compressorCount = 0;
         window.__waveShaperCount = 0;
@@ -199,6 +200,7 @@ async function main() {
         const NativeAudioContext = window.AudioContext;
         window.AudioContext = new Proxy(NativeAudioContext, {
           construct(target, args) {
+            window.__audioContextCount += 1;
             const context = Reflect.construct(target, args);
             const createBufferSource = context.createBufferSource.bind(context);
             context.createBufferSource = function () {
@@ -305,6 +307,11 @@ async function main() {
           readySeconds.dispatchEvent(new Event("input", { bubbles: true }));
           document.getElementById("startButton").click();
           await new Promise((resolve) => setTimeout(resolve, 250));
+          const audioContextCountBeforeReturn = window.__audioContextCount;
+          window.dispatchEvent(new Event("blur"));
+          window.dispatchEvent(new Event("focus"));
+          await new Promise((resolve) => setTimeout(resolve, 250));
+          const audioContextCountAfterReturn = window.__audioContextCount;
           const watchdogBefore = document.getElementById("countdown").textContent;
           window.__dropAnimationFrames = true;
           await new Promise((resolve) => setTimeout(resolve, 1200));
@@ -313,6 +320,8 @@ async function main() {
           await new Promise((resolve) => setTimeout(resolve, 250));
           return {
             audioElements: document.querySelectorAll("audio").length,
+            audioContextCountAfterReturn,
+            audioContextCountBeforeReturn,
             audioStarts: window.__audioStarts,
             compressorCount: window.__compressorCount,
             gainValues: window.__audioGains,
@@ -337,6 +346,11 @@ async function main() {
     assert.equal(result.whistleVolume, "175%");
     assert.equal(result.audioElements, 0);
     assert.equal(result.audioNoticeHidden, true);
+    assert.equal(
+      result.audioContextCountAfterReturn,
+      result.audioContextCountBeforeReturn,
+      "A normal app return should reuse the authorized audio context"
+    );
     assert.ok(result.audioStarts >= 1, "The manual whistle should start a Web Audio source");
     assert.ok(result.gainValues.includes(1.75), "The whistle should use its independent 175% gain");
     assert.ok(result.gainValues.includes(0.875), "The whistle boost should keep a safe output ceiling");
@@ -409,24 +423,35 @@ async function main() {
     console.log(JSON.stringify({ freshStart: result, coldRestore }));
     socket.close();
   } finally {
-    chrome.kill("SIGTERM");
+    try {
+      process.kill(-chrome.pid, "SIGTERM");
+    } catch (error) {
+      chrome.kill("SIGTERM");
+    }
     await Promise.race([
       new Promise((resolve) => chrome.once("exit", resolve)),
       delay(1500)
     ]);
+    await delay(500);
     await new Promise((resolve) => staticServer.close(resolve));
 
-    for (let attempt = 0; attempt < 5; attempt += 1) {
+    let profileRemoved = false;
+    for (let attempt = 0; attempt < 8; attempt += 1) {
       try {
         fs.rmSync(chromeProfile, { force: true, recursive: true });
-        break;
+        await delay(200);
+        if (!fs.existsSync(chromeProfile)) {
+          profileRemoved = true;
+          break;
+        }
       } catch (error) {
-        if (attempt === 4) {
+        if (attempt === 7) {
           throw error;
         }
-        await delay(100);
+        await delay(200);
       }
     }
+    assert.equal(profileRemoved, true, "The browser test should remove its temporary Chrome profile");
   }
 }
 

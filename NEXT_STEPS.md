@@ -5,7 +5,7 @@
 Verify the whistle boost and audio-session behavior on an iPhone:
 
 1. Start Music or a podcast, use Sound Check at 100%, 150%, and 200%, and confirm each step above 100% makes the whistle clearly louder without stopping the music.
-2. Leave the running timer, return to it, and confirm the next whistle, 10-second cue, and horn sound.
+2. Leave the running timer, return to it, and confirm sound resumes automatically without pressing or tapping anything.
 3. If iOS reloads the app, confirm the restored countdown keeps moving with `Timer running - tap anywhere to restore sound`, then one tap restores sound without pausing the timer.
 4. Repeat the leave/return cycle twice so recovery is proven beyond the first interruption.
 

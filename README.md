@@ -13,7 +13,7 @@ Help wrestlers, coaches, and training partners run workout timers, interval roun
 - Version 1 is a static, mobile-first interval timer built with vanilla HTML/CSS/JS.
 - Wrestle, rest, and finish transitions all use the same short whistle, with a saved 25%-200% whistle-volume control.
 - Levels above 100% use soft saturation so the whistle gets meaningfully louder instead of having the extra gain flattened by a peak limiter.
-- Audio cues use one Web Audio path so they can mix with Music and recover after iOS app switching.
+- Audio cues use one Web Audio path so they can mix with Music, resume the existing authorized audio context after a normal app switch, and rebuild it only if resume fails.
 - If iOS fully reloads the PWA, the timer restores elapsed time and keeps counting while a tap restores sound.
 - A watchdog keeps the wall-clock countdown moving if Safari drops the animation-frame loop.
 - A no-dependency regression suite covers interruption, foreground return, reload recovery, dropped frames, and stuck WebKit audio operations.
@@ -27,7 +27,7 @@ node tests/browser-smoke.js
 
 ## Platform Boundary
 
-iOS suspends PWA Web Audio while the app is actually in the background. The timer keeps wall-clock time and resumes its visible countdown after a return or cold reload. A reload shows `Timer running - tap anywhere to restore sound` until a user gesture unlocks audio, but sounding cues while fully exited requires a native iOS app or wrapper.
+iOS suspends PWA Web Audio while the app is actually in the background. The timer keeps wall-clock time and automatically resumes its existing audio context after a normal return. A full PWA reload still shows `Timer running - tap anywhere to restore sound` because the new page has no authorized audio session to recover; sounding cues while fully exited requires a native iOS app or wrapper.
 
 ## Next Step
 
