@@ -1,11 +1,21 @@
 const assert = require("node:assert/strict");
 const fs = require("node:fs");
 const path = require("node:path");
-const test = require("node:test");
+const { afterEach, test } = require("node:test");
 const vm = require("node:vm");
 
 const appPath = path.join(__dirname, "..", "app.js");
 const appSource = fs.readFileSync(appPath, "utf8");
+const activeHarnesses = new Set();
+
+afterEach(() => {
+  activeHarnesses.forEach((harness) => {
+    if (harness.api.state.isRunning) {
+      harness.api.pauseRunning();
+    }
+  });
+  activeHarnesses.clear();
+});
 
 class FakeElement {
   constructor(tagName, id) {
@@ -215,6 +225,7 @@ function createHarness(contextBehaviors = [], initialStorage = {}) {
       handlePlayPause: handlePlayPause,
       handleSettingsInput: handleSettingsInput,
       buildSequence: buildSequence,
+      pauseRunning: pauseRunning,
       playFinishWhistle: playFinishWhistle,
       playWhistleCue: playWhistleCue,
       handleAppReturn: handleAppReturn,
@@ -228,7 +239,7 @@ function createHarness(contextBehaviors = [], initialStorage = {}) {
 
   vm.runInNewContext(instrumentedSource, context, { filename: appPath });
 
-  return {
+  const harness = {
     api: window.__timerTest.api,
     audioContexts,
     audioSession,
@@ -241,6 +252,9 @@ function createHarness(contextBehaviors = [], initialStorage = {}) {
     localData,
     windowEvents
   };
+
+  activeHarnesses.add(harness);
+  return harness;
 }
 
 test("uses one boosted whistle with a mixable Web Audio session", async () => {
@@ -340,7 +354,7 @@ test("a stuck resume times out and the next user gesture recovers", async () => 
   assert.equal(harness.api.state.audioContext.state, "running");
 });
 
-test("a cold reload pauses a running timer until sound is unlocked again", async () => {
+test("a cold reload keeps a running timer moving while sound waits for a gesture", async () => {
   const savedState = JSON.stringify({
     settings: { workSeconds: 30, restSeconds: 15, readySeconds: 10, rounds: 2 },
     currentIndex: 0,
@@ -353,15 +367,33 @@ test("a cold reload pauses a running timer until sound is unlocked again", async
   const harness = createHarness([], { wrestlingWorkoutTimerState: savedState });
 
   assert.equal(harness.api.state.hasStarted, true);
-  assert.equal(harness.api.state.isRunning, false);
+  assert.equal(harness.api.state.isRunning, true);
   assert.equal(harness.audioContexts.length, 0);
   assert.equal(harness.elements.get("audioResumeNotice").hidden, false);
-  assert.equal(harness.elements.get("playButtonLabel").textContent, "Resume");
+  assert.match(harness.elements.get("audioResumeNotice").textContent, /Timer running/);
+  assert.equal(harness.elements.get("playButtonLabel").textContent, "Pause");
+
+  const restoredRemainingMs = harness.api.state.remainingMs;
+  await new Promise((resolve) => setTimeout(resolve, 550));
+  assert.ok(harness.api.state.remainingMs < restoredRemainingMs - 400);
 
   await harness.api.handlePlayPause();
   assert.equal(harness.api.state.isRunning, true);
   assert.equal(harness.api.state.audioContext.state, "running");
   assert.equal(harness.elements.get("audioResumeNotice").hidden, true);
+  assert.equal(harness.api.state.restoredRunningWithoutAudio, false);
+});
+
+test("a watchdog advances the timer when animation frames are dropped", async () => {
+  const harness = createHarness();
+  await harness.api.handleStart();
+  const startingRemainingMs = harness.api.state.remainingMs;
+
+  await new Promise((resolve) => setTimeout(resolve, 550));
+
+  assert.equal(harness.api.state.isRunning, true);
+  assert.equal(harness.elements.get("playButtonLabel").textContent, "Pause");
+  assert.ok(harness.api.state.remainingMs < startingRemainingMs - 400);
 });
 
 test("an audio-session interruption arms recovery", async () => {

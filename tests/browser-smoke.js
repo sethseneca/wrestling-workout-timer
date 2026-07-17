@@ -187,6 +187,14 @@ async function main() {
         window.__audioStarts = 0;
         window.__audioGains = [];
         window.__compressorCount = 0;
+        window.__dropAnimationFrames = false;
+        const nativeRequestAnimationFrame = window.requestAnimationFrame.bind(window);
+        window.requestAnimationFrame = function (callback) {
+          if (window.__dropAnimationFrames) {
+            return 999999;
+          }
+          return nativeRequestAnimationFrame(callback);
+        };
         const NativeAudioContext = window.AudioContext;
         window.AudioContext = new Proxy(NativeAudioContext, {
           construct(target, args) {
@@ -237,6 +245,10 @@ async function main() {
           readySeconds.dispatchEvent(new Event("input", { bubbles: true }));
           document.getElementById("startButton").click();
           await new Promise((resolve) => setTimeout(resolve, 250));
+          const watchdogBefore = document.getElementById("countdown").textContent;
+          window.__dropAnimationFrames = true;
+          await new Promise((resolve) => setTimeout(resolve, 1200));
+          const watchdogAfter = document.getElementById("countdown").textContent;
           document.querySelector('[data-manual-cue="whistle"]').click();
           await new Promise((resolve) => setTimeout(resolve, 250));
           return {
@@ -247,6 +259,8 @@ async function main() {
             audioNoticeHidden: document.getElementById("audioResumeNotice").hidden,
             playLabel: document.getElementById("playButtonLabel").textContent,
             phase: document.getElementById("phaseLabel").textContent,
+            watchdogAfter,
+            watchdogBefore,
             whistleVolume: document.getElementById("whistleVolumeValue").textContent
           };
         })()
@@ -264,6 +278,7 @@ async function main() {
     assert.ok(result.audioStarts >= 1, "The manual whistle should start a Web Audio source");
     assert.ok(result.gainValues.includes(1.75), "The whistle should use its independent 175% gain");
     assert.ok(result.compressorCount >= 1, "Boosted whistles should pass through the limiter");
+    assert.notEqual(result.watchdogAfter, result.watchdogBefore, "The watchdog should advance the timer when animation frames stop");
 
     const blankLoaded = client.waitFor("Page.loadEventFired");
     await client.send("Page.navigate", { url: "about:blank" });
@@ -278,14 +293,18 @@ async function main() {
         (async function () {
           const before = {
             audioNoticeHidden: document.getElementById("audioResumeNotice").hidden,
+            countdown: document.getElementById("countdown").textContent,
             playLabel: document.getElementById("playButtonLabel").textContent
           };
+          await new Promise((resolve) => setTimeout(resolve, 1100));
+          const runningCountdown = document.getElementById("countdown").textContent;
           document.getElementById("startButton").click();
           await new Promise((resolve) => setTimeout(resolve, 250));
           document.querySelector('[data-manual-cue="whistle"]').click();
           await new Promise((resolve) => setTimeout(resolve, 250));
           return {
             before,
+            runningCountdown,
             after: {
               audioNoticeHidden: document.getElementById("audioResumeNotice").hidden,
               audioStarts: window.__audioStarts,
@@ -300,8 +319,9 @@ async function main() {
       returnByValue: true
     });
     const coldRestore = coldRestoreEvaluation.result.value;
-    assert.equal(coldRestore.before.playLabel, "Resume");
+    assert.equal(coldRestore.before.playLabel, "Pause");
     assert.equal(coldRestore.before.audioNoticeHidden, false);
+    assert.notEqual(coldRestore.runningCountdown, coldRestore.before.countdown, "A restored running timer should keep counting before audio is unlocked");
     assert.equal(coldRestore.after.playLabel, "Pause");
     assert.equal(coldRestore.after.audioNoticeHidden, true);
     assert.equal(coldRestore.after.whistleVolume, "125%");

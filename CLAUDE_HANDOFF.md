@@ -10,7 +10,7 @@ Wrestling Workout Timer - a wrestling workout and interval timer app.
 - Version 1 static app files exist: `index.html`, `style.css`, and `app.js`.
 - Git is linked to GitHub repository `wrestling-workout-timer`.
 - The app uses vanilla HTML/CSS/JS with no build step or dependencies.
-- A local audio-session fix is pending phone verification and publication.
+- A local timer-resilience fix is pending phone verification and publication.
 
 ## Important Files
 
@@ -33,7 +33,8 @@ Wrestling Workout Timer - a wrestling workout and interval timer app.
 - On blur, background, or interruption, the old audio context is replaced and buffers are decoded into the fresh context.
 - WebKit operations have a bounded timeout because iOS can leave `AudioContext.resume()` unresolved after suspension.
 - Hidden HTML media fallbacks are intentionally excluded because their playback session can interrupt other audio.
-- A cold PWA reload restores elapsed time but stays paused with a sound-resume notice until a user gesture unlocks audio; it never resumes silently.
+- A cold PWA reload restores elapsed time and keeps the countdown running from wall-clock time while a notice requests one gesture to unlock sound.
+- A 500 ms watchdog advances the countdown if Safari drops the normal animation-frame callback.
 
 ## Open Questions
 
@@ -45,7 +46,7 @@ iOS suspends Web Audio while a PWA is actually backgrounded. The timer restores 
 
 ## Next Step
 
-Run the three-part iPhone audio check in `NEXT_STEPS.md`, then publish only after approval.
+Run the four-part iPhone timer and audio check in `NEXT_STEPS.md`, then publish only after approval.
 
 ## Notes for Claude
 

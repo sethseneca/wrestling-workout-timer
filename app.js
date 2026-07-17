@@ -20,6 +20,7 @@
     whistleVolume: 150
   };
   var AUDIO_OPERATION_TIMEOUT_MS = 700;
+  var TICK_WATCHDOG_MS = 500;
   var AudioContextConstructor = window.AudioContext || window.webkitAudioContext;
   var audioCtx = null;
 
@@ -65,9 +66,11 @@
     targetTime: 0,
     targetWallTime: 0,
     rafId: 0,
+    tickTimeoutId: 0,
     isRunning: false,
     hasStarted: false,
     isDone: false,
+    restoredRunningWithoutAudio: false,
     audioContext: null,
     audioBuffers: {},
     audioBufferPromises: {},
@@ -352,6 +355,13 @@
   }
 
   async function handlePlayPause() {
+    if (state.isRunning && state.restoredRunningWithoutAudio) {
+      if (await prepareAudioForTimer()) {
+        state.restoredRunningWithoutAudio = false;
+      }
+      return;
+    }
+
     if (state.hasStarted && !state.isDone) {
       await handlePauseResume();
       return;
@@ -447,9 +457,10 @@
       return;
     }
 
-    cancelAnimationFrame(state.rafId);
+    clearTickSchedule();
     clearScheduledCues();
     hideAudioResumeNotice();
+    state.restoredRunningWithoutAudio = false;
     state.isRunning = true;
     state.targetTime = performance.now() + state.remainingMs;
     state.targetWallTime = Date.now() + state.remainingMs;
@@ -463,7 +474,8 @@
   function pauseRunning() {
     state.remainingMs = getRunningRemainingMs();
     state.isRunning = false;
-    cancelAnimationFrame(state.rafId);
+    state.restoredRunningWithoutAudio = false;
+    clearTickSchedule();
     clearScheduledCues();
     releaseWakeLock();
     updateDisplay();
@@ -472,7 +484,7 @@
   }
 
   function resetTimer(shouldSave) {
-    cancelAnimationFrame(state.rafId);
+    clearTickSchedule();
     clearScheduledCues();
     releaseWakeLock();
 
@@ -487,6 +499,7 @@
     state.hasStarted = false;
     state.isRunning = false;
     state.isDone = false;
+    state.restoredRunningWithoutAudio = false;
     state.tenSecondWarningKey = null;
     hideAudioResumeNotice();
     setCurrentStep(0, null);
@@ -517,28 +530,51 @@
   }
 
   function tick() {
+    clearTickSchedule();
+
     if (!state.isRunning) {
       return;
     }
 
+    if (document.visibilityState === "hidden") {
+      return;
+    }
+
+    scheduleNextTick();
+
     state.remainingMs = getRunningRemainingMs();
     updateDisplay();
     saveTimerStateThrottled();
-    maybePlayTenSecondWarning();
+
+    try {
+      maybePlayTenSecondWarning();
+    } catch (error) {
+      markAudioForRecovery();
+    }
 
     if (state.remainingMs <= 0) {
       advanceInterval(false);
       return;
     }
+  }
 
+  function scheduleNextTick() {
     state.rafId = requestAnimationFrame(tick);
+    state.tickTimeoutId = window.setTimeout(tick, TICK_WATCHDOG_MS);
+  }
+
+  function clearTickSchedule() {
+    cancelAnimationFrame(state.rafId);
+    window.clearTimeout(state.tickTimeoutId);
+    state.rafId = 0;
+    state.tickTimeoutId = 0;
   }
 
   function advanceInterval(wasSkipped) {
     var previousStep = state.sequence[state.currentIndex];
     var previousPhase = previousStep ? previousStep.phase : null;
 
-    cancelAnimationFrame(state.rafId);
+    clearTickSchedule();
     clearScheduledCues();
 
     if (wasSkipped) {
@@ -563,7 +599,7 @@
     var nextStep = state.sequence[state.currentIndex];
     var nextPhase = nextStep ? nextStep.phase : null;
 
-    cancelAnimationFrame(state.rafId);
+    clearTickSchedule();
     clearScheduledCues();
 
     if (state.currentIndex <= 0) {
@@ -580,12 +616,13 @@
   }
 
   function finishWorkout(shouldPlayTone) {
-    cancelAnimationFrame(state.rafId);
+    clearTickSchedule();
     clearScheduledCues();
     releaseWakeLock();
     state.isRunning = false;
     state.hasStarted = true;
     state.isDone = true;
+    state.restoredRunningWithoutAudio = false;
     state.remainingMs = 0;
     app.className = "app phase-done";
     app.style.setProperty("--drain-pct", "100%");
@@ -690,8 +727,25 @@
     }
   }
 
-  function handleAudioInteraction() {
-    unlockAudio();
+  function handleAudioInteraction(event) {
+    var usedPlayButton = Boolean(
+      event &&
+      event.target &&
+      (event.target === startButton ||
+        (typeof event.target.closest === "function" && event.target.closest("#startButton")))
+    );
+
+    unlockAudio().then(function (ready) {
+      if (!ready) {
+        return;
+      }
+
+      hideAudioResumeNotice();
+
+      if (state.restoredRunningWithoutAudio && !usedPlayButton) {
+        state.restoredRunningWithoutAudio = false;
+      }
+    });
   }
 
   async function prepareAudioForTimer() {
@@ -963,7 +1017,7 @@
   function playCurrentStepStartCue(previousPhase) {
     var step = state.sequence[state.currentIndex];
 
-    if (!step || document.visibilityState === "hidden") {
+    if (!step || !state.audioUnlocked || document.visibilityState === "hidden") {
       return;
     }
 
@@ -982,7 +1036,7 @@
   function maybePlayTenSecondWarning() {
     var step = state.sequence[state.currentIndex];
 
-    if (!step || step.phase !== "work" || step.duration <= 10 || document.visibilityState === "hidden") {
+    if (!step || !state.audioUnlocked || step.phase !== "work" || step.duration <= 10 || document.visibilityState === "hidden") {
       return;
     }
 
@@ -1189,6 +1243,7 @@
     state.hasStarted = snapshot.hasStarted;
     state.isDone = snapshot.isDone;
     state.isRunning = false;
+    state.restoredRunningWithoutAudio = false;
 
     if (!state.sequence.length) {
       return false;
@@ -1197,7 +1252,9 @@
     var step = state.sequence[state.currentIndex];
     state.remainingMs = clamp(snapshot.remainingMs, 0, step.duration * 1000);
 
-    if (snapshot.isRunning && !snapshot.isDone) {
+    var shouldResumeRunning = snapshot.isRunning && !snapshot.isDone && snapshot.hasStarted;
+
+    if (shouldResumeRunning) {
       applyElapsedSinceSave(Date.now() - snapshot.savedAt);
     }
 
@@ -1206,14 +1263,22 @@
       return true;
     }
 
-    updateDisplay();
-    updateControls();
-
-    if (snapshot.isRunning && state.hasStarted) {
-      showAudioResumeNotice();
+    if (shouldResumeRunning) {
+      state.isRunning = true;
+      state.restoredRunningWithoutAudio = true;
+      state.targetTime = performance.now() + state.remainingMs;
+      state.targetWallTime = Date.now() + state.remainingMs;
+      showAudioResumeNotice("Timer running - tap anywhere to restore sound");
+      requestWakeLock();
     }
 
+    updateDisplay();
+    updateControls();
     saveTimerState();
+
+    if (shouldResumeRunning) {
+      tick();
+    }
 
     return true;
   }
@@ -1242,18 +1307,21 @@
 
   function saveTimerState() {
     var remainingMs = getRunningRemainingMs();
-
-    localStorage.setItem(TIMER_STATE_KEY, JSON.stringify({
-      settings: state.settings,
-      currentIndex: state.currentIndex,
-      remainingMs: Math.round(remainingMs),
-      hasStarted: state.hasStarted,
-      isRunning: state.isRunning,
-      isDone: state.isDone,
-      savedAt: Date.now()
-    }));
-
     state.lastStateSave = Date.now();
+
+    try {
+      localStorage.setItem(TIMER_STATE_KEY, JSON.stringify({
+        settings: state.settings,
+        currentIndex: state.currentIndex,
+        remainingMs: Math.round(remainingMs),
+        hasStarted: state.hasStarted,
+        isRunning: state.isRunning,
+        isDone: state.isDone,
+        savedAt: state.lastStateSave
+      }));
+    } catch (error) {
+      // A storage failure must never stop the live countdown loop.
+    }
   }
 
   function saveTimerStateThrottled() {
@@ -1483,6 +1551,7 @@
     if (state.isRunning) {
       state.remainingMs = getRunningRemainingMs();
       state.hiddenAt = Date.now();
+      clearTickSchedule();
     }
 
     saveTimerState();
@@ -1538,7 +1607,7 @@
     updateDisplay();
     updateControls();
     saveTimerState();
-    cancelAnimationFrame(state.rafId);
+    clearTickSchedule();
     tick();
   }
 

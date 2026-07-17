@@ -6,7 +6,7 @@ Verify the audio-session fix on an iPhone before publishing it:
 
 1. Start Music or a podcast, then start the timer and confirm both remain audible.
 2. Leave the running timer, return to it, and confirm the next whistle, 10-second cue, and horn sound.
-3. If iOS reloads the app, confirm it pauses at the restored time with `Tap play to resume with sound`, then resumes audibly.
+3. If iOS reloads the app, confirm the restored countdown keeps moving with `Timer running - tap anywhere to restore sound`, then one tap restores sound without pausing the timer.
 4. Repeat the leave/return cycle twice so recovery is proven beyond the first interruption.
 
 ## Staff Meeting Notes
