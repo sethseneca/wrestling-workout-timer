@@ -629,11 +629,46 @@ form {
 }
 
 fieldset,
-.round-field {
+.round-field,
+.volume-field {
   margin: 0;
   border: 0;
   border-radius: 12px;
   background: rgba(255, 255, 255, 0.035);
+}
+
+.volume-field {
+  display: grid;
+  gap: 10px;
+  padding: 14px 16px 15px;
+}
+
+.volume-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  color: var(--text);
+  font-size: 0.92rem;
+  font-weight: 900;
+}
+
+.volume-heading output {
+  color: #ffffff;
+  font-variant-numeric: tabular-nums;
+}
+
+.volume-field input[type="range"] {
+  width: 100%;
+  margin: 0;
+  accent-color: #ffffff;
+}
+
+.volume-help {
+  color: var(--muted);
+  font-size: 0.74rem;
+  font-weight: 700;
+  line-height: 1.4;
 }
 
 .timer-library {

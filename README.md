@@ -11,6 +11,7 @@ Help wrestlers, coaches, and training partners run workout timers, interval roun
 - Project folder created on 2026-06-29.
 - Git initialized and linked to the public GitHub repository.
 - Version 1 is a static, mobile-first interval timer built with vanilla HTML/CSS/JS.
+- Wrestle, rest, and finish transitions all use the same short whistle, with a saved 25%-200% whistle-volume control.
 - Audio cues use one Web Audio path so they can mix with Music and recover after iOS app switching.
 - If iOS fully reloads the PWA, the timer restores elapsed time but pauses until the user taps Resume and sound is unlocked.
 - A no-dependency regression suite covers interruption, foreground return, and stuck WebKit audio operations.
@@ -28,4 +29,4 @@ iOS suspends PWA Web Audio while the app is actually in the background. The time
 
 ## Next Step
 
-Verify the local build on an iPhone while Music is playing, then background and reopen the timer before publishing the fix.
+Verify the short whistle at multiple volume settings on an iPhone while Music is playing, then background and reopen the timer before publishing the change.

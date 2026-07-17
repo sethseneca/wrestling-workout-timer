@@ -173,7 +173,20 @@ async function main() {
     await client.send("Runtime.enable");
     await client.send("Page.addScriptToEvaluateOnNewDocument", {
       source: `
+        if (new URLSearchParams(location.search).has("cold-restore")) {
+          localStorage.setItem("wrestlingWorkoutTimerState", JSON.stringify({
+            settings: { workSeconds: 30, restSeconds: 15, readySeconds: 10, rounds: 2, whistleVolume: 125 },
+            currentIndex: 0,
+            remainingMs: 9000,
+            hasStarted: true,
+            isRunning: true,
+            isDone: false,
+            savedAt: Date.now()
+          }));
+        }
         window.__audioStarts = 0;
+        window.__audioGains = [];
+        window.__compressorCount = 0;
         const NativeAudioContext = window.AudioContext;
         window.AudioContext = new Proxy(NativeAudioContext, {
           construct(target, args) {
@@ -188,6 +201,21 @@ async function main() {
               };
               return source;
             };
+            const createGain = context.createGain.bind(context);
+            context.createGain = function () {
+              const gainNode = createGain();
+              const setValueAtTime = gainNode.gain.setValueAtTime.bind(gainNode.gain);
+              gainNode.gain.setValueAtTime = function (value, ...gainArgs) {
+                window.__audioGains.push(value);
+                return setValueAtTime(value, ...gainArgs);
+              };
+              return gainNode;
+            };
+            const createDynamicsCompressor = context.createDynamicsCompressor.bind(context);
+            context.createDynamicsCompressor = function () {
+              window.__compressorCount += 1;
+              return createDynamicsCompressor();
+            };
             return context;
           }
         });
@@ -201,6 +229,12 @@ async function main() {
     const evaluation = await client.send("Runtime.evaluate", {
       expression: `
         (async function () {
+          const whistleVolume = document.getElementById("whistleVolume");
+          whistleVolume.value = "175";
+          whistleVolume.dispatchEvent(new Event("input", { bubbles: true }));
+          const readySeconds = document.getElementById("readySeconds");
+          readySeconds.value = "0";
+          readySeconds.dispatchEvent(new Event("input", { bubbles: true }));
           document.getElementById("startButton").click();
           await new Promise((resolve) => setTimeout(resolve, 250));
           document.querySelector('[data-manual-cue="whistle"]').click();
@@ -208,9 +242,12 @@ async function main() {
           return {
             audioElements: document.querySelectorAll("audio").length,
             audioStarts: window.__audioStarts,
+            compressorCount: window.__compressorCount,
+            gainValues: window.__audioGains,
             audioNoticeHidden: document.getElementById("audioResumeNotice").hidden,
             playLabel: document.getElementById("playButtonLabel").textContent,
-            phase: document.getElementById("phaseLabel").textContent
+            phase: document.getElementById("phaseLabel").textContent,
+            whistleVolume: document.getElementById("whistleVolumeValue").textContent
           };
         })()
       `,
@@ -220,26 +257,20 @@ async function main() {
 
     const result = evaluation.result.value;
     assert.equal(result.playLabel, "Pause");
-    assert.equal(result.phase, "GET READY");
+    assert.equal(result.phase, "WRESTLE");
+    assert.equal(result.whistleVolume, "175%");
     assert.equal(result.audioElements, 0);
     assert.equal(result.audioNoticeHidden, true);
     assert.ok(result.audioStarts >= 1, "The manual whistle should start a Web Audio source");
+    assert.ok(result.gainValues.includes(1.75), "The whistle should use its independent 175% gain");
+    assert.ok(result.compressorCount >= 1, "Boosted whistles should pass through the limiter");
+
+    const blankLoaded = client.waitFor("Page.loadEventFired");
+    await client.send("Page.navigate", { url: "about:blank" });
+    await blankLoaded;
 
     const reloaded = client.waitFor("Page.loadEventFired");
-    await client.send("Runtime.evaluate", {
-      expression: `
-        localStorage.setItem("wrestlingWorkoutTimerState", JSON.stringify({
-          settings: { workSeconds: 30, restSeconds: 15, readySeconds: 10, rounds: 2 },
-          currentIndex: 0,
-          remainingMs: 9000,
-          hasStarted: true,
-          isRunning: true,
-          isDone: false,
-          savedAt: Date.now()
-        }));
-        location.reload();
-      `
-    });
+    await client.send("Page.navigate", { url: `${appUrl}?cold-restore=1` });
     await reloaded;
 
     const coldRestoreEvaluation = await client.send("Runtime.evaluate", {
@@ -258,7 +289,9 @@ async function main() {
             after: {
               audioNoticeHidden: document.getElementById("audioResumeNotice").hidden,
               audioStarts: window.__audioStarts,
-              playLabel: document.getElementById("playButtonLabel").textContent
+              gainValues: window.__audioGains,
+              playLabel: document.getElementById("playButtonLabel").textContent,
+              whistleVolume: document.getElementById("whistleVolumeValue").textContent
             }
           };
         })()
@@ -271,7 +304,9 @@ async function main() {
     assert.equal(coldRestore.before.audioNoticeHidden, false);
     assert.equal(coldRestore.after.playLabel, "Pause");
     assert.equal(coldRestore.after.audioNoticeHidden, true);
+    assert.equal(coldRestore.after.whistleVolume, "125%");
     assert.ok(coldRestore.after.audioStarts >= 1, "The cold-restored timer should recover Web Audio after the resume tap");
+    assert.ok(coldRestore.after.gainValues.includes(1.25), "The restored whistle gain should be applied after audio recovery");
     assert.deepEqual(runtimeErrors, []);
 
     console.log(JSON.stringify({ freshStart: result, coldRestore }));

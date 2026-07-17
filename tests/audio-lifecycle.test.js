@@ -48,6 +48,7 @@ function createHarness(contextBehaviors = [], initialStorage = {}) {
   const audioContexts = [];
   const createdTags = [];
   const elements = new Map();
+  const fetchUrls = [];
   const localData = new Map();
   const documentEvents = new Map();
   const windowEvents = new Map();
@@ -70,6 +71,8 @@ function createHarness(contextBehaviors = [], initialStorage = {}) {
       this.behavior = contextBehaviors[audioContexts.length] || {};
       this.currentTime = 1;
       this.destination = {};
+      this.compressorCount = 0;
+      this.gainValues = [];
       this.startedSources = [];
       this.state = this.behavior.initialState || "suspended";
       audioContexts.push(this);
@@ -90,18 +93,33 @@ function createHarness(contextBehaviors = [], initialStorage = {}) {
 
     createBufferSource() {
       const context = this;
-      return {
+      const source = {
         buffer: null,
         connect() {},
-        start(when) { context.startedSources.push(when); },
+        start(when) { context.startedSources.push({ buffer: source.buffer, when }); },
         stop() {}
       };
+      return source;
     }
 
     createGain() {
+      const context = this;
       return {
         connect() {},
-        gain: { setValueAtTime() {} }
+        gain: { setValueAtTime(value) { context.gainValues.push(value); } }
+      };
+    }
+
+    createDynamicsCompressor() {
+      this.compressorCount += 1;
+      const audioParam = { setValueAtTime() {} };
+      return {
+        attack: audioParam,
+        connect() {},
+        knee: audioParam,
+        ratio: audioParam,
+        release: audioParam,
+        threshold: audioParam
       };
     }
 
@@ -156,7 +174,10 @@ function createHarness(contextBehaviors = [], initialStorage = {}) {
     AudioContext: FakeAudioContext,
     addEventListener(name, handler) { windowEvents.set(name, handler); },
     clearTimeout,
-    fetch: async () => ({ ok: true, arrayBuffer: async () => new ArrayBuffer(8) }),
+    fetch: async (url) => {
+      fetchUrls.push(url);
+      return { ok: true, arrayBuffer: async () => new ArrayBuffer(8) };
+    },
     setTimeout,
     __timerTest: {}
   };
@@ -192,7 +213,10 @@ function createHarness(contextBehaviors = [], initialStorage = {}) {
       unlockAudio: unlockAudio,
       handleStart: handleStart,
       handlePlayPause: handlePlayPause,
-      playWhistleStart: playWhistleStart,
+      handleSettingsInput: handleSettingsInput,
+      buildSequence: buildSequence,
+      playFinishWhistle: playFinishWhistle,
+      playWhistleCue: playWhistleCue,
       handleAppReturn: handleAppReturn,
       handleAudioContextStateChange: handleAudioContextStateChange,
       handleVisibilityChange: handleVisibilityChange,
@@ -213,21 +237,51 @@ function createHarness(contextBehaviors = [], initialStorage = {}) {
     document,
     documentEvents,
     elements,
+    fetchUrls,
+    localData,
     windowEvents
   };
 }
 
-test("uses a mixable Web Audio session without an HTML audio fallback", async () => {
+test("uses one boosted whistle with a mixable Web Audio session", async () => {
   const harness = createHarness();
 
   assert.equal(harness.audioSession.type, "ambient");
   assert.equal(await harness.api.unlockAudio(), true);
   assert.equal(harness.audioContexts.length, 1);
-  assert.equal(Object.keys(harness.api.state.audioBuffers).length, 4);
+  assert.equal(Object.keys(harness.api.state.audioBuffers).length, 2);
   assert.equal(harness.createdTags.includes("audio"), false);
+  assert.ok(harness.fetchUrls.some((url) => url.includes("assets/audio/rest-horn.m4a")));
+  assert.equal(harness.fetchUrls.some((url) => url.includes("whistle-start.m4a")), false);
+  assert.equal(harness.fetchUrls.some((url) => url.includes("final-horn.m4a")), false);
 
-  harness.api.playWhistleStart(0);
-  assert.equal(harness.audioContexts[0].startedSources.length, 1);
+  const sequence = harness.api.buildSequence(harness.api.state.settings);
+  assert.equal(sequence.find((step) => step.phase === "work").label, "WRESTLE");
+
+  harness.api.playWhistleCue(0);
+  harness.api.playFinishWhistle();
+  const audioContext = harness.audioContexts[0];
+  assert.equal(audioContext.startedSources.length, 2);
+  assert.equal(audioContext.startedSources[0].buffer, harness.api.state.audioBuffers.whistle);
+  assert.equal(audioContext.startedSources[1].buffer, harness.api.state.audioBuffers.whistle);
+  assert.deepEqual(audioContext.gainValues, [1.5, 1.5]);
+  assert.equal(audioContext.compressorCount, 2);
+});
+
+test("persists the independent whistle volume and applies it to the cue", async () => {
+  const harness = createHarness();
+  assert.equal(await harness.api.unlockAudio(), true);
+
+  harness.elements.get("whistleVolume").value = "75";
+  harness.api.handleSettingsInput();
+
+  assert.equal(harness.api.state.settings.whistleVolume, 75);
+  assert.equal(harness.elements.get("whistleVolumeValue").textContent, "75%");
+  assert.equal(JSON.parse(harness.localData.get("wrestlingWorkoutTimerSettings")).whistleVolume, 75);
+
+  harness.api.playWhistleCue(0);
+  assert.equal(harness.audioContexts[0].gainValues.at(-1), 0.75);
+  assert.equal(harness.audioContexts[0].compressorCount, 0);
 });
 
 test("replaces an interrupted context when the app returns", async () => {
@@ -253,7 +307,7 @@ test("replaces an interrupted context when the app returns", async () => {
   assert.equal(harness.api.state.audioContext.state, "running");
   assert.equal(harness.api.state.audioNeedsRecovery, false);
 
-  harness.api.playWhistleStart(0);
+  harness.api.playWhistleCue(0);
   assert.equal(harness.audioContexts[1].startedSources.length, 1);
 });
 

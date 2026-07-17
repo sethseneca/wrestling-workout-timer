@@ -16,7 +16,7 @@
     <link rel="icon" href="assets/icons/icon.svg" type="image/svg+xml">
     <link rel="icon" href="assets/icons/favicon-32.png" sizes="32x32" type="image/png">
     <link rel="apple-touch-icon" href="assets/icons/apple-touch-icon.png">
-    <link rel="stylesheet" href="style.css?v=20260717-audio-session2">
+    <link rel="stylesheet" href="style.css?v=20260717-whistle-volume1">
   </head>
   <body>
     <main class="app" id="app">
@@ -102,22 +102,22 @@
 
         <form id="settingsForm">
           <fieldset class="duration-field">
-            <legend>Work Duration</legend>
+            <legend>Wrestle Duration</legend>
             <div class="time-inputs">
               <label>
                 <span>Min</span>
                 <div class="stepper-control">
-                  <button type="button" data-stepper-target="workMinutes" data-stepper-delta="-1" aria-label="Decrease work minutes">-</button>
+                  <button type="button" data-stepper-target="workMinutes" data-stepper-delta="-1" aria-label="Decrease wrestle minutes">-</button>
                   <input id="workMinutes" inputmode="numeric" min="0" max="59" type="number" value="0">
-                  <button type="button" data-stepper-target="workMinutes" data-stepper-delta="1" aria-label="Increase work minutes">+</button>
+                  <button type="button" data-stepper-target="workMinutes" data-stepper-delta="1" aria-label="Increase wrestle minutes">+</button>
                 </div>
               </label>
               <label>
                 <span>Sec</span>
                 <div class="stepper-control">
-                  <button type="button" data-stepper-target="workSeconds" data-stepper-delta="-5" aria-label="Decrease work seconds">-</button>
+                  <button type="button" data-stepper-target="workSeconds" data-stepper-delta="-5" aria-label="Decrease wrestle seconds">-</button>
                   <input id="workSeconds" inputmode="numeric" min="0" max="59" step="5" type="number" value="30">
-                  <button type="button" data-stepper-target="workSeconds" data-stepper-delta="5" aria-label="Increase work seconds">+</button>
+                  <button type="button" data-stepper-target="workSeconds" data-stepper-delta="5" aria-label="Increase wrestle seconds">+</button>
                 </div>
               </label>
             </div>
@@ -176,6 +176,15 @@
             </div>
           </label>
 
+          <label class="volume-field" for="whistleVolume">
+            <span class="volume-heading">
+              <span>Whistle Volume</span>
+              <output id="whistleVolumeValue" for="whistleVolume">150%</output>
+            </span>
+            <input id="whistleVolume" max="200" min="25" step="5" type="range" value="150">
+            <span class="volume-help">Independent boost for every whistle. Phone volume still sets the overall maximum.</span>
+          </label>
+
           <section class="timer-library" aria-labelledby="savedTimersTitle">
             <h2 id="savedTimersTitle">Saved Timers</h2>
             <div class="save-timer-row">
@@ -199,6 +208,6 @@
       </section>
     </main>
 
-    <script src="app.js?v=20260717-audio-session2" defer></script>
+    <script src="app.js?v=20260717-whistle-volume1" defer></script>
   </body>
 </html>

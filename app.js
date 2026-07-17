@@ -6,13 +6,7 @@
   var SAVED_TIMERS_KEY = "wrestlingWorkoutSavedTimers";
   var AUDIO_FILES = {
     whistle: [
-      { src: "assets/audio/whistle-start.m4a?v=20260702-sustained1", type: "audio/mp4" }
-    ],
-    restHorn: [
-      { src: "assets/audio/rest-horn.m4a?v=20260630-console9", type: "audio/mp4" }
-    ],
-    finalHorn: [
-      { src: "assets/audio/final-horn.m4a?v=20260630-console9", type: "audio/mp4" }
+      { src: "assets/audio/rest-horn.m4a?v=20260717-unified-whistle1", type: "audio/mp4" }
     ],
     tenSecondPop: [
       { src: "assets/audio/ten-second-pop.m4a?v=20260630-console9", type: "audio/mp4" }
@@ -22,7 +16,8 @@
     workSeconds: 30,
     restSeconds: 15,
     readySeconds: 10,
-    rounds: 8
+    rounds: 8,
+    whistleVolume: 150
   };
   var AUDIO_OPERATION_TIMEOUT_MS = 700;
   var AudioContextConstructor = window.AudioContext || window.webkitAudioContext;
@@ -49,6 +44,7 @@
   var settingsCloseButton = document.getElementById("settingsCloseButton");
   var settingsPanel = document.getElementById("settingsPanel");
   var settingsScrim = document.getElementById("settingsScrim");
+  var whistleVolumeValue = document.getElementById("whistleVolumeValue");
 
   var inputs = {
     workMinutes: document.getElementById("workMinutes"),
@@ -57,7 +53,8 @@
     restSeconds: document.getElementById("restSeconds"),
     readyMinutes: document.getElementById("readyMinutes"),
     readySeconds: document.getElementById("readySeconds"),
-    rounds: document.getElementById("rounds")
+    rounds: document.getElementById("rounds"),
+    whistleVolume: document.getElementById("whistleVolume")
   };
 
   var state = {
@@ -251,7 +248,8 @@
       workSeconds: clamp(toNumber(settings.workSeconds, DEFAULTS.workSeconds), 1, 3599),
       restSeconds: clamp(toNumber(settings.restSeconds, DEFAULTS.restSeconds), 0, 3599),
       readySeconds: clamp(toNumber(settings.readySeconds, DEFAULTS.readySeconds), 0, 3599),
-      rounds: clamp(toNumber(settings.rounds, DEFAULTS.rounds), 1, 99)
+      rounds: clamp(toNumber(settings.rounds, DEFAULTS.rounds), 1, 99),
+      whistleVolume: clamp(toNumber(settings.whistleVolume, DEFAULTS.whistleVolume), 25, 200)
     };
   }
 
@@ -260,7 +258,8 @@
       workSeconds: readDuration("work"),
       restSeconds: readDuration("rest"),
       readySeconds: readDuration("ready"),
-      rounds: inputs.rounds.value
+      rounds: inputs.rounds.value,
+      whistleVolume: inputs.whistleVolume.value
     });
   }
 
@@ -275,6 +274,8 @@
     writeDuration("rest", settings.restSeconds);
     writeDuration("ready", settings.readySeconds);
     inputs.rounds.value = settings.rounds;
+    inputs.whistleVolume.value = settings.whistleVolume;
+    updateWhistleVolumeValue(settings.whistleVolume);
   }
 
   function writeDuration(prefix, totalSeconds) {
@@ -284,6 +285,7 @@
 
   function handleSettingsInput() {
     state.settings = readSettingsFromInputs();
+    updateWhistleVolumeValue(state.settings.whistleVolume);
     saveSettings(state.settings);
 
     if (!state.isRunning && !state.hasStarted) {
@@ -291,6 +293,10 @@
     } else {
       saveTimerState();
     }
+  }
+
+  function updateWhistleVolumeValue(volume) {
+    whistleVolumeValue.textContent = Math.round(volume) + "%";
   }
 
   function handleSettingsStepperClick(event) {
@@ -327,7 +333,7 @@
     for (var round = 1; round <= settings.rounds; round += 1) {
       sequence.push({
         phase: "work",
-        label: "WORK",
+        label: "WRESTLE",
         duration: settings.workSeconds,
         round: round
       });
@@ -590,7 +596,7 @@
     syncMaskText(roundCounterEl, roundCounterEl.textContent);
     updateElementMasks();
     if (shouldPlayTone) {
-      playFinishTone();
+      playFinishWhistle();
     }
     updateControls();
     saveTimerState();
@@ -965,11 +971,11 @@
     var isAtStepStart = elapsedInStep <= 0.25;
 
     if (step.phase === "work" && isAtStepStart) {
-      playWhistleStart(0);
+      playWhistleCue(0);
     }
 
     if (step.phase === "rest" && previousPhase === "work" && isAtStepStart) {
-      playRestHorn(0);
+      playWhistleCue(0);
     }
   }
 
@@ -992,18 +998,14 @@
     playTenSecondWarning(0);
   }
 
-  function playWhistleStart(delaySeconds, shouldTrack) {
-    playAudioBuffer("whistle", 1, delaySeconds || 0, shouldTrack);
+  function playWhistleCue(delaySeconds, shouldTrack) {
+    playAudioBuffer("whistle", state.settings.whistleVolume / 100, delaySeconds || 0, shouldTrack);
   }
 
   function playTenSecondWarning(delaySeconds, shouldTrack) {
     for (var index = 0; index < 5; index += 1) {
       playAudioBuffer("tenSecondPop", 1, (delaySeconds || 0) + index * 0.4, shouldTrack);
     }
-  }
-
-  function playRestHorn(delaySeconds, shouldTrack) {
-    playAudioBuffer("restHorn", 1, delaySeconds || 0, shouldTrack);
   }
 
   function playAudioBuffer(name, volume, delaySeconds, shouldTrack, attempt) {
@@ -1040,7 +1042,7 @@
     source.buffer = state.audioBuffers[name];
     gain.gain.setValueAtTime(volume, now);
     source.connect(gain);
-    gain.connect(state.audioContext.destination);
+    connectCueOutput(gain, volume, now);
 
     try {
       source.start(now);
@@ -1066,6 +1068,22 @@
     }
 
     return true;
+  }
+
+  function connectCueOutput(gain, volume, now) {
+    if (volume <= 1 || typeof state.audioContext.createDynamicsCompressor !== "function") {
+      gain.connect(state.audioContext.destination);
+      return;
+    }
+
+    var limiter = state.audioContext.createDynamicsCompressor();
+    limiter.threshold.setValueAtTime(-1, now);
+    limiter.knee.setValueAtTime(0, now);
+    limiter.ratio.setValueAtTime(20, now);
+    limiter.attack.setValueAtTime(0.001, now);
+    limiter.release.setValueAtTime(0.1, now);
+    gain.connect(limiter);
+    limiter.connect(state.audioContext.destination);
   }
 
   async function recoverAudioForPlayback(shouldForceRecreate) {
@@ -1117,8 +1135,8 @@
     state.scheduledCueNodes = [];
   }
 
-  function playFinishTone() {
-    playAudioBuffer("finalHorn", 1, 0);
+  function playFinishWhistle() {
+    playWhistleCue(0);
   }
 
   async function handleManualCueClick(event) {
@@ -1133,7 +1151,7 @@
     }
 
     if (button.getAttribute("data-manual-cue") === "whistle") {
-      playWhistleStart(0);
+      playWhistleCue(0);
     }
   }
 
@@ -1149,7 +1167,7 @@
     }
 
     if (button.getAttribute("data-sound-check") === "whistle") {
-      playWhistleStart(0);
+      playWhistleCue(0);
     }
 
     if (button.getAttribute("data-sound-check") === "tenSecondPop") {
@@ -1421,7 +1439,7 @@
   }
 
   function getTimerSummary(settings) {
-    return formatShortDuration(settings.workSeconds) + " work / " + formatShortDuration(settings.restSeconds) + " rest / " + settings.rounds + " rounds";
+    return formatShortDuration(settings.workSeconds) + " wrestle / " + formatShortDuration(settings.restSeconds) + " rest / " + settings.rounds + " rounds";
   }
 
   function compareSavedTimers(a, b) {
@@ -1507,7 +1525,7 @@
       finishWorkout(false);
       audioRecovery.then(function (ready) {
         if (ready) {
-          playFinishTone();
+          playFinishWhistle();
         }
       });
       return;
