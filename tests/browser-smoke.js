@@ -187,6 +187,7 @@ async function main() {
         window.__audioStarts = 0;
         window.__audioGains = [];
         window.__compressorCount = 0;
+        window.__waveShaperCount = 0;
         window.__dropAnimationFrames = false;
         const nativeRequestAnimationFrame = window.requestAnimationFrame.bind(window);
         window.requestAnimationFrame = function (callback) {
@@ -224,6 +225,11 @@ async function main() {
               window.__compressorCount += 1;
               return createDynamicsCompressor();
             };
+            const createWaveShaper = context.createWaveShaper.bind(context);
+            context.createWaveShaper = function () {
+              window.__waveShaperCount += 1;
+              return createWaveShaper();
+            };
             return context;
           }
         });
@@ -237,6 +243,60 @@ async function main() {
     const evaluation = await client.send("Runtime.evaluate", {
       expression: `
         (async function () {
+          const decodeContext = new AudioContext();
+          const whistleResponse = await fetch("assets/audio/rest-horn.m4a");
+          const whistleBuffer = await decodeContext.decodeAudioData(await whistleResponse.arrayBuffer());
+          await decodeContext.close();
+
+          async function measureWhistleLoudness(volume) {
+            const offlineContext = new OfflineAudioContext(1, whistleBuffer.length, whistleBuffer.sampleRate);
+            const source = offlineContext.createBufferSource();
+            const gain = offlineContext.createGain();
+            source.buffer = whistleBuffer;
+            gain.gain.setValueAtTime(volume, 0);
+            source.connect(gain);
+
+            if (volume > 1) {
+              const saturator = offlineContext.createWaveShaper();
+              const curve = new Float32Array(4096);
+              const drive = (volume - 1) * 4;
+              const normalization = Math.tanh(drive);
+              for (let index = 0; index < curve.length; index += 1) {
+                const input = (index * 2) / (curve.length - 1) - 1;
+                curve[index] = Math.tanh(drive * input) / normalization;
+              }
+              saturator.curve = curve;
+              saturator.oversample = "4x";
+              const output = offlineContext.createGain();
+              output.gain.setValueAtTime(Math.max(0.85, 0.95 - (volume - 1) * 0.1), 0);
+              gain.connect(saturator);
+              saturator.connect(output);
+              output.connect(offlineContext.destination);
+            } else {
+              gain.connect(offlineContext.destination);
+            }
+
+            source.start(0);
+            const rendered = await offlineContext.startRendering();
+            const samples = rendered.getChannelData(0);
+            let peak = 0;
+            let sumSquares = 0;
+            for (const sample of samples) {
+              peak = Math.max(peak, Math.abs(sample));
+              sumSquares += sample * sample;
+            }
+
+            return {
+              peak,
+              rms: Math.sqrt(sumSquares / samples.length)
+            };
+          }
+
+          const whistleLoudness = {
+            at100: await measureWhistleLoudness(1),
+            at150: await measureWhistleLoudness(1.5),
+            at200: await measureWhistleLoudness(2)
+          };
           const whistleVolume = document.getElementById("whistleVolume");
           whistleVolume.value = "175";
           whistleVolume.dispatchEvent(new Event("input", { bubbles: true }));
@@ -256,9 +316,11 @@ async function main() {
             audioStarts: window.__audioStarts,
             compressorCount: window.__compressorCount,
             gainValues: window.__audioGains,
+            waveShaperCount: window.__waveShaperCount,
             audioNoticeHidden: document.getElementById("audioResumeNotice").hidden,
             playLabel: document.getElementById("playButtonLabel").textContent,
             phase: document.getElementById("phaseLabel").textContent,
+            whistleLoudness,
             watchdogAfter,
             watchdogBefore,
             whistleVolume: document.getElementById("whistleVolumeValue").textContent
@@ -277,7 +339,22 @@ async function main() {
     assert.equal(result.audioNoticeHidden, true);
     assert.ok(result.audioStarts >= 1, "The manual whistle should start a Web Audio source");
     assert.ok(result.gainValues.includes(1.75), "The whistle should use its independent 175% gain");
-    assert.ok(result.compressorCount >= 1, "Boosted whistles should pass through the limiter");
+    assert.ok(result.gainValues.includes(0.875), "The whistle boost should keep a safe output ceiling");
+    assert.equal(result.compressorCount, 0, "The soft-saturation path should replace the flattening limiter");
+    assert.ok(result.waveShaperCount >= 1, "Boosted whistles should pass through soft saturation");
+    assert.ok(
+      result.whistleLoudness.at150.rms >= result.whistleLoudness.at100.rms * 1.45,
+      "150% should create a meaningful measured loudness increase"
+    );
+    assert.ok(
+      result.whistleLoudness.at200.rms >= result.whistleLoudness.at100.rms * 1.58,
+      "200% should create a strong measured loudness increase"
+    );
+    assert.ok(
+      result.whistleLoudness.at200.rms >= result.whistleLoudness.at150.rms * 1.05,
+      "200% should remain louder than 150%"
+    );
+    assert.ok(result.whistleLoudness.at200.peak <= 1, "The maximum boost should stay below full scale");
     assert.notEqual(result.watchdogAfter, result.watchdogBefore, "The watchdog should advance the timer when animation frames stop");
 
     const blankLoaded = client.waitFor("Page.loadEventFired");

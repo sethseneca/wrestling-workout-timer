@@ -10,7 +10,7 @@ Wrestling Workout Timer - a wrestling workout and interval timer app.
 - Version 1 static app files exist: `index.html`, `style.css`, and `app.js`.
 - Git is linked to GitHub repository `wrestling-workout-timer`.
 - The app uses vanilla HTML/CSS/JS with no build step or dependencies.
-- A local timer-resilience fix is pending phone verification and publication.
+- The app includes timer resilience and an independent whistle boost that still mixes with other phone audio.
 
 ## Important Files
 
@@ -35,6 +35,7 @@ Wrestling Workout Timer - a wrestling workout and interval timer app.
 - Hidden HTML media fallbacks are intentionally excluded because their playback session can interrupt other audio.
 - A cold PWA reload restores elapsed time and keeps the countdown running from wall-clock time while a notice requests one gesture to unlock sound.
 - A 500 ms watchdog advances the countdown if Safari drops the normal animation-frame callback.
+- Whistle levels above 100% use an oversampled soft-saturation curve instead of a peak limiter so the extra gain creates a real loudness increase.
 
 ## Open Questions
 
@@ -46,7 +47,7 @@ iOS suspends Web Audio while a PWA is actually backgrounded. The timer restores 
 
 ## Next Step
 
-Run the four-part iPhone timer and audio check in `NEXT_STEPS.md`, then publish only after approval.
+Run the four-part iPhone timer and audio check in `NEXT_STEPS.md`.
 
 ## Notes for Claude
 

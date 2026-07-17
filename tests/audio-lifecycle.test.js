@@ -84,7 +84,11 @@ function createHarness(contextBehaviors = [], initialStorage = {}) {
       this.compressorCount = 0;
       this.gainValues = [];
       this.startedSources = [];
+      this.waveShapers = [];
       this.state = this.behavior.initialState || "suspended";
+      if (this.behavior.waveShaper === false) {
+        this.createWaveShaper = undefined;
+      }
       audioContexts.push(this);
     }
 
@@ -131,6 +135,16 @@ function createHarness(contextBehaviors = [], initialStorage = {}) {
         release: audioParam,
         threshold: audioParam
       };
+    }
+
+    createWaveShaper() {
+      const waveShaper = {
+        connect() {},
+        curve: null,
+        oversample: "none"
+      };
+      this.waveShapers.push(waveShaper);
+      return waveShaper;
     }
 
     decodeAudioData() {
@@ -278,8 +292,16 @@ test("uses one boosted whistle with a mixable Web Audio session", async () => {
   assert.equal(audioContext.startedSources.length, 2);
   assert.equal(audioContext.startedSources[0].buffer, harness.api.state.audioBuffers.whistle);
   assert.equal(audioContext.startedSources[1].buffer, harness.api.state.audioBuffers.whistle);
-  assert.deepEqual(audioContext.gainValues, [1.5, 1.5]);
-  assert.equal(audioContext.compressorCount, 2);
+  assert.deepEqual(
+    audioContext.gainValues.map((value) => Number(value.toFixed(3))),
+    [1.5, 0.9, 1.5, 0.9]
+  );
+  assert.equal(audioContext.compressorCount, 0);
+  assert.equal(audioContext.waveShapers.length, 2);
+  assert.equal(audioContext.waveShapers[0].oversample, "4x");
+  assert.equal(audioContext.waveShapers[0].curve.length, 4096);
+  assert.ok(audioContext.waveShapers[0].curve[0] <= -0.99);
+  assert.ok(audioContext.waveShapers[0].curve.at(-1) >= 0.99);
 });
 
 test("persists the independent whistle volume and applies it to the cue", async () => {
@@ -296,6 +318,15 @@ test("persists the independent whistle volume and applies it to the cue", async 
   harness.api.playWhistleCue(0);
   assert.equal(harness.audioContexts[0].gainValues.at(-1), 0.75);
   assert.equal(harness.audioContexts[0].compressorCount, 0);
+  assert.equal(harness.audioContexts[0].waveShapers.length, 0);
+});
+
+test("falls back to the peak limiter when soft saturation is unavailable", async () => {
+  const harness = createHarness([{ waveShaper: false }]);
+  assert.equal(await harness.api.unlockAudio(), true);
+
+  harness.api.playWhistleCue(0);
+  assert.equal(harness.audioContexts[0].compressorCount, 1);
 });
 
 test("replaces an interrupted context when the app returns", async () => {

@@ -21,6 +21,7 @@
   };
   var AUDIO_OPERATION_TIMEOUT_MS = 700;
   var TICK_WATCHDOG_MS = 500;
+  var WHISTLE_BOOST_CURVE_SAMPLES = 4096;
   var AudioContextConstructor = window.AudioContext || window.webkitAudioContext;
   var audioCtx = null;
 
@@ -1125,7 +1126,24 @@
   }
 
   function connectCueOutput(gain, volume, now) {
-    if (volume <= 1 || typeof state.audioContext.createDynamicsCompressor !== "function") {
+    if (volume <= 1) {
+      gain.connect(state.audioContext.destination);
+      return;
+    }
+
+    if (typeof state.audioContext.createWaveShaper === "function") {
+      var saturator = state.audioContext.createWaveShaper();
+      var output = state.audioContext.createGain();
+      saturator.curve = createWhistleBoostCurve(volume);
+      saturator.oversample = "4x";
+      output.gain.setValueAtTime(getWhistleBoostOutputGain(volume), now);
+      gain.connect(saturator);
+      saturator.connect(output);
+      output.connect(state.audioContext.destination);
+      return;
+    }
+
+    if (typeof state.audioContext.createDynamicsCompressor !== "function") {
       gain.connect(state.audioContext.destination);
       return;
     }
@@ -1138,6 +1156,23 @@
     limiter.release.setValueAtTime(0.1, now);
     gain.connect(limiter);
     limiter.connect(state.audioContext.destination);
+  }
+
+  function createWhistleBoostCurve(volume) {
+    var curve = new Float32Array(WHISTLE_BOOST_CURVE_SAMPLES);
+    var drive = Math.max((volume - 1) * 4, 0.0001);
+    var normalization = Math.tanh(drive);
+
+    for (var index = 0; index < curve.length; index += 1) {
+      var input = (index * 2) / (curve.length - 1) - 1;
+      curve[index] = Math.tanh(drive * input) / normalization;
+    }
+
+    return curve;
+  }
+
+  function getWhistleBoostOutputGain(volume) {
+    return clamp(0.95 - Math.max(volume - 1, 0) * 0.1, 0.85, 0.95);
   }
 
   async function recoverAudioForPlayback(shouldForceRecreate) {
