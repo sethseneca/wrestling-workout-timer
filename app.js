@@ -24,6 +24,7 @@
     readySeconds: 10,
     rounds: 8
   };
+  var AUDIO_OPERATION_TIMEOUT_MS = 700;
   var AudioContextConstructor = window.AudioContext || window.webkitAudioContext;
   var audioCtx = null;
 
@@ -43,6 +44,7 @@
   var saveTimerButton = document.getElementById("saveTimerButton");
   var savedTimerList = document.getElementById("savedTimerList");
   var soundCheckEl = document.getElementById("soundCheck");
+  var audioResumeNotice = document.getElementById("audioResumeNotice");
   var settingsToggleButton = document.getElementById("settingsToggleButton");
   var settingsCloseButton = document.getElementById("settingsCloseButton");
   var settingsPanel = document.getElementById("settingsPanel");
@@ -76,7 +78,9 @@
     audioDataPromises: {},
     audioReadyPromise: null,
     audioUnlocked: false,
-    fallbackAudio: {},
+    audioNeedsRecovery: false,
+    audioRecoveryPromise: null,
+    audioSessionListening: false,
     scheduledCueNodes: [],
     tenSecondWarningKey: null,
     wakeLock: null,
@@ -104,6 +108,7 @@
   }
 
   renderSavedTimers();
+  configureAudioSession();
   primeAudioData();
 
   function setupElementMasks() {
@@ -167,6 +172,7 @@
   savedTimerList.addEventListener("click", handleSavedTimerClick);
   soundCheckEl.addEventListener("click", handleSoundCheckClick);
   window.addEventListener("beforeunload", saveTimerState);
+  window.addEventListener("blur", markAudioForRecovery);
   window.addEventListener("focus", handleAppReturn);
   window.addEventListener("pageshow", handleAppReturn);
   window.addEventListener("resize", updateElementMasks);
@@ -340,8 +346,6 @@
   }
 
   async function handlePlayPause() {
-    resumeAudioContext();
-
     if (state.hasStarted && !state.isDone) {
       await handlePauseResume();
       return;
@@ -351,8 +355,9 @@
   }
 
   async function handleStart() {
-    await unlockAudio();
-    await ensureAudioReady();
+    if (!await prepareAudioForTimer()) {
+      return;
+    }
 
     if (state.isDone) {
       resetTimer(false);
@@ -372,23 +377,26 @@
   }
 
   async function handlePauseResume() {
-    await unlockAudio();
-    await ensureAudioReady();
-
     if (!state.hasStarted || state.isDone) {
       return;
     }
 
     if (state.isRunning) {
       pauseRunning();
-    } else {
-      startRunning();
+      return;
     }
+
+    if (!await prepareAudioForTimer()) {
+      return;
+    }
+
+    startRunning();
   }
 
   async function handleSkip() {
-    await unlockAudio();
-    await ensureAudioReady();
+    if (!await prepareAudioForTimer()) {
+      return;
+    }
 
     if (state.isDone) {
       return;
@@ -407,8 +415,9 @@
   }
 
   async function handleSkipBack() {
-    await unlockAudio();
-    await ensureAudioReady();
+    if (!await prepareAudioForTimer()) {
+      return;
+    }
 
     if (state.isDone) {
       resetTimer(false);
@@ -434,6 +443,7 @@
 
     cancelAnimationFrame(state.rafId);
     clearScheduledCues();
+    hideAudioResumeNotice();
     state.isRunning = true;
     state.targetTime = performance.now() + state.remainingMs;
     state.targetWallTime = Date.now() + state.remainingMs;
@@ -472,6 +482,7 @@
     state.isRunning = false;
     state.isDone = false;
     state.tenSecondWarningKey = null;
+    hideAudioResumeNotice();
     setCurrentStep(0, null);
     updateControls();
     saveTimerState();
@@ -629,8 +640,73 @@
     return Math.max(0, state.targetTime - performance.now());
   }
 
+  function configureAudioSession() {
+    if (!("audioSession" in navigator) || !navigator.audioSession) {
+      return;
+    }
+
+    try {
+      // Ambient audio mixes the timer cues with Music, podcasts, and other apps.
+      navigator.audioSession.type = "ambient";
+    } catch (error) {
+      // Older WebKit builds expose no configurable audio session.
+    }
+
+    if (!state.audioSessionListening && typeof navigator.audioSession.addEventListener === "function") {
+      navigator.audioSession.addEventListener("statechange", handleAudioSessionStateChange);
+      state.audioSessionListening = true;
+    }
+  }
+
+  function handleAudioSessionStateChange() {
+    if (!navigator.audioSession || navigator.audioSession.state !== "interrupted") {
+      return;
+    }
+
+    markAudioForRecovery();
+  }
+
+  function handleAudioContextStateChange(event) {
+    var audioContext = event && event.target ? event.target : state.audioContext;
+
+    if (audioContext !== state.audioContext) {
+      return;
+    }
+
+    if (audioContext.state === "interrupted" || audioContext.state === "closed") {
+      markAudioForRecovery();
+    }
+  }
+
+  function markAudioForRecovery() {
+    if (state.audioUnlocked) {
+      state.audioNeedsRecovery = true;
+    }
+  }
+
   function handleAudioInteraction() {
     unlockAudio();
+  }
+
+  async function prepareAudioForTimer() {
+    var isReady = await unlockAudio();
+
+    if (!isReady) {
+      showAudioResumeNotice("Tap play again to restore sound");
+      return false;
+    }
+
+    hideAudioResumeNotice();
+    return true;
+  }
+
+  function showAudioResumeNotice(message) {
+    audioResumeNotice.textContent = message || "Tap play to resume with sound";
+    audioResumeNotice.hidden = false;
+  }
+
+  function hideAudioResumeNotice() {
+    audioResumeNotice.hidden = true;
   }
 
   function createAudioContext() {
@@ -639,7 +715,17 @@
     }
 
     if (!audioCtx || audioCtx.state === "closed") {
-      audioCtx = new AudioContextConstructor();
+      try {
+        audioCtx = new AudioContextConstructor({ latencyHint: "interactive" });
+      } catch (error) {
+        try {
+          audioCtx = new AudioContextConstructor();
+        } catch (constructorError) {
+          return null;
+        }
+      }
+
+      audioCtx.onstatechange = handleAudioContextStateChange;
       resetDecodedAudioBuffers();
     }
 
@@ -649,12 +735,11 @@
 
   async function unlockAudio() {
     state.audioUnlocked = true;
-    unlockFallbackAudio();
-    await resumeAudioContext();
-    return ensureAudioReady();
+    configureAudioSession();
+    return recoverAudioForPlayback(state.audioNeedsRecovery);
   }
 
-  async function resumeAudioContext(shouldRecreate) {
+  async function resumeAudioContext() {
     var audioContext = createAudioContext();
 
     if (!audioContext) {
@@ -666,25 +751,11 @@
     }
 
     try {
-      await audioContext.resume();
+      var didSettle = await settleAudioOperation(audioContext.resume());
+      return didSettle && audioContext === state.audioContext && audioContext.state === "running";
     } catch (error) {
-      if (shouldRecreate !== false) {
-        return recreateAudioContext().then(function () {
-          return resumeAudioContext(false);
-        });
-      }
+      return false;
     }
-
-    if (audioContext.state === "running") {
-      return true;
-    }
-
-    if (shouldRecreate !== false && audioContext.state === "closed") {
-      await recreateAudioContext();
-      return resumeAudioContext(false);
-    }
-
-    return false;
   }
 
   async function ensureAudioReady() {
@@ -692,9 +763,41 @@
       return false;
     }
 
-    await primeAudioBuffers();
+    if (!await resumeAudioContext()) {
+      return false;
+    }
 
-    return resumeAudioContext();
+    return primeAudioBuffers();
+  }
+
+  function settleAudioOperation(operation) {
+    if (!operation || typeof operation.then !== "function") {
+      return Promise.resolve(true);
+    }
+
+    return new Promise(function (resolve) {
+      var didFinish = false;
+      var timeoutId = window.setTimeout(function () {
+        if (!didFinish) {
+          didFinish = true;
+          resolve(false);
+        }
+      }, AUDIO_OPERATION_TIMEOUT_MS);
+
+      operation.then(function () {
+        if (!didFinish) {
+          didFinish = true;
+          window.clearTimeout(timeoutId);
+          resolve(true);
+        }
+      }).catch(function () {
+        if (!didFinish) {
+          didFinish = true;
+          window.clearTimeout(timeoutId);
+          resolve(false);
+        }
+      });
+    });
   }
 
   function primeAudioBuffers() {
@@ -705,8 +808,16 @@
     if (!state.audioReadyPromise) {
       state.audioReadyPromise = Promise.all(Object.keys(AUDIO_FILES).map(function (name) {
         return loadAudioBuffer(name);
-      })).then(function () {
-        return true;
+      })).then(function (audioBuffers) {
+        var isReady = audioBuffers.every(function (audioBuffer) {
+          return Boolean(audioBuffer);
+        });
+
+        if (!isReady) {
+          state.audioReadyPromise = null;
+        }
+
+        return isReady;
       }).catch(function () {
         state.audioReadyPromise = null;
         return false;
@@ -723,8 +834,10 @@
 
     return Promise.all(Object.keys(AUDIO_FILES).map(function (name) {
       return loadAudioData(name);
-    })).then(function () {
-      return true;
+    })).then(function (audioData) {
+      return audioData.every(function (arrayBuffer) {
+        return Boolean(arrayBuffer);
+      });
     }).catch(function () {
       return false;
     });
@@ -821,113 +934,24 @@
     }
 
     clearScheduledCues();
+    var previousAudioContext = audioCtx;
+    audioCtx = null;
+    state.audioContext = null;
+    resetDecodedAudioBuffers();
 
     try {
-      if (audioCtx && audioCtx.state !== "closed") {
-        await audioCtx.close();
+      if (previousAudioContext && previousAudioContext.state !== "closed") {
+        await settleAudioOperation(previousAudioContext.close());
       }
     } catch (error) {
       // A broken context is already unusable, so continue with a fresh one.
     }
 
-    audioCtx = new AudioContextConstructor();
-    state.audioContext = audioCtx;
-    resetDecodedAudioBuffers();
-    return audioCtx;
+    return createAudioContext();
   }
 
   function chooseAudioSource(candidates) {
     return candidates[0] ? candidates[0].src : "";
-  }
-
-  function ensureFallbackAudio(name) {
-    if (state.fallbackAudio[name]) {
-      return state.fallbackAudio[name];
-    }
-
-    var source = chooseAudioSource(AUDIO_FILES[name]);
-
-    if (!source) {
-      return null;
-    }
-
-    var audio = document.createElement("audio");
-    audio.src = source;
-    audio.preload = "auto";
-    audio.setAttribute("playsinline", "");
-    audio.setAttribute("webkit-playsinline", "");
-    audio.setAttribute("aria-hidden", "true");
-    audio.style.display = "none";
-    document.body.appendChild(audio);
-    state.fallbackAudio[name] = audio;
-    return audio;
-  }
-
-  function unlockFallbackAudio() {
-    Object.keys(AUDIO_FILES).forEach(function (name) {
-      var audio = ensureFallbackAudio(name);
-
-      if (!audio) {
-        return;
-      }
-
-      if (audio.dataset.unlocked === "true") {
-        return;
-      }
-
-      try {
-        audio.load();
-        audio.muted = true;
-
-        var playPromise = audio.play();
-
-        if (playPromise && typeof playPromise.then === "function") {
-          playPromise.then(function () {
-            audio.pause();
-            audio.currentTime = 0;
-            audio.muted = false;
-            audio.dataset.unlocked = "true";
-          }).catch(function () {
-            audio.muted = false;
-          });
-        } else {
-          audio.pause();
-          audio.currentTime = 0;
-          audio.muted = false;
-          audio.dataset.unlocked = "true";
-        }
-      } catch (error) {
-        audio.muted = false;
-        return;
-      }
-    });
-  }
-
-  function playFallbackAudio(name, volume) {
-    var baseAudio = ensureFallbackAudio(name);
-
-    if (!baseAudio) {
-      return false;
-    }
-
-    var audio = baseAudio.paused || baseAudio.ended ? baseAudio : baseAudio.cloneNode(true);
-    audio.volume = volume;
-    audio.muted = false;
-
-    try {
-      audio.currentTime = 0;
-      var playPromise = audio.play();
-
-      if (playPromise && typeof playPromise.catch === "function") {
-        playPromise.catch(function () {
-          return false;
-        });
-      }
-    } catch (error) {
-      return false;
-    }
-
-    return true;
   }
 
   function playCurrentStepStartCue(previousPhase) {
@@ -990,12 +1014,8 @@
         recoverAudioForPlayback().then(function (ready) {
           if (ready) {
             playAudioBuffer(name, volume, delaySeconds, shouldTrack, attempt + 1);
-          } else {
-            playDelayedFallbackAudio(name, volume, delaySeconds);
           }
         });
-      } else {
-        playDelayedFallbackAudio(name, volume, delaySeconds);
       }
 
       return false;
@@ -1006,12 +1026,8 @@
         recoverAudioForPlayback().then(function (ready) {
           if (ready) {
             playAudioBuffer(name, volume, delaySeconds, shouldTrack, attempt + 1);
-          } else {
-            playDelayedFallbackAudio(name, volume, delaySeconds);
           }
         });
-      } else {
-        playDelayedFallbackAudio(name, volume, delaySeconds);
       }
 
       return false;
@@ -1033,12 +1049,8 @@
         recoverAudioForPlayback(true).then(function (ready) {
           if (ready) {
             playAudioBuffer(name, volume, delaySeconds, shouldTrack, attempt + 1);
-          } else {
-            playDelayedFallbackAudio(name, volume, delaySeconds);
           }
         });
-      } else {
-        playDelayedFallbackAudio(name, volume, delaySeconds);
       }
 
       return false;
@@ -1057,29 +1069,40 @@
   }
 
   async function recoverAudioForPlayback(shouldForceRecreate) {
-    if (shouldForceRecreate || (state.audioContext && state.audioContext.state === "closed")) {
-      await recreateAudioContext();
+    if (state.audioRecoveryPromise) {
+      return state.audioRecoveryPromise;
     }
 
-    if (!await ensureAudioReady()) {
-      await recreateAudioContext();
-      return ensureAudioReady();
+    state.audioRecoveryPromise = (async function () {
+      var audioContext = state.audioContext;
+      var shouldReplaceContext = Boolean(
+        shouldForceRecreate ||
+        state.audioNeedsRecovery ||
+        !audioContext ||
+        audioContext.state === "closed" ||
+        audioContext.state === "interrupted"
+      );
+
+      if (shouldReplaceContext) {
+        await recreateAudioContext();
+      }
+
+      var isReady = await ensureAudioReady();
+
+      if (!isReady && !shouldReplaceContext) {
+        await recreateAudioContext();
+        isReady = await ensureAudioReady();
+      }
+
+      state.audioNeedsRecovery = !isReady;
+      return isReady;
+    })();
+
+    try {
+      return await state.audioRecoveryPromise;
+    } finally {
+      state.audioRecoveryPromise = null;
     }
-
-    return true;
-  }
-
-  function playDelayedFallbackAudio(name, volume, delaySeconds) {
-    var delayMs = Math.max(0, delaySeconds || 0) * 1000;
-
-    if (delayMs > 0) {
-      window.setTimeout(function () {
-        playFallbackAudio(name, volume);
-      }, delayMs);
-      return true;
-    }
-
-    return playFallbackAudio(name, volume);
   }
 
   function clearScheduledCues() {
@@ -1105,8 +1128,9 @@
       return;
     }
 
-    await unlockAudio();
-    await ensureAudioReady();
+    if (!await prepareAudioForTimer()) {
+      return;
+    }
 
     if (button.getAttribute("data-manual-cue") === "whistle") {
       playWhistleStart(0);
@@ -1120,8 +1144,9 @@
       return;
     }
 
-    await unlockAudio();
-    await ensureAudioReady();
+    if (!await prepareAudioForTimer()) {
+      return;
+    }
 
     if (button.getAttribute("data-sound-check") === "whistle") {
       playWhistleStart(0);
@@ -1167,10 +1192,10 @@
     updateControls();
 
     if (snapshot.isRunning && state.hasStarted) {
-      startRunning();
-    } else {
-      saveTimerState();
+      showAudioResumeNotice();
     }
+
+    saveTimerState();
 
     return true;
   }
@@ -1435,6 +1460,8 @@
   }
 
   function handlePageSuspend() {
+    markAudioForRecovery();
+
     if (state.isRunning) {
       state.remainingMs = getRunningRemainingMs();
       state.hiddenAt = Date.now();
@@ -1457,8 +1484,15 @@
       return;
     }
 
+    var shouldRecoverAudio = Boolean(
+      state.audioUnlocked &&
+      (state.audioNeedsRecovery || !state.audioContext || state.audioContext.state !== "running")
+    );
+    var audioRecovery = shouldRecoverAudio
+      ? recoverAudioForPlayback(true)
+      : Promise.resolve(Boolean(state.audioContext && state.audioContext.state === "running"));
+
     if (!state.isRunning) {
-      ensureAudioReady();
       return;
     }
 
@@ -1471,7 +1505,7 @@
 
     if (state.isDone) {
       finishWorkout(false);
-      ensureAudioReady().then(function (ready) {
+      audioRecovery.then(function (ready) {
         if (ready) {
           playFinishTone();
         }

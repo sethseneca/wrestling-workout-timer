@@ -24,11 +24,10 @@ A wrestling workout timer app for interval timing, conditioning rounds, drilling
 
 ## Open Decisions
 
-- Native mobile app, web app, or responsive PWA.
 - Free personal tool, paid app, or lead generator for a larger wrestling training product.
 - Whether to support saved workout templates in the first version.
-- Whether audio cues, voice prompts, or coach-mode controls are required for version one.
+- Whether true background audio is important enough to justify a native iOS wrapper later.
 
 ## Recommended Default
 
-Start as a responsive web app/PWA. It is faster to build, easier to share, and can become a mobile app later if the concept proves useful.
+Keep version one as a responsive PWA with reliable foreground audio cues. Consider a native wrapper only if sounding cues while the app is fully backgrounded becomes a hard requirement.
