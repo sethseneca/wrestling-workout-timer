@@ -137,6 +137,115 @@ class DevToolsClient {
   }
 }
 
+async function assertLandscapeLayout(client, width, height) {
+  await client.send("Emulation.setDeviceMetricsOverride", {
+    width,
+    height,
+    deviceScaleFactor: 1,
+    mobile: true,
+    screenWidth: width,
+    screenHeight: height,
+    screenOrientation: { type: "landscapePrimary", angle: 90 }
+  });
+  await delay(150);
+
+  const evaluation = await client.send("Runtime.evaluate", {
+    expression: `
+      (function () {
+        function rect(element) {
+          const bounds = element.getBoundingClientRect();
+          return {
+            bottom: bounds.bottom,
+            height: bounds.height,
+            left: bounds.left,
+            right: bounds.right,
+            top: bounds.top,
+            width: bounds.width
+          };
+        }
+
+        function textRect(element) {
+          const range = document.createRange();
+          range.selectNodeContents(element);
+          return rect(range);
+        }
+
+        const elements = {
+          countdown: document.getElementById("countdown"),
+          phase: document.getElementById("phaseLabel"),
+          round: document.getElementById("roundCounter"),
+          reset: document.getElementById("resetButton"),
+          previous: document.getElementById("skipBackButton"),
+          play: document.getElementById("startButton"),
+          next: document.getElementById("skipButton"),
+          whistle: document.querySelector('[data-manual-cue="whistle"]'),
+          settings: document.getElementById("settingsToggleButton")
+        };
+        const required = Object.fromEntries(
+          Object.entries(elements).map(([name, element]) => [name, rect(element)])
+        );
+        const controls = ["reset", "previous", "play", "next", "whistle"];
+        const overlaps = [];
+
+        for (let first = 0; first < controls.length; first += 1) {
+          for (let second = first + 1; second < controls.length; second += 1) {
+            const a = required[controls[first]];
+            const b = required[controls[second]];
+            if (a.left < b.right && a.right > b.left && a.top < b.bottom && a.bottom > b.top) {
+              overlaps.push([controls[first], controls[second]]);
+            }
+          }
+        }
+
+        return {
+          viewport: { width: innerWidth, height: innerHeight },
+          documentSize: {
+            width: document.documentElement.scrollWidth,
+            height: document.documentElement.scrollHeight
+          },
+          required,
+          countdownText: textRect(elements.countdown),
+          phaseText: textRect(elements.phase),
+          roundText: textRect(elements.round),
+          timerDisplay: rect(document.querySelector(".timer-display")),
+          console: rect(document.querySelector(".control-console")),
+          overlaps
+        };
+      })()
+    `,
+    returnByValue: true
+  });
+  const layout = evaluation.result.value;
+
+  assert.deepEqual(layout.viewport, { width, height });
+  assert.ok(layout.documentSize.width <= width, `${width}x${height} should not scroll horizontally`);
+  assert.ok(layout.documentSize.height <= height, `${width}x${height} should not scroll vertically`);
+
+  for (const [name, bounds] of Object.entries(layout.required)) {
+    assert.ok(bounds.width > 0 && bounds.height > 0, `${name} should be visible at ${width}x${height}`);
+    assert.ok(bounds.left >= -0.5 && bounds.top >= -0.5, `${name} should start inside ${width}x${height}`);
+    assert.ok(bounds.right <= width + 0.5 && bounds.bottom <= height + 0.5, `${name} should fit inside ${width}x${height}`);
+  }
+
+  for (const name of ["reset", "previous", "play", "next", "whistle", "settings"]) {
+    assert.ok(layout.required[name].width >= 44, `${name} should be at least 44px wide at ${width}x${height}`);
+    assert.ok(layout.required[name].height >= 44, `${name} should be at least 44px tall at ${width}x${height}`);
+  }
+
+  for (const [name, bounds] of Object.entries({
+    countdown: layout.countdownText,
+    phase: layout.phaseText,
+    round: layout.roundText
+  })) {
+    assert.ok(bounds.left >= -0.5 && bounds.right <= width + 0.5, `${name} text should fit horizontally at ${width}x${height}`);
+    assert.ok(bounds.top >= -0.5 && bounds.bottom <= height + 0.5, `${name} text should fit vertically at ${width}x${height}`);
+  }
+
+  assert.ok(layout.timerDisplay.right <= layout.console.left, `Timer and controls should not overlap at ${width}x${height}`);
+  assert.deepEqual(layout.overlaps, [], `Main controls should not overlap at ${width}x${height}`);
+  return layout;
+}
+
 async function main() {
   assert.equal(fs.existsSync(chromePath), true, "Chrome is required for the browser smoke test");
 
@@ -264,6 +373,38 @@ async function main() {
     const loaded = client.waitFor("Page.loadEventFired");
     await client.send("Page.navigate", { url: appUrl });
     await loaded;
+
+    const landscapeLayouts = [];
+    for (const [width, height] of [[667, 375], [844, 390], [932, 430]]) {
+      landscapeLayouts.push(await assertLandscapeLayout(client, width, height));
+    }
+    await client.send("Emulation.setDeviceMetricsOverride", {
+      width: 390,
+      height: 844,
+      deviceScaleFactor: 1,
+      mobile: true,
+      screenWidth: 390,
+      screenHeight: 844,
+      screenOrientation: { type: "portraitPrimary", angle: 0 }
+    });
+    await delay(150);
+    const portraitEvaluation = await client.send("Runtime.evaluate", {
+      expression: `
+        ({
+          flexDirection: getComputedStyle(document.querySelector(".control-console")).flexDirection,
+          height: document.documentElement.scrollHeight,
+          width: document.documentElement.scrollWidth
+        })
+      `,
+      returnByValue: true
+    });
+    assert.deepEqual(
+      portraitEvaluation.result.value,
+      { flexDirection: "row", height: 844, width: 390 },
+      "The landscape layout must not change the portrait console"
+    );
+    await client.send("Emulation.clearDeviceMetricsOverride");
+    await delay(150);
 
     const evaluation = await client.send("Runtime.evaluate", {
       expression: `
@@ -473,7 +614,7 @@ async function main() {
     assert.ok(coldRestore.after.gainValues.includes(1.25), "The restored whistle gain should be applied after audio recovery");
     assert.deepEqual(runtimeErrors, []);
 
-    console.log(JSON.stringify({ freshStart: result, coldRestore }));
+    console.log(JSON.stringify({ freshStart: result, coldRestore, landscapeLayouts }));
     socket.close();
   } finally {
     try {
