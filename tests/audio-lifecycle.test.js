@@ -83,6 +83,7 @@ function createHarness(contextBehaviors = [], initialStorage = {}) {
       this.destination = {};
       this.compressorCount = 0;
       this.gainValues = [];
+      this.oscillators = [];
       this.startedSources = [];
       this.waveShapers = [];
       this.state = this.behavior.initialState || "suspended";
@@ -120,8 +121,33 @@ function createHarness(contextBehaviors = [], initialStorage = {}) {
       const context = this;
       return {
         connect() {},
+        disconnect() {},
         gain: { setValueAtTime(value) { context.gainValues.push(value); } }
       };
+    }
+
+    createOscillator() {
+      const context = this;
+      const oscillator = {
+        frequencyValue: null,
+        started: false,
+        stopped: false,
+        connect() {},
+        disconnect() {},
+        frequency: {
+          setValueAtTime(value) {
+            oscillator.frequencyValue = value;
+          }
+        },
+        start() {
+          oscillator.started = true;
+        },
+        stop() {
+          oscillator.stopped = true;
+        }
+      };
+      context.oscillators.push(oscillator);
+      return oscillator;
     }
 
     createDynamicsCompressor() {
@@ -240,6 +266,8 @@ function createHarness(contextBehaviors = [], initialStorage = {}) {
       handleSettingsInput: handleSettingsInput,
       buildSequence: buildSequence,
       pauseRunning: pauseRunning,
+      finishWorkout: finishWorkout,
+      tick: tick,
       playFinishWhistle: playFinishWhistle,
       playWhistleCue: playWhistleCue,
       handleAppReturn: handleAppReturn,
@@ -329,6 +357,53 @@ test("falls back to the peak limiter when soft saturation is unavailable", async
   assert.equal(harness.audioContexts[0].compressorCount, 1);
 });
 
+test("a 10-minute session keeps its audio graph alive for the full running lifecycle", async () => {
+  const harness = createHarness();
+  harness.elements.get("workMinutes").value = "10";
+  harness.elements.get("workSeconds").value = "0";
+  harness.elements.get("restMinutes").value = "0";
+  harness.elements.get("restSeconds").value = "0";
+  harness.elements.get("readyMinutes").value = "0";
+  harness.elements.get("readySeconds").value = "0";
+  harness.elements.get("rounds").value = "1";
+  harness.elements.get("whistleVolume").value = "150";
+  harness.api.handleSettingsInput();
+
+  await harness.api.handleStart();
+  const audioContext = harness.audioContexts[0];
+  const firstKeepAlive = audioContext.oscillators[0];
+  assert.equal(harness.api.state.sequence[0].duration, 600);
+  assert.equal(firstKeepAlive.started, true);
+  assert.equal(firstKeepAlive.stopped, false);
+  assert.equal(firstKeepAlive.frequencyValue, 20);
+  assert.ok(audioContext.gainValues.includes(0.000001));
+  assert.equal(harness.api.state.audioKeepAliveSource, firstKeepAlive);
+
+  harness.api.pauseRunning();
+  assert.equal(firstKeepAlive.stopped, true);
+  assert.equal(harness.api.state.audioKeepAliveSource, null);
+
+  await harness.api.handlePlayPause();
+  const secondKeepAlive = audioContext.oscillators[1];
+  assert.equal(secondKeepAlive.started, true);
+  assert.equal(secondKeepAlive.stopped, false);
+
+  harness.api.state.targetWallTime = Date.now() + 9000;
+  harness.api.tick();
+  assert.equal(
+    audioContext.startedSources.filter((source) => source.buffer === harness.api.state.audioBuffers.tenSecondPop).length,
+    5
+  );
+  assert.equal(secondKeepAlive.stopped, false);
+
+  harness.api.state.targetWallTime = Date.now() - 1;
+  harness.api.tick();
+  assert.equal(harness.api.state.isDone, true);
+  assert.equal(audioContext.startedSources.at(-1).buffer, harness.api.state.audioBuffers.whistle);
+  assert.equal(secondKeepAlive.stopped, true);
+  assert.equal(harness.api.state.audioKeepAliveSource, null);
+});
+
 test("rebuilds an interrupted context only after its resume fails", async () => {
   const harness = createHarness([{}, {}]);
   harness.api.setAudioTimeout(20);
@@ -348,9 +423,11 @@ test("rebuilds an interrupted context only after its resume fails", async () => 
   assert.equal(await harness.api.handleVisibilityChange(), true);
 
   assert.equal(harness.audioContexts.length, 2);
+  assert.equal(originalContext.oscillators[0].stopped, true);
   assert.equal(harness.api.state.audioContext, harness.audioContexts[1]);
   assert.equal(harness.api.state.audioContext.state, "running");
   assert.equal(harness.api.state.audioNeedsRecovery, false);
+  assert.equal(harness.audioContexts[1].oscillators[0].started, true);
 
   harness.api.playWhistleCue(0);
   assert.equal(harness.audioContexts[1].startedSources.length, 1);
@@ -359,6 +436,7 @@ test("rebuilds an interrupted context only after its resume fails", async () => 
 test("a focus round-trip keeps an already running context", async () => {
   const harness = createHarness([{}]);
   assert.equal(await harness.api.unlockAudio(), true);
+  await harness.api.handleStart();
   const originalContext = harness.api.state.audioContext;
   assert.equal(originalContext.state, "running");
 
@@ -369,6 +447,8 @@ test("a focus round-trip keeps an already running context", async () => {
   assert.equal(harness.audioContexts.length, 1);
   assert.equal(harness.api.state.audioContext, originalContext);
   assert.equal(harness.api.state.audioNeedsRecovery, false);
+  assert.equal(originalContext.oscillators.length, 1);
+  assert.equal(originalContext.oscillators[0].stopped, false);
 });
 
 test("an interrupted context resumes without replacement when WebKit allows it", async () => {
@@ -428,6 +508,7 @@ test("a cold reload keeps a running timer moving while sound waits for a gesture
   assert.equal(harness.api.state.audioContext.state, "running");
   assert.equal(harness.elements.get("audioResumeNotice").hidden, true);
   assert.equal(harness.api.state.restoredRunningWithoutAudio, false);
+  assert.equal(harness.audioContexts[0].oscillators[0].started, true);
 });
 
 test("a watchdog advances the timer when animation frames are dropped", async () => {

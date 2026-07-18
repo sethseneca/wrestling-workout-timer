@@ -36,6 +36,7 @@ Wrestling Workout Timer - a wrestling workout and interval timer app.
 - A cold PWA reload restores elapsed time and keeps the countdown running from wall-clock time while a notice requests one gesture to unlock sound.
 - A 500 ms watchdog advances the countdown if Safari drops the normal animation-frame callback.
 - Whistle levels above 100% use an oversampled soft-saturation curve instead of a peak limiter so the extra gain creates a real loudness increase.
+- A sub-audible oscillator keeps the Web Audio graph active only while the timer runs, so long intervals do not lose their later cues during silent gaps.
 
 ## Open Questions
 
@@ -47,7 +48,7 @@ iOS suspends Web Audio while a PWA is actually backgrounded. A normal return can
 
 ## Next Step
 
-Run the four-part iPhone timer and audio check in `NEXT_STEPS.md`.
+Run the five-part iPhone timer and audio check in `NEXT_STEPS.md`.
 
 ## Notes for Claude
 

@@ -188,6 +188,9 @@ async function main() {
         window.__audioContextCount = 0;
         window.__audioGains = [];
         window.__compressorCount = 0;
+        window.__oscillatorFrequencies = [];
+        window.__oscillatorStarts = 0;
+        window.__oscillatorStops = 0;
         window.__waveShaperCount = 0;
         window.__dropAnimationFrames = false;
         const nativeRequestAnimationFrame = window.requestAnimationFrame.bind(window);
@@ -221,6 +224,26 @@ async function main() {
                 return setValueAtTime(value, ...gainArgs);
               };
               return gainNode;
+            };
+            const createOscillator = context.createOscillator.bind(context);
+            context.createOscillator = function () {
+              const oscillator = createOscillator();
+              const setFrequency = oscillator.frequency.setValueAtTime.bind(oscillator.frequency);
+              oscillator.frequency.setValueAtTime = function (value, ...frequencyArgs) {
+                window.__oscillatorFrequencies.push(value);
+                return setFrequency(value, ...frequencyArgs);
+              };
+              const start = oscillator.start.bind(oscillator);
+              oscillator.start = function (...startArgs) {
+                window.__oscillatorStarts += 1;
+                return start(...startArgs);
+              };
+              const stop = oscillator.stop.bind(oscillator);
+              oscillator.stop = function (...stopArgs) {
+                window.__oscillatorStops += 1;
+                return stop(...stopArgs);
+              };
+              return oscillator;
             };
             const createDynamicsCompressor = context.createDynamicsCompressor.bind(context);
             context.createDynamicsCompressor = function () {
@@ -302,9 +325,18 @@ async function main() {
           const whistleVolume = document.getElementById("whistleVolume");
           whistleVolume.value = "175";
           whistleVolume.dispatchEvent(new Event("input", { bubbles: true }));
+          const workMinutes = document.getElementById("workMinutes");
+          workMinutes.value = "10";
+          workMinutes.dispatchEvent(new Event("input", { bubbles: true }));
+          const workSeconds = document.getElementById("workSeconds");
+          workSeconds.value = "0";
+          workSeconds.dispatchEvent(new Event("input", { bubbles: true }));
           const readySeconds = document.getElementById("readySeconds");
           readySeconds.value = "0";
           readySeconds.dispatchEvent(new Event("input", { bubbles: true }));
+          const rounds = document.getElementById("rounds");
+          rounds.value = "1";
+          rounds.dispatchEvent(new Event("input", { bubbles: true }));
           document.getElementById("startButton").click();
           await new Promise((resolve) => setTimeout(resolve, 250));
           const audioContextCountBeforeReturn = window.__audioContextCount;
@@ -318,16 +350,28 @@ async function main() {
           const watchdogAfter = document.getElementById("countdown").textContent;
           document.querySelector('[data-manual-cue="whistle"]').click();
           await new Promise((resolve) => setTimeout(resolve, 250));
+          const countdownDuringLongSession = document.getElementById("countdown").textContent;
+          const playLabelWhileRunning = document.getElementById("playButtonLabel").textContent;
+          const oscillatorStartsWhileRunning = window.__oscillatorStarts;
+          const oscillatorStopsWhileRunning = window.__oscillatorStops;
+          document.getElementById("startButton").click();
+          await new Promise((resolve) => setTimeout(resolve, 250));
           return {
             audioElements: document.querySelectorAll("audio").length,
             audioContextCountAfterReturn,
             audioContextCountBeforeReturn,
             audioStarts: window.__audioStarts,
             compressorCount: window.__compressorCount,
+            countdownDuringLongSession,
             gainValues: window.__audioGains,
+            oscillatorFrequencies: window.__oscillatorFrequencies,
+            oscillatorStartsWhileRunning,
+            oscillatorStopsAfterPause: window.__oscillatorStops,
+            oscillatorStopsWhileRunning,
             waveShaperCount: window.__waveShaperCount,
             audioNoticeHidden: document.getElementById("audioResumeNotice").hidden,
-            playLabel: document.getElementById("playButtonLabel").textContent,
+            playLabel: playLabelWhileRunning,
+            playLabelAfterPause: document.getElementById("playButtonLabel").textContent,
             phase: document.getElementById("phaseLabel").textContent,
             whistleLoudness,
             watchdogAfter,
@@ -342,7 +386,9 @@ async function main() {
 
     const result = evaluation.result.value;
     assert.equal(result.playLabel, "Pause");
+    assert.equal(result.playLabelAfterPause, "Resume");
     assert.equal(result.phase, "WRESTLE");
+    assert.match(result.countdownDuringLongSession, /^09:5[6-9]$/);
     assert.equal(result.whistleVolume, "175%");
     assert.equal(result.audioElements, 0);
     assert.equal(result.audioNoticeHidden, true);
@@ -352,6 +398,11 @@ async function main() {
       "A normal app return should reuse the authorized audio context"
     );
     assert.ok(result.audioStarts >= 1, "The manual whistle should start a Web Audio source");
+    assert.ok(result.oscillatorStartsWhileRunning >= 1, "A long running session should keep its audio graph active");
+    assert.equal(result.oscillatorStopsWhileRunning, 0, "The keep-alive should remain active throughout the running session");
+    assert.ok(result.oscillatorStopsAfterPause >= 1, "Pausing should stop the audio keep-alive");
+    assert.ok(result.oscillatorFrequencies.includes(20), "The keep-alive should use a sub-audible frequency");
+    assert.ok(result.gainValues.includes(0.000001), "The keep-alive should remain effectively inaudible");
     assert.ok(result.gainValues.includes(1.75), "The whistle should use its independent 175% gain");
     assert.ok(result.gainValues.includes(0.875), "The whistle boost should keep a safe output ceiling");
     assert.equal(result.compressorCount, 0, "The soft-saturation path should replace the flattening limiter");
@@ -400,6 +451,7 @@ async function main() {
               audioNoticeHidden: document.getElementById("audioResumeNotice").hidden,
               audioStarts: window.__audioStarts,
               gainValues: window.__audioGains,
+              oscillatorStarts: window.__oscillatorStarts,
               playLabel: document.getElementById("playButtonLabel").textContent,
               whistleVolume: document.getElementById("whistleVolumeValue").textContent
             }
@@ -417,6 +469,7 @@ async function main() {
     assert.equal(coldRestore.after.audioNoticeHidden, true);
     assert.equal(coldRestore.after.whistleVolume, "125%");
     assert.ok(coldRestore.after.audioStarts >= 1, "The cold-restored timer should recover Web Audio after the resume tap");
+    assert.ok(coldRestore.after.oscillatorStarts >= 1, "The restored running timer should restart its audio keep-alive");
     assert.ok(coldRestore.after.gainValues.includes(1.25), "The restored whistle gain should be applied after audio recovery");
     assert.deepEqual(runtimeErrors, []);
 

@@ -20,6 +20,8 @@
     whistleVolume: 150
   };
   var AUDIO_OPERATION_TIMEOUT_MS = 700;
+  var AUDIO_KEEP_ALIVE_FREQUENCY_HZ = 20;
+  var AUDIO_KEEP_ALIVE_GAIN = 0.000001;
   var TICK_WATCHDOG_MS = 500;
   var WHISTLE_BOOST_CURVE_SAMPLES = 4096;
   var AudioContextConstructor = window.AudioContext || window.webkitAudioContext;
@@ -82,6 +84,9 @@
     audioNeedsRecovery: false,
     audioRecoveryPromise: null,
     audioSessionListening: false,
+    audioKeepAliveContext: null,
+    audioKeepAliveGain: null,
+    audioKeepAliveSource: null,
     scheduledCueNodes: [],
     tenSecondWarningKey: null,
     wakeLock: null,
@@ -465,6 +470,7 @@
     state.isRunning = true;
     state.targetTime = performance.now() + state.remainingMs;
     state.targetWallTime = Date.now() + state.remainingMs;
+    startAudioKeepAlive();
     playCurrentStepStartCue(null);
     requestWakeLock();
     tick();
@@ -478,6 +484,7 @@
     state.restoredRunningWithoutAudio = false;
     clearTickSchedule();
     clearScheduledCues();
+    stopAudioKeepAlive();
     releaseWakeLock();
     updateDisplay();
     updateControls();
@@ -487,6 +494,7 @@
   function resetTimer(shouldSave) {
     clearTickSchedule();
     clearScheduledCues();
+    stopAudioKeepAlive();
     releaseWakeLock();
 
     state.settings = readSettingsFromInputs();
@@ -619,6 +627,7 @@
   function finishWorkout(shouldPlayTone) {
     clearTickSchedule();
     clearScheduledCues();
+    stopAudioKeepAlive();
     releaseWakeLock();
     state.isRunning = false;
     state.hasStarted = true;
@@ -828,7 +837,13 @@
       return false;
     }
 
-    return primeAudioBuffers();
+    var audioBuffersReady = await primeAudioBuffers();
+
+    if (audioBuffersReady && state.isRunning) {
+      startAudioKeepAlive();
+    }
+
+    return audioBuffersReady;
   }
 
   function settleAudioOperation(operation) {
@@ -995,6 +1010,7 @@
     }
 
     clearScheduledCues();
+    stopAudioKeepAlive();
     var previousAudioContext = audioCtx;
     audioCtx = null;
     state.audioContext = null;
@@ -1220,6 +1236,67 @@
     });
 
     state.scheduledCueNodes = [];
+  }
+
+  function startAudioKeepAlive() {
+    var audioContext = state.audioContext;
+
+    if (
+      !state.isRunning ||
+      !state.audioUnlocked ||
+      !audioContext ||
+      audioContext.state !== "running" ||
+      typeof audioContext.createOscillator !== "function"
+    ) {
+      return false;
+    }
+
+    if (state.audioKeepAliveSource && state.audioKeepAliveContext === audioContext) {
+      return true;
+    }
+
+    stopAudioKeepAlive();
+
+    try {
+      var source = audioContext.createOscillator();
+      var gain = audioContext.createGain();
+      source.frequency.setValueAtTime(AUDIO_KEEP_ALIVE_FREQUENCY_HZ, audioContext.currentTime);
+      gain.gain.setValueAtTime(AUDIO_KEEP_ALIVE_GAIN, audioContext.currentTime);
+      source.connect(gain);
+      gain.connect(audioContext.destination);
+      source.start();
+      state.audioKeepAliveContext = audioContext;
+      state.audioKeepAliveGain = gain;
+      state.audioKeepAliveSource = source;
+      return true;
+    } catch (error) {
+      stopAudioKeepAlive();
+      return false;
+    }
+  }
+
+  function stopAudioKeepAlive() {
+    var source = state.audioKeepAliveSource;
+    var gain = state.audioKeepAliveGain;
+    state.audioKeepAliveContext = null;
+    state.audioKeepAliveGain = null;
+    state.audioKeepAliveSource = null;
+
+    if (source) {
+      try {
+        source.stop();
+      } catch (error) {
+        // A stopped or closed source needs no further action.
+      }
+
+      if (typeof source.disconnect === "function") {
+        source.disconnect();
+      }
+    }
+
+    if (gain && typeof gain.disconnect === "function") {
+      gain.disconnect();
+    }
   }
 
   function playFinishWhistle() {

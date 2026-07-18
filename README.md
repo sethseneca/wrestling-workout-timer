@@ -14,9 +14,10 @@ Help wrestlers, coaches, and training partners run workout timers, interval roun
 - Wrestle, rest, and finish transitions all use the same short whistle, with a saved 25%-200% whistle-volume control.
 - Levels above 100% use soft saturation so the whistle gets meaningfully louder instead of having the extra gain flattened by a peak limiter.
 - Audio cues use one Web Audio path so they can mix with Music, resume the existing authorized audio context after a normal app switch, and rebuild it only if resume fails.
+- A sub-audible Web Audio keep-alive runs only while the timer is active, preventing long silent intervals from losing their later cues.
 - If iOS fully reloads the PWA, the timer restores elapsed time and keeps counting while a tap restores sound.
 - A watchdog keeps the wall-clock countdown moving if Safari drops the animation-frame loop.
-- A no-dependency regression suite covers interruption, foreground return, reload recovery, dropped frames, and stuck WebKit audio operations.
+- A no-dependency regression suite covers 10-minute audio continuity, interruption, foreground return, reload recovery, dropped frames, and stuck WebKit audio operations.
 
 ## Local Validation
 
@@ -31,4 +32,4 @@ iOS suspends PWA Web Audio while the app is actually in the background. The time
 
 ## Next Step
 
-Compare the whistle at 100%, 150%, and 200% over Music on an iPhone, then run one full workout and confirm the countdown never switches to Resume.
+Run one 10-minute Wrestle interval on an iPhone and confirm the opening whistle, 10-second warning, and final whistle all sound.
