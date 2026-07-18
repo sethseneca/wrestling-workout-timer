@@ -8,8 +8,8 @@
     whistle: [
       { src: "assets/audio/rest-horn.m4a?v=20260717-unified-whistle1", type: "audio/mp4" }
     ],
-    tenSecondPop: [
-      { src: "assets/audio/ten-second-pop.m4a?v=20260630-console9", type: "audio/mp4" }
+    tenSecondClapper: [
+      { src: "assets/audio/ten-second-clapper.m4a?v=20260718-clapper1", type: "audio/mp4" }
     ]
   };
   var DEFAULTS = {
@@ -1074,9 +1074,7 @@
   }
 
   function playTenSecondWarning(delaySeconds, shouldTrack) {
-    for (var index = 0; index < 5; index += 1) {
-      playAudioBuffer("tenSecondPop", 1, (delaySeconds || 0) + index * 0.4, shouldTrack);
-    }
+    playAudioBuffer("tenSecondClapper", 1, delaySeconds || 0, shouldTrack);
   }
 
   function playAudioBuffer(name, volume, delaySeconds, shouldTrack, attempt) {
@@ -1334,7 +1332,7 @@
       playWhistleCue(0);
     }
 
-    if (button.getAttribute("data-sound-check") === "tenSecondPop") {
+    if (button.getAttribute("data-sound-check") === "tenSecondClapper") {
       playTenSecondWarning(0);
     }
   }

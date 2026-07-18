@@ -495,6 +495,12 @@ async function main() {
           const playLabelWhileRunning = document.getElementById("playButtonLabel").textContent;
           const oscillatorStartsWhileRunning = window.__oscillatorStarts;
           const oscillatorStopsWhileRunning = window.__oscillatorStops;
+          document.getElementById("settingsToggleButton").click();
+          const audioStartsBeforeClapper = window.__audioStarts;
+          document.querySelector('[data-sound-check="tenSecondClapper"]').click();
+          await new Promise((resolve) => setTimeout(resolve, 250));
+          const clapperStarts = window.__audioStarts - audioStartsBeforeClapper;
+          document.getElementById("settingsCloseButton").click();
           document.getElementById("startButton").click();
           await new Promise((resolve) => setTimeout(resolve, 250));
           return {
@@ -502,6 +508,7 @@ async function main() {
             audioContextCountAfterReturn,
             audioContextCountBeforeReturn,
             audioStarts: window.__audioStarts,
+            clapperStarts,
             compressorCount: window.__compressorCount,
             countdownDuringLongSession,
             gainValues: window.__audioGains,
@@ -539,6 +546,8 @@ async function main() {
       "A normal app return should reuse the authorized audio context"
     );
     assert.ok(result.audioStarts >= 1, "The manual whistle should start a Web Audio source");
+    assert.equal(result.clapperStarts, 1, "The warning Sound Check should play one clapper cue");
+    assert.ok(result.gainValues.includes(1), "The clapper should play at normal gain");
     assert.ok(result.oscillatorStartsWhileRunning >= 1, "A long running session should keep its audio graph active");
     assert.equal(result.oscillatorStopsWhileRunning, 0, "The keep-alive should remain active throughout the running session");
     assert.ok(result.oscillatorStopsAfterPause >= 1, "Pausing should stop the audio keep-alive");

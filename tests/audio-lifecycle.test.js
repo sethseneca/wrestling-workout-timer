@@ -308,6 +308,8 @@ test("uses one boosted whistle with a mixable Web Audio session", async () => {
   assert.equal(Object.keys(harness.api.state.audioBuffers).length, 2);
   assert.equal(harness.createdTags.includes("audio"), false);
   assert.ok(harness.fetchUrls.some((url) => url.includes("assets/audio/rest-horn.m4a")));
+  assert.ok(harness.fetchUrls.some((url) => url.includes("assets/audio/ten-second-clapper.m4a")));
+  assert.equal(harness.fetchUrls.some((url) => url.includes("ten-second-pop.m4a")), false);
   assert.equal(harness.fetchUrls.some((url) => url.includes("whistle-start.m4a")), false);
   assert.equal(harness.fetchUrls.some((url) => url.includes("final-horn.m4a")), false);
 
@@ -391,8 +393,8 @@ test("a 10-minute session keeps its audio graph alive for the full running lifec
   harness.api.state.targetWallTime = Date.now() + 9000;
   harness.api.tick();
   assert.equal(
-    audioContext.startedSources.filter((source) => source.buffer === harness.api.state.audioBuffers.tenSecondPop).length,
-    5
+    audioContext.startedSources.filter((source) => source.buffer === harness.api.state.audioBuffers.tenSecondClapper).length,
+    1
   );
   assert.equal(secondKeepAlive.stopped, false);
 
