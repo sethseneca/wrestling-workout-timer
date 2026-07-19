@@ -412,7 +412,33 @@ async function main() {
           const decodeContext = new AudioContext();
           const whistleResponse = await fetch("assets/audio/rest-horn.m4a");
           const whistleBuffer = await decodeContext.decodeAudioData(await whistleResponse.arrayBuffer());
+          const clapperResponse = await fetch("assets/audio/ten-second-clapper.m4a");
+          const clapperBuffer = await decodeContext.decodeAudioData(await clapperResponse.arrayBuffer());
           await decodeContext.close();
+
+          function detectClapperHitTimes(audioBuffer) {
+            const samples = audioBuffer.getChannelData(0);
+            let peak = 0;
+            for (const sample of samples) {
+              peak = Math.max(peak, Math.abs(sample));
+            }
+
+            const threshold = peak * 0.35;
+            const minimumGapSamples = Math.round(audioBuffer.sampleRate * 0.18);
+            const hitTimes = [];
+            let lastHitSample = -minimumGapSamples;
+
+            for (let index = 0; index < samples.length; index += 1) {
+              if (Math.abs(samples[index]) >= threshold && index - lastHitSample >= minimumGapSamples) {
+                hitTimes.push(Number((index / audioBuffer.sampleRate).toFixed(4)));
+                lastHitSample = index;
+              }
+            }
+
+            return hitTimes;
+          }
+
+          const clapperHitTimes = detectClapperHitTimes(clapperBuffer);
 
           async function measureWhistleLoudness(volume) {
             const offlineContext = new OfflineAudioContext(1, whistleBuffer.length, whistleBuffer.sampleRate);
@@ -498,8 +524,8 @@ async function main() {
           document.getElementById("settingsToggleButton").click();
           const audioStartsBeforeClapper = window.__audioStarts;
           document.querySelector('[data-sound-check="tenSecondClapper"]').click();
-          await new Promise((resolve) => setTimeout(resolve, 250));
-          const clapperStarts = window.__audioStarts - audioStartsBeforeClapper;
+          await new Promise((resolve) => setTimeout(resolve, 1300));
+          const clapperSequenceStarts = window.__audioStarts - audioStartsBeforeClapper;
           document.getElementById("settingsCloseButton").click();
           document.getElementById("startButton").click();
           await new Promise((resolve) => setTimeout(resolve, 250));
@@ -508,7 +534,9 @@ async function main() {
             audioContextCountAfterReturn,
             audioContextCountBeforeReturn,
             audioStarts: window.__audioStarts,
-            clapperStarts,
+            clapperDuration: clapperBuffer.duration,
+            clapperHitTimes,
+            clapperSequenceStarts,
             compressorCount: window.__compressorCount,
             countdownDuringLongSession,
             gainValues: window.__audioGains,
@@ -546,7 +574,13 @@ async function main() {
       "A normal app return should reuse the authorized audio context"
     );
     assert.ok(result.audioStarts >= 1, "The manual whistle should start a Web Audio source");
-    assert.equal(result.clapperStarts, 1, "The warning Sound Check should play one clapper cue");
+    assert.equal(result.clapperSequenceStarts, 1, "The warning Sound Check should start the complete three-clap track once");
+    assert.equal(result.clapperHitTimes.length, 3, "The fight-clapper asset should contain exactly three sharp hits");
+    assert.ok(result.clapperDuration < 1.5, "The complete three-clap warning should remain short");
+    for (let index = 1; index < result.clapperHitTimes.length; index += 1) {
+      const gap = result.clapperHitTimes[index] - result.clapperHitTimes[index - 1];
+      assert.ok(gap >= 0.2 && gap <= 0.4, "The three hits should land in rapid clap-clap-clap succession");
+    }
     assert.ok(result.gainValues.includes(1), "The clapper should play at normal gain");
     assert.ok(result.oscillatorStartsWhileRunning >= 1, "A long running session should keep its audio graph active");
     assert.equal(result.oscillatorStopsWhileRunning, 0, "The keep-alive should remain active throughout the running session");

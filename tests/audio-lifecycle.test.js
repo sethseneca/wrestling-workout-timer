@@ -308,7 +308,7 @@ test("uses one boosted whistle with a mixable Web Audio session", async () => {
   assert.equal(Object.keys(harness.api.state.audioBuffers).length, 2);
   assert.equal(harness.createdTags.includes("audio"), false);
   assert.ok(harness.fetchUrls.some((url) => url.includes("assets/audio/rest-horn.m4a")));
-  assert.ok(harness.fetchUrls.some((url) => url.includes("assets/audio/ten-second-clapper.m4a")));
+  assert.ok(harness.fetchUrls.some((url) => url.includes("assets/audio/ten-second-clapper.m4a?v=20260718-three-clap1")));
   assert.equal(harness.fetchUrls.some((url) => url.includes("ten-second-pop.m4a")), false);
   assert.equal(harness.fetchUrls.some((url) => url.includes("whistle-start.m4a")), false);
   assert.equal(harness.fetchUrls.some((url) => url.includes("final-horn.m4a")), false);
@@ -392,10 +392,10 @@ test("a 10-minute session keeps its audio graph alive for the full running lifec
 
   harness.api.state.targetWallTime = Date.now() + 9000;
   harness.api.tick();
-  assert.equal(
-    audioContext.startedSources.filter((source) => source.buffer === harness.api.state.audioBuffers.tenSecondClapper).length,
-    1
+  const fightClapperSequences = audioContext.startedSources.filter(
+    (source) => source.buffer === harness.api.state.audioBuffers.tenSecondClapper
   );
+  assert.equal(fightClapperSequences.length, 1, "The 10-minute Wrestle phase should play one complete three-clap sequence");
   assert.equal(secondKeepAlive.stopped, false);
 
   harness.api.state.targetWallTime = Date.now() - 1;
