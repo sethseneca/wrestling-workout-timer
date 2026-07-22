@@ -1,6 +1,6 @@
 # Claude Handoff
 
-Last updated: 2026-07-18
+Last updated: 2026-07-22
 
 ## Project
 
@@ -14,10 +14,11 @@ The current priority is a dependable foreground iPhone/PWA experience: the timer
 - GitHub: `https://github.com/sethseneca/wrestling-workout-timer`
 - Live app: `https://sethseneca.github.io/wrestling-workout-timer/`
 - Branch: `main`
-- Current deployed app commit: `6a5926b` - `Replace 10-second warning with clapper`
-- GitHub Pages successfully deployed and was cache-bypass verified at `6a5926b`.
-- The landscape layout commit `099af26` and the first single-hit clapper commit `6a5926b` are live.
-- The next local change, `Make 10-second warning a three-clap fight clapper`, replaces the single-hit warning with a three-hit recording and must remain unpushed until Seth approves deployment.
+- Current deployed app commit: `97c9dc8` - `Avoid false audio recovery on window blur`.
+- Local `main` and `origin/main` matched at `97c9dc8` on 2026-07-22.
+- GitHub Pages successfully deployed and was cache-bypass verified at `97c9dc8`.
+- The three-clap warning, centered landscape layout, native iPhone project, and browser blur-recovery fix are all pushed to GitHub.
+- The laptop is becoming the primary development machine. Follow `LAPTOP_SETUP.md`; GitHub `main` remains the source of truth.
 
 ## Technical Shape
 
@@ -89,7 +90,7 @@ The current audio path is Web Audio only.
 4. If a cue cannot play, the app tries to recover the context and retries the cue.
 5. A normal app return first tries to resume the existing authorized context. It creates a new context and decodes buffers again only if resume actually fails.
 6. WebKit audio operations use a 700 ms bounded timeout so a permanently unresolved `resume()` or `close()` cannot freeze recovery.
-7. Blur, focus, pageshow, pagehide, visibility, freeze, audio-session interruption, and context state changes all participate in recovery state.
+7. Focus, pageshow, pagehide, visibility, freeze, audio-session interruption, and context state changes participate in recovery. A harmless window blur no longer marks healthy audio as broken.
 
 ### Long-session keep-alive
 
@@ -199,12 +200,28 @@ If iOS fully reloads the PWA, the new page has no authorized audio session. In t
 - Updates Sound Check, deterministic warning coverage, browser coverage, and the `app.js` cache key.
 - Deployed and cache-bypass verified on GitHub Pages.
 
-### `Make 10-second warning a three-clap fight clapper` - local, unpushed
+### `3b26d80` - Make 10-second warning a three-clap fight clapper
 
 - Replaces the single-hit #1588 file with the real three-hit #1590 recording while keeping the same `ten-second-clapper.m4a` path and one-buffer playback route.
 - The warning still triggers once at 10 seconds remaining, but that one track contains all three rapid wooden strikes.
 - Keeps normal gain and the existing prefetch, decode, retry, recovery, keep-alive, and long-session path unchanged.
 - Updates Sound Check and automated coverage to verify the complete asset starts once and contains exactly three rapid transients.
+
+### `456f426` - Center landscape timer display
+
+- Uses balanced landscape columns so the enlarged timer remains visually centered without overlapping the control rail.
+- Passed browser layout checks at 667x375, 844x390, and 932x430.
+
+### `aebc76e` - Add private native iPhone timer
+
+- Adds the SwiftUI/AVAudioEngine iPhone project under `ios/WrestlingTimer/`.
+- The project compiles without signing, but signed installation and physical background-audio testing remain pending.
+
+### `97c9dc8` - Avoid false audio recovery on window blur
+
+- Stops harmless focus loss from marking a healthy Web Audio context as broken.
+- Keeps recovery tied to actual suspension, visibility, audio-session, and context-state evidence.
+- Deployed and live-file verified on GitHub Pages.
 
 ## Validation Already Completed
 
@@ -214,8 +231,9 @@ The latest release passed:
 - `node tests/browser-smoke.js` - passed in real Chrome/Web Audio.
 - `git diff --check` before commit.
 - Secret-pattern scan before push.
-- GitHub push and Pages deployment for `6a5926b`.
+- GitHub push and Pages deployment through `97c9dc8`.
 - Fresh cache-bypassed comparison proving the public `app.js` exactly matched local `app.js`.
+- Native Xcode compile without signing passed for `aebc76e`; signed device installation remains unverified.
 
 The landscape and original single-hit clapper work passed `npm test` (11/11) and `node tests/browser-smoke.js` before deployment at `6a5926b`.
 
@@ -262,6 +280,7 @@ Do not weaken foreground reliability in an attempt to promise unsupported backgr
 - `PROJECT_BRIEF.md` - product purpose and open direction decisions.
 - `README.md` - concise current status and platform boundary.
 - `NEXT_STEPS.md` - current physical iPhone validation checklist.
+- `LAPTOP_SETUP.md` - laptop bootstrap, validation, native setup, and machine-switch rules.
 - `CLAUDE_HANDOFF.md` - this detailed continuation context.
 - `index.html` - UI, settings, PWA metadata, and cache-busted app script.
 - `style.css` - mobile-first mat-room UI.

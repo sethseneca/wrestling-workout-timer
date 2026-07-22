@@ -26,6 +26,8 @@ npm test
 node tests/browser-smoke.js
 ```
 
+For a fresh development machine, follow [LAPTOP_SETUP.md](LAPTOP_SETUP.md).
+
 ## Platform Boundary
 
 iOS suspends PWA Web Audio while the app is actually in the background. The timer keeps wall-clock time and automatically resumes its existing audio context after a normal return. A full PWA reload still shows `Timer running - tap anywhere to restore sound` because the new page has no authorized audio session to recover; sounding cues while fully exited requires a native iOS app or wrapper.
