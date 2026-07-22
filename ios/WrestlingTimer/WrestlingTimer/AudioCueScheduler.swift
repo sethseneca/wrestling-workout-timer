@@ -23,6 +23,7 @@ final class AudioCueScheduler {
     private var isPrepared = false
 
     func start(cues: [ScheduledCue], volume: Float, elapsed: TimeInterval) {
+        guard configureAudioSession() else { return }
         prepareIfNeeded()
         stopNodes()
         whistleNode.volume = min(max(volume, 0.25), 2)
@@ -30,7 +31,6 @@ final class AudioCueScheduler {
 
         do {
             let session = AVAudioSession.sharedInstance()
-            try session.setCategory(.playback, mode: .default, options: [.mixWithOthers])
             try session.setActive(true)
             if !engine.isRunning { try engine.start() }
         } catch {
@@ -51,11 +51,11 @@ final class AudioCueScheduler {
     }
 
     func playNow(_ kind: CueKind, volume: Float) {
+        guard configureAudioSession() else { return }
         prepareIfNeeded()
         whistleNode.volume = min(max(volume, 0.25), 2)
         do {
             let session = AVAudioSession.sharedInstance()
-            try session.setCategory(.playback, mode: .default, options: [.mixWithOthers])
             try session.setActive(true)
             if !engine.isRunning { try engine.start() }
         } catch {
@@ -67,20 +67,33 @@ final class AudioCueScheduler {
     func stop() {
         stopNodes()
         engine.pause()
+        try? AVAudioSession.sharedInstance().setActive(false, options: [.notifyOthersOnDeactivation])
+    }
+
+    private func configureAudioSession() -> Bool {
+        do {
+            try AVAudioSession.sharedInstance().setCategory(.playback, mode: .default, options: [.mixWithOthers])
+            return true
+        } catch {
+            return false
+        }
     }
 
     private func prepareIfNeeded() {
         guard !isPrepared else { return }
+        whistleBuffer = loadBuffer(named: "rest-horn")
+        clapperBuffer = loadBuffer(named: "ten-second-clapper")
+
         engine.attach(whistleNode)
         engine.attach(clapperNode)
         engine.attach(keepAliveNode)
         let mixer = engine.mainMixerNode
-        engine.connect(whistleNode, to: mixer, format: nil)
-        engine.connect(clapperNode, to: mixer, format: nil)
-        engine.connect(keepAliveNode, to: mixer, format: nil)
-        whistleBuffer = loadBuffer(named: "rest-horn")
-        clapperBuffer = loadBuffer(named: "ten-second-clapper")
-        silentBuffer = makeSilentBuffer()
+        engine.connect(whistleNode, to: mixer, format: whistleBuffer?.format)
+        engine.connect(clapperNode, to: mixer, format: clapperBuffer?.format)
+
+        let keepAliveFormat = mixer.outputFormat(forBus: 0)
+        engine.connect(keepAliveNode, to: mixer, format: keepAliveFormat)
+        silentBuffer = makeSilentBuffer(format: keepAliveFormat)
         isPrepared = true
     }
 
@@ -117,10 +130,11 @@ final class AudioCueScheduler {
         }
     }
 
-    private func makeSilentBuffer() -> AVAudioPCMBuffer? {
-        guard let format = AVAudioFormat(standardFormatWithSampleRate: 44_100, channels: 1),
-              let buffer = AVAudioPCMBuffer(pcmFormat: format, frameCapacity: 44_100) else { return nil }
-        buffer.frameLength = 44_100
+    private func makeSilentBuffer(format: AVAudioFormat) -> AVAudioPCMBuffer? {
+        guard format.sampleRate > 0, format.channelCount > 0 else { return nil }
+        let frameCount = AVAudioFrameCount(format.sampleRate)
+        guard let buffer = AVAudioPCMBuffer(pcmFormat: format, frameCapacity: frameCount) else { return nil }
+        buffer.frameLength = frameCount
         return buffer
     }
 }
