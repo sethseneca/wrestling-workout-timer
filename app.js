@@ -178,7 +178,6 @@
   savedTimerList.addEventListener("click", handleSavedTimerClick);
   soundCheckEl.addEventListener("click", handleSoundCheckClick);
   window.addEventListener("beforeunload", saveTimerState);
-  window.addEventListener("blur", markAudioForRecovery);
   window.addEventListener("focus", handleAppReturn);
   window.addEventListener("pageshow", handleAppReturn);
   window.addEventListener("resize", updateElementMasks);

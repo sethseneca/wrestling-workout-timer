@@ -435,15 +435,15 @@ test("rebuilds an interrupted context only after its resume fails", async () => 
   assert.equal(harness.audioContexts[1].startedSources.length, 1);
 });
 
-test("a focus round-trip keeps an already running context", async () => {
+test("a harmless window blur does not arm recovery for a healthy context", async () => {
   const harness = createHarness([{}]);
   assert.equal(await harness.api.unlockAudio(), true);
   await harness.api.handleStart();
   const originalContext = harness.api.state.audioContext;
   assert.equal(originalContext.state, "running");
 
-  harness.windowEvents.get("blur")();
-  assert.equal(harness.api.state.audioNeedsRecovery, true);
+  assert.equal(harness.windowEvents.has("blur"), false);
+  assert.equal(harness.api.state.audioNeedsRecovery, false);
   assert.equal(await harness.windowEvents.get("focus")(), true);
 
   assert.equal(harness.audioContexts.length, 1);
