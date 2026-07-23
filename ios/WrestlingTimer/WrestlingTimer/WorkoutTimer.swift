@@ -20,6 +20,9 @@ struct TimerSettings {
     var readySeconds = 10
     var rounds = 8
     var whistleVolume = 1.5
+    var wrestleLabel = "WRESTLE"
+    var tenSecondWarningEnabled = true
+    var tenSecondWarningVolume = 3.0
 }
 
 struct WorkoutSegment {
@@ -37,6 +40,7 @@ final class WorkoutTimer: ObservableObject {
     @Published private(set) var round = 1
     @Published private(set) var isRunning = false
     @Published private(set) var isFinished = false
+    @Published private(set) var phaseProgress = 0.0
 
     private let audio = AudioCueScheduler()
     private var tickTimer: Timer?
@@ -58,6 +62,12 @@ final class WorkoutTimer: ObservableObject {
         return String(format: "%02d:%02d", minutes, seconds)
     }
 
+    var phaseTitle: String {
+        guard phase == .wrestle else { return phase.rawValue }
+        let label = settings.wrestleLabel.trimmingCharacters(in: .whitespacesAndNewlines)
+        return label.isEmpty ? WorkoutPhase.wrestle.rawValue : label.uppercased()
+    }
+
     var roundText: String {
         "Round \(round) of \(settings.rounds)"
     }
@@ -75,12 +85,23 @@ final class WorkoutTimer: ObservableObject {
             reset()
         }
 
-        let elapsed = elapsedBeforeStart
         startDate = Date()
         isRunning = true
-        audio.start(cues: makeCues(), volume: Float(settings.whistleVolume), elapsed: elapsed)
         beginTicking()
         refresh()
+
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.02) { [weak self] in
+            guard let self, self.isRunning else { return }
+            let audioElapsed = self.elapsed
+            let startingPhase = self.segments.last(where: { $0.start <= audioElapsed })?.phase ?? .wrestle
+            self.audio.start(
+                cues: self.makeCues(),
+                whistleVolume: Float(self.settings.whistleVolume),
+                warningVolume: Float(self.settings.tenSecondWarningVolume),
+                elapsed: audioElapsed,
+                duckBackgroundAudio: startingPhase == .rest
+            )
+        }
     }
 
     func pause() {
@@ -89,8 +110,8 @@ final class WorkoutTimer: ObservableObject {
         isRunning = false
         tickTimer?.invalidate()
         tickTimer = nil
-        audio.stop()
         refresh()
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.02) { [weak self] in self?.audio.stop() }
     }
 
     func reset() {
@@ -119,13 +140,31 @@ final class WorkoutTimer: ObservableObject {
         audio.playNow(.whistle, volume: Float(settings.whistleVolume))
     }
 
+    func setWhistleVolume(_ volume: Double) {
+        settings.whistleVolume = volume
+        audio.setVolumes(
+            whistle: Float(settings.whistleVolume),
+            warning: Float(settings.tenSecondWarningVolume)
+        )
+    }
+
+    func setTenSecondWarningVolume(_ volume: Double) {
+        settings.tenSecondWarningVolume = volume
+        audio.setVolumes(
+            whistle: Float(settings.whistleVolume),
+            warning: Float(settings.tenSecondWarningVolume)
+        )
+    }
+
     func refresh() {
         guard !segments.isEmpty else { return }
         let currentElapsed = elapsed
         let total = segments.last!.start + segments.last!.duration
 
         if currentElapsed >= total {
+            audio.setBackgroundAudioDucked(false)
             remainingSeconds = 0
+            phaseProgress = 1
             phase = .wrestle
             round = settings.rounds
             if isRunning {
@@ -144,8 +183,12 @@ final class WorkoutTimer: ObservableObject {
         let segment = segments[index]
         phase = segment.phase
         round = segment.round
+        audio.setBackgroundAudioDucked(isRunning && phase == .rest)
         let remaining = max(0, segment.duration - (currentElapsed - segment.start))
         remainingSeconds = Int(ceil(remaining))
+        phaseProgress = segment.duration > 0
+            ? min(max((currentElapsed - segment.start) / segment.duration, 0), 1)
+            : 1
     }
 
     private var elapsed: TimeInterval {
@@ -204,7 +247,7 @@ final class WorkoutTimer: ObservableObject {
             if segment.phase == .wrestle || segment.phase == .rest {
                 cues.append(ScheduledCue(kind: .whistle, offset: segment.start))
             }
-            if segment.phase == .wrestle, segment.duration > 10 {
+            if settings.tenSecondWarningEnabled, segment.phase == .wrestle, segment.duration > 10 {
                 cues.append(ScheduledCue(kind: .clapper, offset: segment.start + segment.duration - 10))
             }
         }

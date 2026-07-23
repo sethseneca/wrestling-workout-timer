@@ -1,4 +1,5 @@
 import SwiftUI
+import UIKit
 
 struct ContentView: View {
     @EnvironmentObject private var timer: WorkoutTimer
@@ -9,46 +10,48 @@ struct ContentView: View {
             timer.phase.tint
                 .ignoresSafeArea()
 
-            HStack(spacing: 18) {
+            GeometryReader { geometry in
                 VStack(spacing: 0) {
-                    HStack {
-                        Text("WRESTLING TIMER")
-                            .font(.system(size: 16, weight: .black, design: .rounded))
-                            .tracking(2)
-                        Spacer()
-                        Button { showingSetup = true } label: {
-                            Image(systemName: "gearshape")
-                                .font(.system(size: 24, weight: .bold))
-                                .frame(width: 54, height: 54)
-                                .background(.black.opacity(0.17), in: Circle())
-                        }
-                        .accessibilityLabel("Open workout setup")
-                    }
-
-                    Spacer()
-
-                    VStack(spacing: 3) {
-                        Text(timer.phase.rawValue)
-                            .font(.system(size: 46, weight: .black, design: .rounded))
-                        Text(timer.countdownText)
-                            .font(.system(size: 170, weight: .black, design: .rounded))
-                            .monospacedDigit()
-                            .minimumScaleFactor(0.55)
-                            .lineLimit(1)
-                        Text(timer.isFinished ? "WORKOUT COMPLETE" : timer.roundText)
-                            .font(.system(size: 20, weight: .black, design: .rounded))
-                    }
-                    .frame(maxWidth: .infinity)
-
-                    Spacer()
+                    Color.black
+                        .frame(height: geometry.size.height * timer.phaseProgress)
+                    Spacer(minLength: 0)
                 }
-
-                controlRail
-                    .frame(width: 116)
             }
-            .padding(.horizontal, 24)
-            .padding(.vertical, 14)
+            .ignoresSafeArea()
+            .animation(.linear(duration: 0.1), value: timer.phaseProgress)
+
+            timerReadout
+
+            Text("WORKOUT TIMER")
+                .font(fightFont(size: 17))
+                .tracking(1.4)
+                .shadow(color: .black.opacity(0.42), radius: 0, x: 1.5, y: 2)
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+                .padding(.leading, 10)
+                .padding(.top, 14)
+
+            Button { showingSetup = true } label: {
+                Image(systemName: "gearshape")
+                    .font(.system(size: 36, weight: .bold))
+                    .foregroundStyle(.white.opacity(0.9))
+                    .frame(width: 60, height: 60)
+                    .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel("Open workout setup")
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomLeading)
+            .padding(.leading, 2)
+            .padding(.bottom, 8)
+
+            controlRail
+                .frame(width: 112)
+                .padding(.top, 10)
+                .padding(.bottom, 2)
+                .padding(.trailing, 4)
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .trailing)
+                .ignoresSafeArea(.container, edges: .trailing)
         }
+        .foregroundStyle(.white)
         .preferredColorScheme(.dark)
         .sheet(isPresented: $showingSetup) {
             SetupView()
@@ -56,30 +59,72 @@ struct ContentView: View {
         }
     }
 
+    private var timerReadout: some View {
+        VStack(spacing: 1) {
+            Text(timer.phaseTitle)
+                .font(fightFont(size: 48))
+                .tracking(0.5)
+                .lineLimit(1)
+                .minimumScaleFactor(0.65)
+                .offset(y: 22)
+
+            Text(timer.countdownText)
+                .font(fightFont(size: 222))
+                .monospacedDigit()
+                .minimumScaleFactor(0.55)
+                .lineLimit(1)
+                .offset(y: 36)
+
+            Text(timer.isFinished ? "WORKOUT COMPLETE" : timer.roundText.uppercased())
+                .font(fightFont(size: 48, weight: .heavy))
+                .tracking(0.4)
+        }
+        .shadow(color: .black.opacity(0.52), radius: 0, x: 2.5, y: 3.5)
+        .shadow(color: .black.opacity(0.18), radius: 5, x: 0, y: 2)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .padding(.horizontal, 110)
+    }
+
+    private func fightFont(size: CGFloat, weight: UIFont.Weight = .black) -> Font {
+        let athleticFont = UIFont(name: "DINCondensed-Bold", size: size)
+            ?? UIFont.systemFont(ofSize: size, weight: weight, width: .compressed)
+        return Font(athleticFont)
+    }
+
     private var controlRail: some View {
         VStack(spacing: 0) {
             railButton("arrow.counterclockwise", label: "Reset") { timer.reset() }
             railButton("backward.end.fill", label: "Previous interval") { timer.previousInterval() }
             Button { timer.startOrPause() } label: {
-                Image(systemName: timer.isRunning ? "pause.fill" : "play.fill")
-                    .font(.system(size: 42, weight: .bold))
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    .foregroundStyle(.white)
+                ZStack {
+                    Color.clear
+                    Image(systemName: timer.isRunning ? "pause.fill" : "play.fill")
+                        .font(.system(size: 42, weight: .bold))
+                        .foregroundStyle(.white)
+                }
+                .contentShape(Rectangle())
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
+            .buttonStyle(.plain)
             .accessibilityLabel(timer.isRunning ? "Pause timer" : "Start timer")
             railButton("forward.end.fill", label: "Next interval") { timer.nextInterval() }
             railButton("speaker.wave.3.fill", label: "Whistle") { timer.whistle() }
         }
         .foregroundStyle(.white.opacity(0.7))
-        .background(.black.opacity(0.97), in: Capsule())
+        .background(.black.opacity(0.8), in: Capsule())
     }
 
     private func railButton(_ icon: String, label: String, action: @escaping () -> Void) -> some View {
         Button(action: action) {
-            Image(systemName: icon)
-                .font(.system(size: 29, weight: .semibold))
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
+            ZStack {
+                Color.clear
+                Image(systemName: icon)
+                    .font(.system(size: 29, weight: .semibold))
+            }
+            .contentShape(Rectangle())
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
+        .buttonStyle(.plain)
         .accessibilityLabel(label)
     }
 }
@@ -92,16 +137,39 @@ private struct SetupView: View {
         NavigationStack {
             Form {
                 Section("Intervals") {
-                    Stepper("Wrestle: \(timer.settings.wrestleSeconds)s", value: wrestleSeconds, in: 1...3_600, step: 5)
-                    Stepper("Rest: \(timer.settings.restSeconds)s", value: restSeconds, in: 0...3_600, step: 5)
-                    Stepper("Get Ready: \(timer.settings.readySeconds)s", value: readySeconds, in: 0...120, step: 5)
+                    DurationSelector(title: "Wrestle", seconds: wrestleSeconds, range: 1...3_600)
+                    DurationSelector(title: "Rest", seconds: restSeconds, range: 0...3_600)
+                    DurationSelector(title: "Get Ready", seconds: readySeconds, range: 0...120)
                     Stepper("Rounds: \(timer.settings.rounds)", value: rounds, in: 1...99)
                 }
+                Section("Timer Text") {
+                    TextField("Wrestle label", text: wrestleLabel)
+                        .textInputAutocapitalization(.characters)
+                        .autocorrectionDisabled()
+                }
                 Section("Sound") {
-                    HStack {
-                        Text("Whistle volume")
-                        Slider(value: volume, in: 0.25...2, step: 0.05)
+                    VStack(alignment: .leading, spacing: 6) {
+                        HStack {
+                            Text("Whistle volume")
+                            Spacer()
+                            Text("\(Int((timer.settings.whistleVolume * 100).rounded()))%")
+                                .foregroundStyle(.secondary)
+                                .monospacedDigit()
+                        }
+                        Slider(value: whistleVolume, in: 0...2, step: 0.05)
                     }
+                    Toggle("10-second warning", isOn: tenSecondWarningEnabled)
+                    VStack(alignment: .leading, spacing: 6) {
+                        HStack {
+                            Text("Warning volume")
+                            Spacer()
+                            Text("\(Int((timer.settings.tenSecondWarningVolume * 100).rounded()))%")
+                                .foregroundStyle(.secondary)
+                                .monospacedDigit()
+                        }
+                        Slider(value: warningVolume, in: 0...3, step: 0.05)
+                    }
+                    .disabled(!timer.settings.tenSecondWarningEnabled)
                 }
                 Section {
                     Button("Apply and reset timer", role: .destructive) {
@@ -121,15 +189,67 @@ private struct SetupView: View {
     private var restSeconds: Binding<Int> { Binding(get: { timer.settings.restSeconds }, set: { timer.settings.restSeconds = $0 }) }
     private var readySeconds: Binding<Int> { Binding(get: { timer.settings.readySeconds }, set: { timer.settings.readySeconds = $0 }) }
     private var rounds: Binding<Int> { Binding(get: { timer.settings.rounds }, set: { timer.settings.rounds = $0 }) }
-    private var volume: Binding<Double> { Binding(get: { timer.settings.whistleVolume }, set: { timer.settings.whistleVolume = $0 }) }
+    private var whistleVolume: Binding<Double> { Binding(get: { timer.settings.whistleVolume }, set: { timer.setWhistleVolume($0) }) }
+    private var warningVolume: Binding<Double> { Binding(get: { timer.settings.tenSecondWarningVolume }, set: { timer.setTenSecondWarningVolume($0) }) }
+    private var wrestleLabel: Binding<String> { Binding(get: { timer.settings.wrestleLabel }, set: { timer.settings.wrestleLabel = $0 }) }
+    private var tenSecondWarningEnabled: Binding<Bool> { Binding(get: { timer.settings.tenSecondWarningEnabled }, set: { timer.settings.tenSecondWarningEnabled = $0 }) }
+}
+
+private struct DurationSelector: View {
+    let title: String
+    @Binding var seconds: Int
+    let range: ClosedRange<Int>
+
+    var body: some View {
+        HStack {
+            Text(title)
+            Spacer()
+            TextField("0", value: minutes, format: .number)
+                .keyboardType(.numberPad)
+                .multilineTextAlignment(.trailing)
+                .textFieldStyle(.roundedBorder)
+                .frame(width: 52)
+                .accessibilityLabel("\(title) minutes")
+            Text("min")
+                .foregroundStyle(.secondary)
+
+            TextField("0", value: remainingSeconds, format: .number)
+                .keyboardType(.numberPad)
+                .multilineTextAlignment(.trailing)
+                .textFieldStyle(.roundedBorder)
+                .frame(width: 52)
+                .accessibilityLabel("\(title) seconds")
+            Text("sec")
+                .foregroundStyle(.secondary)
+        }
+    }
+
+    private var minutes: Binding<Int> {
+        Binding(
+            get: { seconds / 60 },
+            set: { update(minutes: $0, seconds: seconds % 60) }
+        )
+    }
+
+    private var remainingSeconds: Binding<Int> {
+        Binding(
+            get: { seconds % 60 },
+            set: { update(minutes: seconds / 60, seconds: $0) }
+        )
+    }
+
+    private func update(minutes: Int, seconds newSeconds: Int) {
+        let requested = minutes * 60 + newSeconds
+        seconds = min(max(requested, range.lowerBound), range.upperBound)
+    }
 }
 
 private extension WorkoutPhase {
     var tint: Color {
         switch self {
-        case .ready: return Color(red: 0.60, green: 0.50, blue: 0.32)
+        case .ready: return Color(red: 0.39, green: 0.42, blue: 0.46)
         case .wrestle: return Color(red: 0.95, green: 0.23, blue: 0.25)
-        case .rest: return Color(red: 0.22, green: 1.0, blue: 0.53)
+        case .rest: return Color(red: 0.08, green: 0.58, blue: 0.30)
         }
     }
 }

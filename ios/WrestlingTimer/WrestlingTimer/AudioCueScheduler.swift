@@ -15,19 +15,28 @@ struct ScheduledCue {
 final class AudioCueScheduler {
     private let engine = AVAudioEngine()
     private let whistleNode = AVAudioPlayerNode()
+    private let whistleGain = AVAudioUnitEQ(numberOfBands: 0)
     private let clapperNode = AVAudioPlayerNode()
+    private let clapperBoost = AVAudioUnitEQ(numberOfBands: 0)
     private let keepAliveNode = AVAudioPlayerNode()
     private var whistleBuffer: AVAudioPCMBuffer?
     private var clapperBuffer: AVAudioPCMBuffer?
     private var silentBuffer: AVAudioPCMBuffer?
     private var isPrepared = false
+    private var isDuckingBackgroundAudio = false
 
-    func start(cues: [ScheduledCue], volume: Float, elapsed: TimeInterval) {
-        guard configureAudioSession() else { return }
+    func start(
+        cues: [ScheduledCue],
+        whistleVolume: Float,
+        warningVolume: Float,
+        elapsed: TimeInterval,
+        duckBackgroundAudio: Bool
+    ) {
+        guard configureAudioSession(duckBackgroundAudio: duckBackgroundAudio) else { return }
+        isDuckingBackgroundAudio = duckBackgroundAudio
         prepareIfNeeded()
         stopNodes()
-        whistleNode.volume = min(max(volume, 0.25), 2)
-        clapperNode.volume = 1
+        setVolumes(whistle: whistleVolume, warning: warningVolume)
 
         do {
             let session = AVAudioSession.sharedInstance()
@@ -51,9 +60,12 @@ final class AudioCueScheduler {
     }
 
     func playNow(_ kind: CueKind, volume: Float) {
-        guard configureAudioSession() else { return }
+        guard configureAudioSession(duckBackgroundAudio: isDuckingBackgroundAudio) else { return }
         prepareIfNeeded()
-        whistleNode.volume = min(max(volume, 0.25), 2)
+        switch kind {
+        case .whistle: whistleGain.globalGain = decibels(for: volume)
+        case .clapper: clapperBoost.globalGain = decibels(for: volume)
+        }
         do {
             let session = AVAudioSession.sharedInstance()
             try session.setActive(true)
@@ -64,15 +76,29 @@ final class AudioCueScheduler {
         schedule(cue: kind, at: nil)
     }
 
+    func setVolumes(whistle: Float, warning: Float) {
+        whistleGain.globalGain = decibels(for: whistle)
+        clapperBoost.globalGain = decibels(for: warning)
+    }
+
+    func setBackgroundAudioDucked(_ shouldDuck: Bool) {
+        guard shouldDuck != isDuckingBackgroundAudio else { return }
+        guard configureAudioSession(duckBackgroundAudio: shouldDuck) else { return }
+        isDuckingBackgroundAudio = shouldDuck
+    }
+
     func stop() {
         stopNodes()
         engine.pause()
         try? AVAudioSession.sharedInstance().setActive(false, options: [.notifyOthersOnDeactivation])
+        isDuckingBackgroundAudio = false
     }
 
-    private func configureAudioSession() -> Bool {
+    private func configureAudioSession(duckBackgroundAudio: Bool) -> Bool {
         do {
-            try AVAudioSession.sharedInstance().setCategory(.playback, mode: .default, options: [.mixWithOthers])
+            var options: AVAudioSession.CategoryOptions = [.mixWithOthers]
+            if duckBackgroundAudio { options.insert(.duckOthers) }
+            try AVAudioSession.sharedInstance().setCategory(.playback, mode: .default, options: options)
             return true
         } catch {
             return false
@@ -85,16 +111,25 @@ final class AudioCueScheduler {
         clapperBuffer = loadBuffer(named: "ten-second-clapper")
 
         engine.attach(whistleNode)
+        engine.attach(whistleGain)
         engine.attach(clapperNode)
+        engine.attach(clapperBoost)
         engine.attach(keepAliveNode)
         let mixer = engine.mainMixerNode
-        engine.connect(whistleNode, to: mixer, format: whistleBuffer?.format)
-        engine.connect(clapperNode, to: mixer, format: clapperBuffer?.format)
+        engine.connect(whistleNode, to: whistleGain, format: whistleBuffer?.format)
+        engine.connect(whistleGain, to: mixer, format: whistleBuffer?.format)
+        engine.connect(clapperNode, to: clapperBoost, format: clapperBuffer?.format)
+        engine.connect(clapperBoost, to: mixer, format: clapperBuffer?.format)
 
         let keepAliveFormat = mixer.outputFormat(forBus: 0)
         engine.connect(keepAliveNode, to: mixer, format: keepAliveFormat)
         silentBuffer = makeSilentBuffer(format: keepAliveFormat)
         isPrepared = true
+    }
+
+    private func decibels(for linearVolume: Float) -> Float {
+        guard linearVolume > 0 else { return -96 }
+        return min(max(20 * log10f(linearVolume), -96), 24)
     }
 
     private func schedule(cue: CueKind, at time: AVAudioTime?) {
