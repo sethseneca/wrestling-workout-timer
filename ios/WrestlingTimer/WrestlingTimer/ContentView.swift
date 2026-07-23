@@ -25,7 +25,7 @@ struct ContentView: View {
             Text("WORKOUT TIMER")
                 .font(fightFont(size: 17))
                 .tracking(1.4)
-                .shadow(color: .black.opacity(0.42), radius: 0, x: 1.5, y: 2)
+                .shadow(color: .black.opacity(0.34), radius: 0, x: 1, y: 1.5)
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
                 .padding(.leading, 10)
                 .padding(.top, 14)
@@ -45,8 +45,7 @@ struct ContentView: View {
 
             controlRail
                 .frame(width: 112)
-                .padding(.top, 10)
-                .padding(.bottom, 2)
+                .padding(.vertical, 8)
                 .padding(.trailing, 4)
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .trailing)
                 .ignoresSafeArea(.container, edges: .trailing)
@@ -79,8 +78,7 @@ struct ContentView: View {
                 .font(fightFont(size: 48, weight: .heavy))
                 .tracking(0.4)
         }
-        .shadow(color: .black.opacity(0.52), radius: 0, x: 2.5, y: 3.5)
-        .shadow(color: .black.opacity(0.18), radius: 5, x: 0, y: 2)
+        .shadow(color: .black.opacity(0.40), radius: 0, x: 1.5, y: 2.5)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .padding(.horizontal, 110)
     }
@@ -97,20 +95,23 @@ struct ContentView: View {
             railButton("backward.end.fill", label: "Previous interval") { timer.previousInterval() }
             Button { timer.startOrPause() } label: {
                 ZStack {
-                    Color.clear
+                    Circle()
+                        .fill(.white.opacity(timer.isRunning ? 0.16 : 0.12))
+                        .frame(width: 72, height: 72)
                     Image(systemName: timer.isRunning ? "pause.fill" : "play.fill")
-                        .font(.system(size: 42, weight: .bold))
+                        .font(.system(size: 38, weight: .bold))
+                        .symbolRenderingMode(.monochrome)
                         .foregroundStyle(.white)
                 }
                 .contentShape(Rectangle())
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
-            .buttonStyle(.plain)
+            .buttonStyle(RailButtonStyle())
             .accessibilityLabel(timer.isRunning ? "Pause timer" : "Start timer")
             railButton("forward.end.fill", label: "Next interval") { timer.nextInterval() }
             railButton("speaker.wave.3.fill", label: "Whistle") { timer.whistle() }
         }
-        .foregroundStyle(.white.opacity(0.7))
+        .foregroundStyle(.white.opacity(0.82))
         .background(.black.opacity(0.8), in: Capsule())
     }
 
@@ -119,13 +120,24 @@ struct ContentView: View {
             ZStack {
                 Color.clear
                 Image(systemName: icon)
-                    .font(.system(size: 29, weight: .semibold))
+                    .font(.system(size: 29, weight: .bold))
+                    .symbolRenderingMode(.monochrome)
+                    .frame(width: 46, height: 46)
             }
             .contentShape(Rectangle())
             .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
-        .buttonStyle(.plain)
+        .buttonStyle(RailButtonStyle())
         .accessibilityLabel(label)
+    }
+}
+
+private struct RailButtonStyle: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .opacity(configuration.isPressed ? 0.72 : 1)
+            .scaleEffect(configuration.isPressed ? 0.94 : 1)
+            .animation(.easeOut(duration: 0.08), value: configuration.isPressed)
     }
 }
 
@@ -247,7 +259,7 @@ private struct DurationSelector: View {
 private extension WorkoutPhase {
     var tint: Color {
         switch self {
-        case .ready: return Color(red: 0.39, green: 0.42, blue: 0.46)
+        case .ready: return Color(red: 0.41, green: 0.44, blue: 0.48)
         case .wrestle: return Color(red: 0.95, green: 0.23, blue: 0.25)
         case .rest: return Color(red: 0.08, green: 0.58, blue: 0.30)
         }
