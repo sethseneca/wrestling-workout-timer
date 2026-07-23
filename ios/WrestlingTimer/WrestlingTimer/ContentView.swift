@@ -225,17 +225,18 @@ private struct SetupView: View {
                     }
                     .disabled(!timer.settings.tenSecondWarningEnabled)
                 }
-                Section {
-                    Button("Apply and reset timer", role: .destructive) {
+            }
+            .navigationTitle("Workout Setup")
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button("Save & Apply") {
                         timer.reset()
                         dismiss()
                     }
-                } footer: {
-                    Text("Background cues use native iPhone audio and continue after you leave the app.")
+                    .fontWeight(.semibold)
                 }
             }
-            .navigationTitle("Workout Setup")
-            .toolbar { ToolbarItem(placement: .topBarTrailing) { Button("Done") { dismiss() } } }
+            .interactiveDismissDisabled()
         }
     }
 
