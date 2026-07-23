@@ -5,6 +5,7 @@ import Darwin
 enum CueKind {
     case whistle
     case clapper
+    case wheelClick
 }
 
 struct ScheduledCue {
@@ -16,11 +17,16 @@ final class AudioCueScheduler {
     private let engine = AVAudioEngine()
     private let whistleNode = AVAudioPlayerNode()
     private let whistleGain = AVAudioUnitEQ(numberOfBands: 0)
+    private let immediateWhistleNode = AVAudioPlayerNode()
+    private let immediateWhistleGain = AVAudioUnitEQ(numberOfBands: 0)
     private let clapperNode = AVAudioPlayerNode()
     private let clapperBoost = AVAudioUnitEQ(numberOfBands: 0)
+    private let wheelClickNode = AVAudioPlayerNode()
+    private let wheelClickGain = AVAudioUnitEQ(numberOfBands: 0)
     private let keepAliveNode = AVAudioPlayerNode()
     private var whistleBuffer: AVAudioPCMBuffer?
     private var clapperBuffer: AVAudioPCMBuffer?
+    private var wheelClickBuffer: AVAudioPCMBuffer?
     private var silentBuffer: AVAudioPCMBuffer?
     private var isPrepared = false
     private var isDuckingBackgroundAudio = false
@@ -63,8 +69,9 @@ final class AudioCueScheduler {
         guard configureAudioSession(duckBackgroundAudio: isDuckingBackgroundAudio) else { return }
         prepareIfNeeded()
         switch kind {
-        case .whistle: whistleGain.globalGain = decibels(for: volume)
+        case .whistle: immediateWhistleGain.globalGain = decibels(for: volume)
         case .clapper: clapperBoost.globalGain = decibels(for: volume)
+        case .wheelClick: wheelClickGain.globalGain = decibels(for: volume)
         }
         do {
             let session = AVAudioSession.sharedInstance()
@@ -73,11 +80,26 @@ final class AudioCueScheduler {
         } catch {
             return
         }
-        schedule(cue: kind, at: nil)
+        switch kind {
+        case .whistle:
+            if let whistleBuffer {
+                immediateWhistleNode.scheduleBuffer(whistleBuffer, at: nil, options: [])
+                immediateWhistleNode.play()
+            }
+        case .clapper:
+            schedule(cue: kind, at: nil)
+        case .wheelClick:
+            if let wheelClickBuffer {
+                wheelClickNode.stop()
+                wheelClickNode.scheduleBuffer(wheelClickBuffer, at: nil, options: [])
+                wheelClickNode.play()
+            }
+        }
     }
 
     func setVolumes(whistle: Float, warning: Float) {
         whistleGain.globalGain = decibels(for: whistle)
+        immediateWhistleGain.globalGain = decibels(for: whistle)
         clapperBoost.globalGain = decibels(for: warning)
     }
 
@@ -88,8 +110,12 @@ final class AudioCueScheduler {
     }
 
     func stop() {
+        guard isPrepared else {
+            isDuckingBackgroundAudio = false
+            return
+        }
         stopNodes()
-        engine.pause()
+        if engine.isRunning { engine.pause() }
         try? AVAudioSession.sharedInstance().setActive(false, options: [.notifyOthersOnDeactivation])
         isDuckingBackgroundAudio = false
     }
@@ -109,17 +135,26 @@ final class AudioCueScheduler {
         guard !isPrepared else { return }
         whistleBuffer = loadBuffer(named: "rest-horn")
         clapperBuffer = loadBuffer(named: "ten-second-clapper")
+        wheelClickBuffer = makeWheelClickBuffer()
 
         engine.attach(whistleNode)
         engine.attach(whistleGain)
+        engine.attach(immediateWhistleNode)
+        engine.attach(immediateWhistleGain)
         engine.attach(clapperNode)
         engine.attach(clapperBoost)
+        engine.attach(wheelClickNode)
+        engine.attach(wheelClickGain)
         engine.attach(keepAliveNode)
         let mixer = engine.mainMixerNode
         engine.connect(whistleNode, to: whistleGain, format: whistleBuffer?.format)
         engine.connect(whistleGain, to: mixer, format: whistleBuffer?.format)
+        engine.connect(immediateWhistleNode, to: immediateWhistleGain, format: whistleBuffer?.format)
+        engine.connect(immediateWhistleGain, to: mixer, format: whistleBuffer?.format)
         engine.connect(clapperNode, to: clapperBoost, format: clapperBuffer?.format)
         engine.connect(clapperBoost, to: mixer, format: clapperBuffer?.format)
+        engine.connect(wheelClickNode, to: wheelClickGain, format: wheelClickBuffer?.format)
+        engine.connect(wheelClickGain, to: mixer, format: wheelClickBuffer?.format)
 
         let keepAliveFormat = mixer.outputFormat(forBus: 0)
         engine.connect(keepAliveNode, to: mixer, format: keepAliveFormat)
@@ -144,12 +179,19 @@ final class AudioCueScheduler {
                 clapperNode.scheduleBuffer(clapperBuffer, at: time, options: [])
                 clapperNode.play()
             }
+        case .wheelClick:
+            if let wheelClickBuffer {
+                wheelClickNode.scheduleBuffer(wheelClickBuffer, at: time, options: [])
+                wheelClickNode.play()
+            }
         }
     }
 
     private func stopNodes() {
         whistleNode.stop()
+        immediateWhistleNode.stop()
         clapperNode.stop()
+        wheelClickNode.stop()
         keepAliveNode.stop()
     }
 
@@ -170,6 +212,26 @@ final class AudioCueScheduler {
         let frameCount = AVAudioFrameCount(format.sampleRate)
         guard let buffer = AVAudioPCMBuffer(pcmFormat: format, frameCapacity: frameCount) else { return nil }
         buffer.frameLength = frameCount
+        return buffer
+    }
+
+    private func makeWheelClickBuffer() -> AVAudioPCMBuffer? {
+        let sampleRate = 44_100.0
+        guard let format = AVAudioFormat(standardFormatWithSampleRate: sampleRate, channels: 1) else { return nil }
+        let frameCount = AVAudioFrameCount(sampleRate * 0.018)
+        guard
+            let buffer = AVAudioPCMBuffer(pcmFormat: format, frameCapacity: frameCount),
+            let samples = buffer.floatChannelData?[0]
+        else {
+            return nil
+        }
+
+        buffer.frameLength = frameCount
+        for frame in 0..<Int(frameCount) {
+            let time = Double(frame) / sampleRate
+            let envelope = exp(-time * 190)
+            samples[frame] = Float(0.42 * envelope * sin(2 * Double.pi * 1_650 * time))
+        }
         return buffer
     }
 }

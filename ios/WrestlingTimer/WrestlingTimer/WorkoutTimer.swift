@@ -42,14 +42,14 @@ final class WorkoutTimer: ObservableObject {
     @Published private(set) var isFinished = false
     @Published private(set) var phaseProgress = 0.0
 
-    private let audio = AudioCueScheduler()
+    private lazy var audio = AudioCueScheduler()
     private var tickTimer: Timer?
     private var segments: [WorkoutSegment] = []
     private var startDate: Date?
     private var elapsedBeforeStart: TimeInterval = 0
 
     init() {
-        reset()
+        reset(stopAudio: false)
     }
 
     deinit {
@@ -85,6 +85,12 @@ final class WorkoutTimer: ObservableObject {
             reset()
         }
 
+        let pausedElapsed = elapsedBeforeStart
+        let startingSegment = segments[currentSegmentIndex(at: pausedElapsed)]
+        let shouldWhistleOnStart =
+            abs(pausedElapsed - startingSegment.start) < 0.001
+            && (startingSegment.phase == .wrestle || startingSegment.phase == .rest)
+
         startDate = Date()
         isRunning = true
         beginTicking()
@@ -101,6 +107,9 @@ final class WorkoutTimer: ObservableObject {
                 elapsed: audioElapsed,
                 duckBackgroundAudio: startingPhase == .rest
             )
+            if shouldWhistleOnStart {
+                self.audio.playNow(.whistle, volume: Float(self.settings.whistleVolume))
+            }
         }
     }
 
@@ -114,14 +123,14 @@ final class WorkoutTimer: ObservableObject {
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.02) { [weak self] in self?.audio.stop() }
     }
 
-    func reset() {
+    func reset(stopAudio: Bool = true) {
         startDate = nil
         elapsedBeforeStart = 0
         isRunning = false
         isFinished = false
         tickTimer?.invalidate()
         tickTimer = nil
-        audio.stop()
+        if stopAudio { audio.stop() }
         segments = makeSegments()
         refresh()
     }
@@ -133,11 +142,21 @@ final class WorkoutTimer: ObservableObject {
 
     func nextInterval() {
         let current = currentSegmentIndex()
-        rebase(to: min(segments.count - 1, current + 1))
+        let next = min(segments.count - 1, current + 1)
+        guard next != current else { return }
+        rebase(to: next)
     }
 
     func whistle() {
         audio.playNow(.whistle, volume: Float(settings.whistleVolume))
+    }
+
+    func warning() {
+        audio.playNow(.clapper, volume: Float(settings.tenSecondWarningVolume))
+    }
+
+    func wheelClick() {
+        audio.playNow(.wheelClick, volume: 0.65)
     }
 
     func setWhistleVolume(_ volume: Double) {
