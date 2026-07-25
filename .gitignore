@@ -24,3 +24,5 @@ __pycache__/
 .pytest_cache/
 .venv/
 venv/
+ios/WrestlingTimer/WrestlingTimer.xcodeproj/project.xcworkspace/
+ios/WrestlingTimer/WrestlingTimer.xcodeproj/xcuserdata/
