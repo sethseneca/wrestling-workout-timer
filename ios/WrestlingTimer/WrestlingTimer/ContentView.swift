@@ -7,7 +7,7 @@ struct ContentView: View {
 
     var body: some View {
         ZStack {
-            timer.phase.tint
+            timer.color(for: timer.phase)
                 .ignoresSafeArea()
 
             GeometryReader { geometry in
@@ -22,14 +22,6 @@ struct ContentView: View {
 
             timerReadout
 
-            Text("WORKOUT TIMER")
-                .font(fightFont(size: 17))
-                .tracking(1.4)
-                .shadow(color: .black.opacity(0.34), radius: 0, x: 1, y: 1.5)
-                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-                .padding(.leading, 10)
-                .padding(.top, 14)
-
             Button { showingSetup = true } label: {
                 Image(systemName: "gearshape")
                     .font(.system(size: 36, weight: .bold))
@@ -39,15 +31,15 @@ struct ContentView: View {
             }
             .buttonStyle(.plain)
             .accessibilityLabel("Open workout setup")
-            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomLeading)
-            .padding(.leading, 2)
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomTrailing)
+            .padding(.trailing, 2)
             .padding(.bottom, 8)
 
             controlRail
                 .frame(width: 104)
                 .padding(.vertical, 8)
-                .padding(.trailing, 4)
-                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .trailing)
+                .padding(.leading, 4)
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
                 .ignoresSafeArea(.container, edges: .bottom)
         }
         .foregroundStyle(.white)
@@ -153,19 +145,19 @@ private struct SetupView: View {
                         HStack(alignment: .top, spacing: 8) {
                             DurationSelector(
                                 title: "Wrestle",
-                                tint: WorkoutPhase.wrestle.tint,
+                                tint: timer.color(for: .wrestle),
                                 seconds: wrestleSeconds,
                                 range: 1...3_600
                             )
                             DurationSelector(
                                 title: "Rest",
-                                tint: WorkoutPhase.rest.tint,
+                                tint: timer.color(for: .rest),
                                 seconds: restSeconds,
                                 range: 0...3_600
                             )
                             DurationSelector(
                                 title: "Get Ready",
-                                tint: WorkoutPhase.ready.tint,
+                                tint: timer.color(for: .ready),
                                 seconds: readySeconds,
                                 range: 0...120
                             )
@@ -192,6 +184,11 @@ private struct SetupView: View {
                     TextField("Wrestle label", text: wrestleLabel)
                         .textInputAutocapitalization(.characters)
                         .autocorrectionDisabled()
+                }
+                Section("Background Colors") {
+                    ColorPicker("Get Ready", selection: readyColor, supportsOpacity: false)
+                    ColorPicker("Wrestle", selection: wrestleColor, supportsOpacity: false)
+                    ColorPicker("Rest", selection: restColor, supportsOpacity: false)
                 }
                 Section("Sound") {
                     VStack(alignment: .leading, spacing: 6) {
@@ -248,6 +245,9 @@ private struct SetupView: View {
     private var warningVolume: Binding<Double> { Binding(get: { timer.settings.tenSecondWarningVolume }, set: { timer.setTenSecondWarningVolume($0) }) }
     private var wrestleLabel: Binding<String> { Binding(get: { timer.settings.wrestleLabel }, set: { timer.settings.wrestleLabel = $0 }) }
     private var tenSecondWarningEnabled: Binding<Bool> { Binding(get: { timer.settings.tenSecondWarningEnabled }, set: { timer.settings.tenSecondWarningEnabled = $0 }) }
+    private var readyColor: Binding<Color> { Binding(get: { timer.settings.readyColor }, set: { timer.settings.readyColor = $0 }) }
+    private var wrestleColor: Binding<Color> { Binding(get: { timer.settings.wrestleColor }, set: { timer.settings.wrestleColor = $0 }) }
+    private var restColor: Binding<Color> { Binding(get: { timer.settings.restColor }, set: { timer.settings.restColor = $0 }) }
 }
 
 private struct DurationSelector: View {
@@ -351,15 +351,5 @@ private struct DurationSelector: View {
     private func update(minutes: Int, secondsPart: Int) {
         let requested = minutes * 60 + secondsPart
         seconds = min(max(requested, range.lowerBound), range.upperBound)
-    }
-}
-
-private extension WorkoutPhase {
-    var tint: Color {
-        switch self {
-        case .ready: return Color(red: 0.41, green: 0.44, blue: 0.48)
-        case .wrestle: return Color(red: 0.95, green: 0.23, blue: 0.25)
-        case .rest: return Color(red: 0.08, green: 0.58, blue: 0.30)
-        }
     }
 }

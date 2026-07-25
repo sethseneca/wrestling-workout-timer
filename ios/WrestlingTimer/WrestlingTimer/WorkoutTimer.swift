@@ -1,4 +1,4 @@
-import Foundation
+import SwiftUI
 
 enum WorkoutPhase: String {
     case ready = "GET READY"
@@ -23,6 +23,9 @@ struct TimerSettings {
     var wrestleLabel = "WRESTLE"
     var tenSecondWarningEnabled = true
     var tenSecondWarningVolume = 3.0
+    var readyColor = Color(red: 0.41, green: 0.44, blue: 0.48)
+    var wrestleColor = Color(red: 0.95, green: 0.23, blue: 0.25)
+    var restColor = Color(red: 0.08, green: 0.58, blue: 0.30)
 }
 
 struct WorkoutSegment {
@@ -70,6 +73,14 @@ final class WorkoutTimer: ObservableObject {
 
     var roundText: String {
         "Round \(round) of \(settings.rounds)"
+    }
+
+    func color(for phase: WorkoutPhase) -> Color {
+        switch phase {
+        case .ready: return settings.readyColor
+        case .wrestle: return settings.wrestleColor
+        case .rest: return settings.restColor
+        }
     }
 
     func startOrPause() {
