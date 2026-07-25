@@ -23,11 +23,16 @@ struct ContentView: View {
             timerReadout
 
             Button { showingSetup = true } label: {
-                Image(systemName: "gearshape")
-                    .font(.system(size: 36, weight: .bold))
-                    .foregroundStyle(.white.opacity(0.9))
-                    .frame(width: 60, height: 60)
-                    .contentShape(Rectangle())
+                ZStack {
+                    Circle()
+                        .fill(.black.opacity(0.8))
+
+                    Image(systemName: "gearshape")
+                        .font(.system(size: 36, weight: .bold))
+                        .foregroundStyle(.white.opacity(0.9))
+                }
+                .frame(width: 64, height: 64)
+                .contentShape(Circle())
             }
             .buttonStyle(.plain)
             .accessibilityLabel("Open workout setup")

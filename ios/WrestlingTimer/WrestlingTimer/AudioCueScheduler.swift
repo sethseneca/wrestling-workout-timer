@@ -17,8 +17,8 @@ final class AudioCueScheduler {
     private let engine = AVAudioEngine()
     private let whistleNode = AVAudioPlayerNode()
     private let whistleGain = AVAudioUnitEQ(numberOfBands: 0)
-    private let immediateWhistleNode = AVAudioPlayerNode()
-    private let immediateWhistleGain = AVAudioUnitEQ(numberOfBands: 0)
+    private let immediateWhistleNodes = (0..<8).map { _ in AVAudioPlayerNode() }
+    private let immediateWhistleGains = (0..<8).map { _ in AVAudioUnitEQ(numberOfBands: 0) }
     private let clapperNode = AVAudioPlayerNode()
     private let clapperBoost = AVAudioUnitEQ(numberOfBands: 0)
     private let wheelClickNode = AVAudioPlayerNode()
@@ -30,6 +30,7 @@ final class AudioCueScheduler {
     private var silentBuffer: AVAudioPCMBuffer?
     private var isPrepared = false
     private var isDuckingBackgroundAudio = false
+    private var nextImmediateWhistleVoice = 0
 
     func start(
         cues: [ScheduledCue],
@@ -69,7 +70,7 @@ final class AudioCueScheduler {
         guard configureAudioSession(duckBackgroundAudio: isDuckingBackgroundAudio) else { return }
         prepareIfNeeded()
         switch kind {
-        case .whistle: immediateWhistleGain.globalGain = decibels(for: volume)
+        case .whistle: break
         case .clapper: clapperBoost.globalGain = decibels(for: volume)
         case .wheelClick: wheelClickGain.globalGain = decibels(for: volume)
         }
@@ -82,10 +83,7 @@ final class AudioCueScheduler {
         }
         switch kind {
         case .whistle:
-            if let whistleBuffer {
-                immediateWhistleNode.scheduleBuffer(whistleBuffer, at: nil, options: [])
-                immediateWhistleNode.play()
-            }
+            playImmediateWhistle(volume: volume)
         case .clapper:
             schedule(cue: kind, at: nil)
         case .wheelClick:
@@ -99,7 +97,7 @@ final class AudioCueScheduler {
 
     func setVolumes(whistle: Float, warning: Float) {
         whistleGain.globalGain = decibels(for: whistle)
-        immediateWhistleGain.globalGain = decibels(for: whistle)
+        immediateWhistleGains.forEach { $0.globalGain = decibels(for: whistle) }
         clapperBoost.globalGain = decibels(for: warning)
     }
 
@@ -139,8 +137,8 @@ final class AudioCueScheduler {
 
         engine.attach(whistleNode)
         engine.attach(whistleGain)
-        engine.attach(immediateWhistleNode)
-        engine.attach(immediateWhistleGain)
+        immediateWhistleNodes.forEach(engine.attach)
+        immediateWhistleGains.forEach(engine.attach)
         engine.attach(clapperNode)
         engine.attach(clapperBoost)
         engine.attach(wheelClickNode)
@@ -149,8 +147,10 @@ final class AudioCueScheduler {
         let mixer = engine.mainMixerNode
         engine.connect(whistleNode, to: whistleGain, format: whistleBuffer?.format)
         engine.connect(whistleGain, to: mixer, format: whistleBuffer?.format)
-        engine.connect(immediateWhistleNode, to: immediateWhistleGain, format: whistleBuffer?.format)
-        engine.connect(immediateWhistleGain, to: mixer, format: whistleBuffer?.format)
+        for (node, gain) in zip(immediateWhistleNodes, immediateWhistleGains) {
+            engine.connect(node, to: gain, format: whistleBuffer?.format)
+            engine.connect(gain, to: mixer, format: whistleBuffer?.format)
+        }
         engine.connect(clapperNode, to: clapperBoost, format: clapperBuffer?.format)
         engine.connect(clapperBoost, to: mixer, format: clapperBuffer?.format)
         engine.connect(wheelClickNode, to: wheelClickGain, format: wheelClickBuffer?.format)
@@ -160,6 +160,18 @@ final class AudioCueScheduler {
         engine.connect(keepAliveNode, to: mixer, format: keepAliveFormat)
         silentBuffer = makeSilentBuffer(format: keepAliveFormat)
         isPrepared = true
+    }
+
+    private func playImmediateWhistle(volume: Float) {
+        guard let whistleBuffer else { return }
+        let voice = nextImmediateWhistleVoice
+        nextImmediateWhistleVoice = (voice + 1) % immediateWhistleNodes.count
+
+        let node = immediateWhistleNodes[voice]
+        immediateWhistleGains[voice].globalGain = decibels(for: volume)
+        node.stop()
+        node.scheduleBuffer(whistleBuffer, at: nil, options: [])
+        node.play()
     }
 
     private func decibels(for linearVolume: Float) -> Float {
@@ -189,7 +201,8 @@ final class AudioCueScheduler {
 
     private func stopNodes() {
         whistleNode.stop()
-        immediateWhistleNode.stop()
+        immediateWhistleNodes.forEach { $0.stop() }
+        nextImmediateWhistleVoice = 0
         clapperNode.stop()
         wheelClickNode.stop()
         keepAliveNode.stop()
