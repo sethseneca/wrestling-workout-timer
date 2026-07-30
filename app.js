@@ -3,7 +3,6 @@
 
   var SETTINGS_KEY = "wrestlingWorkoutTimerSettings";
   var TIMER_STATE_KEY = "wrestlingWorkoutTimerState";
-  var SAVED_TIMERS_KEY = "wrestlingWorkoutSavedTimers";
   var AUDIO_FILES = {
     whistle: [
       { src: "assets/audio/rest-horn.m4a?v=20260717-unified-whistle1", type: "audio/mp4" }
@@ -17,7 +16,13 @@
     restSeconds: 15,
     readySeconds: 10,
     rounds: 8,
-    whistleVolume: 150
+    whistleVolume: 150,
+    wrestleLabel: "WRESTLE",
+    tenSecondWarningEnabled: true,
+    warningVolume: 300,
+    readyColor: "#69707a",
+    workColor: "#f23b3d",
+    restColor: "#14944d"
   };
   var AUDIO_OPERATION_TIMEOUT_MS = 700;
   var AUDIO_KEEP_ALIVE_FREQUENCY_HZ = 20;
@@ -28,7 +33,6 @@
   var audioCtx = null;
 
   var app = document.getElementById("app");
-  var kickerEl = document.querySelector(".kicker");
   var countdownEl = document.getElementById("countdown");
   var phaseLabelEl = document.getElementById("phaseLabel");
   var roundCounterEl = document.getElementById("roundCounter");
@@ -39,16 +43,16 @@
   var resetButton = document.getElementById("resetButton");
   var manualCuesEl = document.getElementById("manualCues");
   var settingsForm = document.getElementById("settingsForm");
-  var timerNameInput = document.getElementById("timerName");
-  var saveTimerButton = document.getElementById("saveTimerButton");
-  var savedTimerList = document.getElementById("savedTimerList");
-  var soundCheckEl = document.getElementById("soundCheck");
   var audioResumeNotice = document.getElementById("audioResumeNotice");
   var settingsToggleButton = document.getElementById("settingsToggleButton");
   var settingsCloseButton = document.getElementById("settingsCloseButton");
+  var settingsApplyButton = document.getElementById("settingsApplyButton");
   var settingsPanel = document.getElementById("settingsPanel");
   var settingsScrim = document.getElementById("settingsScrim");
   var whistleVolumeValue = document.getElementById("whistleVolumeValue");
+  var warningVolumeValue = document.getElementById("warningVolumeValue");
+  var warningVolumeField = document.querySelector(".warning-volume-field");
+  var themeColorMeta = document.querySelector('meta[name="theme-color"]');
 
   var inputs = {
     workMinutes: document.getElementById("workMinutes"),
@@ -58,7 +62,13 @@
     readyMinutes: document.getElementById("readyMinutes"),
     readySeconds: document.getElementById("readySeconds"),
     rounds: document.getElementById("rounds"),
-    whistleVolume: document.getElementById("whistleVolume")
+    whistleVolume: document.getElementById("whistleVolume"),
+    wrestleLabel: document.getElementById("wrestleLabel"),
+    tenSecondWarningEnabled: document.getElementById("tenSecondWarningEnabled"),
+    warningVolume: document.getElementById("warningVolume"),
+    readyColor: document.getElementById("readyColor"),
+    workColor: document.getElementById("workColor"),
+    restColor: document.getElementById("restColor")
   };
 
   var state = {
@@ -90,73 +100,20 @@
     scheduledCueNodes: [],
     tenSecondWarningKey: null,
     wakeLock: null,
-    savedTimers: [],
     lastStateSave: 0,
     hiddenAt: 0
   };
 
-  var maskTargets = [
-    kickerEl,
-    settingsToggleButton,
-    phaseLabelEl,
-    countdownEl,
-    roundCounterEl
-  ];
-
-  setupElementMasks();
-
   writeSettingsToInputs(state.settings);
-  state.savedTimers = loadSavedTimers();
+  applyAppearance();
   preventAppZoom();
 
   if (!restoreTimerState()) {
     resetTimer(false);
   }
 
-  renderSavedTimers();
   configureAudioSession();
   primeAudioData();
-
-  function setupElementMasks() {
-    kickerEl.dataset.maskText = kickerEl.textContent;
-    phaseLabelEl.dataset.maskText = phaseLabelEl.textContent;
-    countdownEl.dataset.maskText = countdownEl.textContent;
-    roundCounterEl.dataset.maskText = roundCounterEl.textContent;
-
-    [kickerEl, phaseLabelEl, countdownEl, roundCounterEl].forEach(function (element) {
-      element.classList.add("mask-text");
-    });
-
-    settingsToggleButton.classList.add("mask-icon");
-    settingsToggleButton.querySelectorAll("svg").forEach(function (svg) {
-      var clone = svg.cloneNode(true);
-      clone.classList.add("mask-svg");
-      clone.setAttribute("aria-hidden", "true");
-      settingsToggleButton.appendChild(clone);
-    });
-
-    updateElementMasks();
-  }
-
-  function syncMaskText(element, text) {
-    element.dataset.maskText = text;
-  }
-
-  function updateElementMasks() {
-    var elapsed = parseFloat(getComputedStyle(app).getPropertyValue("--drain-pct")) || 0;
-    var appRect = app.getBoundingClientRect();
-    var lineY = appRect.top + appRect.height * clamp(elapsed / 100, 0, 1);
-
-    maskTargets.forEach(function (element) {
-      if (!element) {
-        return;
-      }
-
-      var rect = element.getBoundingClientRect();
-      var maskTop = rect.height > 0 ? clamp((lineY - rect.top) / rect.height, 0, 1) * 100 : 100;
-      element.style.setProperty("--mask-top", maskTop.toFixed(3) + "%");
-    });
-  }
 
   document.addEventListener("pointerdown", handleAudioInteraction, { passive: true });
   document.addEventListener("touchstart", handleAudioInteraction, { passive: true });
@@ -171,20 +128,13 @@
   manualCuesEl.addEventListener("click", handleManualCueClick);
   settingsToggleButton.addEventListener("click", openSettingsPanel);
   settingsCloseButton.addEventListener("click", closeSettingsPanel);
-  settingsScrim.addEventListener("click", closeSettingsPanel);
-  saveTimerButton.addEventListener("click", handleSaveTimer);
+  settingsApplyButton.addEventListener("click", applySettingsAndClose);
   settingsForm.addEventListener("click", handleSettingsStepperClick);
+  settingsForm.addEventListener("click", handleSoundCheckClick);
   settingsForm.addEventListener("input", handleSettingsInput);
-  savedTimerList.addEventListener("click", handleSavedTimerClick);
-  soundCheckEl.addEventListener("click", handleSoundCheckClick);
   window.addEventListener("beforeunload", saveTimerState);
   window.addEventListener("focus", handleAppReturn);
   window.addEventListener("pageshow", handleAppReturn);
-  window.addEventListener("resize", updateElementMasks);
-  window.addEventListener("orientationchange", updateElementMasks);
-  if (document.fonts && document.fonts.ready) {
-    document.fonts.ready.then(updateElementMasks);
-  }
   window.addEventListener("pagehide", handlePageSuspend);
   document.addEventListener("visibilitychange", handleVisibilityChange);
   document.addEventListener("freeze", handlePageSuspend);
@@ -220,7 +170,7 @@
     settingsPanel.removeAttribute("inert");
     settingsToggleButton.setAttribute("aria-expanded", "true");
     settingsScrim.hidden = false;
-    settingsCloseButton.focus({ preventScroll: true });
+    settingsApplyButton.focus({ preventScroll: true });
   }
 
   function closeSettingsPanel() {
@@ -230,6 +180,13 @@
     settingsToggleButton.setAttribute("aria-expanded", "false");
     settingsScrim.hidden = true;
     settingsToggleButton.focus({ preventScroll: true });
+  }
+
+  function applySettingsAndClose() {
+    state.settings = readSettingsFromInputs();
+    saveSettings(state.settings);
+    resetTimer(false);
+    closeSettingsPanel();
   }
 
   function handleGlobalKeydown(event) {
@@ -253,12 +210,28 @@
 
   function normalizeSettings(settings) {
     return {
-      workSeconds: clamp(toNumber(settings.workSeconds, DEFAULTS.workSeconds), 1, 3599),
-      restSeconds: clamp(toNumber(settings.restSeconds, DEFAULTS.restSeconds), 0, 3599),
-      readySeconds: clamp(toNumber(settings.readySeconds, DEFAULTS.readySeconds), 0, 3599),
+      workSeconds: clamp(toNumber(settings.workSeconds, DEFAULTS.workSeconds), 1, 3600),
+      restSeconds: clamp(toNumber(settings.restSeconds, DEFAULTS.restSeconds), 0, 3600),
+      readySeconds: clamp(toNumber(settings.readySeconds, DEFAULTS.readySeconds), 0, 120),
       rounds: clamp(toNumber(settings.rounds, DEFAULTS.rounds), 1, 99),
-      whistleVolume: clamp(toNumber(settings.whistleVolume, DEFAULTS.whistleVolume), 25, 200)
+      whistleVolume: clamp(toNumber(settings.whistleVolume, DEFAULTS.whistleVolume), 0, 200),
+      wrestleLabel: normalizeWrestleLabel(settings.wrestleLabel),
+      tenSecondWarningEnabled: settings.tenSecondWarningEnabled !== false,
+      warningVolume: clamp(toNumber(settings.warningVolume, DEFAULTS.warningVolume), 0, 300),
+      readyColor: normalizeColor(settings.readyColor, DEFAULTS.readyColor),
+      workColor: normalizeColor(settings.workColor, DEFAULTS.workColor),
+      restColor: normalizeColor(settings.restColor, DEFAULTS.restColor)
     };
+  }
+
+  function normalizeWrestleLabel(value) {
+    var label = String(value == null ? DEFAULTS.wrestleLabel : value).trim().slice(0, 24);
+    return label ? label.toUpperCase() : DEFAULTS.wrestleLabel;
+  }
+
+  function normalizeColor(value, fallback) {
+    var color = String(value || "").trim();
+    return /^#[0-9a-f]{6}$/i.test(color) ? color.toLowerCase() : fallback;
   }
 
   function readSettingsFromInputs() {
@@ -267,7 +240,13 @@
       restSeconds: readDuration("rest"),
       readySeconds: readDuration("ready"),
       rounds: inputs.rounds.value,
-      whistleVolume: inputs.whistleVolume.value
+      whistleVolume: inputs.whistleVolume.value,
+      wrestleLabel: inputs.wrestleLabel.value,
+      tenSecondWarningEnabled: inputs.tenSecondWarningEnabled.checked,
+      warningVolume: inputs.warningVolume.value,
+      readyColor: inputs.readyColor.value,
+      workColor: inputs.workColor.value,
+      restColor: inputs.restColor.value
     });
   }
 
@@ -283,7 +262,14 @@
     writeDuration("ready", settings.readySeconds);
     inputs.rounds.value = settings.rounds;
     inputs.whistleVolume.value = settings.whistleVolume;
+    inputs.wrestleLabel.value = settings.wrestleLabel;
+    inputs.tenSecondWarningEnabled.checked = settings.tenSecondWarningEnabled;
+    inputs.warningVolume.value = settings.warningVolume;
+    inputs.readyColor.value = settings.readyColor;
+    inputs.workColor.value = settings.workColor;
+    inputs.restColor.value = settings.restColor;
     updateWhistleVolumeValue(settings.whistleVolume);
+    updateWarningControls();
   }
 
   function writeDuration(prefix, totalSeconds) {
@@ -294,6 +280,8 @@
   function handleSettingsInput() {
     state.settings = readSettingsFromInputs();
     updateWhistleVolumeValue(state.settings.whistleVolume);
+    updateWarningControls();
+    applyAppearance();
     saveSettings(state.settings);
 
     if (!state.isRunning && !state.hasStarted) {
@@ -305,6 +293,28 @@
 
   function updateWhistleVolumeValue(volume) {
     whistleVolumeValue.textContent = Math.round(volume) + "%";
+  }
+
+  function updateWarningControls() {
+    warningVolumeValue.textContent = Math.round(toNumber(inputs.warningVolume.value, DEFAULTS.warningVolume)) + "%";
+    warningVolumeField.classList.toggle("is-disabled", !inputs.tenSecondWarningEnabled.checked);
+    inputs.warningVolume.disabled = !inputs.tenSecondWarningEnabled.checked;
+  }
+
+  function applyAppearance() {
+    app.style.setProperty("--ready", state.settings.readyColor);
+    app.style.setProperty("--work", state.settings.workColor);
+    app.style.setProperty("--rest", state.settings.restColor);
+    if (themeColorMeta) {
+      var phaseColor = state.settings.readyColor;
+      var step = state.sequence[state.currentIndex];
+      if (step && step.phase === "work") {
+        phaseColor = state.settings.workColor;
+      } else if (step && step.phase === "rest") {
+        phaseColor = state.settings.restColor;
+      }
+      themeColorMeta.setAttribute("content", phaseColor);
+    }
   }
 
   function handleSettingsStepperClick(event) {
@@ -341,7 +351,7 @@
     for (var round = 1; round <= settings.rounds; round += 1) {
       sequence.push({
         phase: "work",
-        label: "WRESTLE",
+        label: settings.wrestleLabel,
         duration: settings.workSeconds,
         round: round
       });
@@ -441,7 +451,14 @@
     }
 
     if (state.isDone) {
-      resetTimer(false);
+      state.isDone = false;
+      state.isRunning = false;
+      state.currentIndex = Math.max(0, state.currentIndex - 1);
+      state.remainingMs = state.sequence[state.currentIndex].duration * 1000;
+      state.tenSecondWarningKey = null;
+      updateDisplay();
+      updateControls();
+      saveTimerState();
       return;
     }
 
@@ -510,6 +527,7 @@
     state.restoredRunningWithoutAudio = false;
     state.tenSecondWarningKey = null;
     hideAudioResumeNotice();
+    applyAppearance();
     setCurrentStep(0, null);
     updateControls();
     saveTimerState();
@@ -635,12 +653,10 @@
     state.remainingMs = 0;
     app.className = "app phase-done";
     app.style.setProperty("--drain-pct", "100%");
-    phaseLabelEl.textContent = "DONE";
-    syncMaskText(phaseLabelEl, "DONE");
+    phaseLabelEl.textContent = state.settings.wrestleLabel;
     setCountdownTime(0);
-    roundCounterEl.textContent = "Round " + state.settings.rounds + " of " + state.settings.rounds;
-    syncMaskText(roundCounterEl, roundCounterEl.textContent);
-    updateElementMasks();
+    roundCounterEl.textContent = "WORKOUT COMPLETE";
+    applyAppearance();
     if (shouldPlayTone) {
       playFinishWhistle();
     }
@@ -656,19 +672,16 @@
 
     app.className = "app phase-" + phase;
     phaseLabelEl.textContent = label;
-    syncMaskText(phaseLabelEl, label);
     setCountdownTime(Math.ceil(state.remainingMs / 1000));
     updateDrainProgress(step);
-    roundCounterEl.textContent = "Round " + round + " of " + state.settings.rounds;
-    syncMaskText(roundCounterEl, roundCounterEl.textContent);
-    updateElementMasks();
+    roundCounterEl.textContent = "ROUND " + round + " OF " + state.settings.rounds;
+    applyAppearance();
   }
 
   function updateDrainProgress(step) {
     var totalMs = step && step.duration ? step.duration * 1000 : 0;
     var elapsed = totalMs > 0 ? clamp(1 - state.remainingMs / totalMs, 0, 1) : 1;
     app.style.setProperty("--drain-pct", (elapsed * 100).toFixed(3) + "%");
-    updateElementMasks();
   }
 
   function updateControls() {
@@ -676,7 +689,7 @@
     startButton.classList.toggle("is-running", state.isRunning);
     startButton.setAttribute("aria-label", state.isRunning ? "Pause timer" : state.hasStarted && !state.isDone ? "Resume timer" : "Start timer");
     playButtonLabel.textContent = state.isRunning ? "Pause" : state.hasStarted && !state.isDone ? "Resume" : "Start";
-    skipBackButton.disabled = state.isDone || (!state.hasStarted && !state.sequence.length);
+    skipBackButton.disabled = !state.sequence.length;
     skipButton.disabled = state.isDone;
   }
 
@@ -1052,7 +1065,7 @@
   function maybePlayTenSecondWarning() {
     var step = state.sequence[state.currentIndex];
 
-    if (!step || !state.audioUnlocked || step.phase !== "work" || step.duration <= 10 || document.visibilityState === "hidden") {
+    if (!step || !state.audioUnlocked || !state.settings.tenSecondWarningEnabled || step.phase !== "work" || step.duration <= 10 || document.visibilityState === "hidden") {
       return;
     }
 
@@ -1073,7 +1086,7 @@
   }
 
   function playTenSecondWarning(delaySeconds, shouldTrack) {
-    playAudioBuffer("tenSecondClapper", 1, delaySeconds || 0, shouldTrack);
+    playAudioBuffer("tenSecondClapper", state.settings.warningVolume / 100, delaySeconds || 0, shouldTrack);
   }
 
   function playAudioBuffer(name, volume, delaySeconds, shouldTrack, attempt) {
@@ -1458,173 +1471,6 @@
     state.remainingMs = Math.max(0, state.remainingMs - remainingElapsed);
   }
 
-  function loadSavedTimers() {
-    try {
-      var timers = JSON.parse(localStorage.getItem(SAVED_TIMERS_KEY));
-
-      if (!Array.isArray(timers)) {
-        return [];
-      }
-
-      return timers
-        .map(function (timer) {
-          if (!timer || !timer.name || !timer.settings) {
-            return null;
-          }
-
-          return {
-            id: timer.id || createTimerId(),
-            name: String(timer.name).trim().slice(0, 40),
-            settings: normalizeSettings(timer.settings),
-            updatedAt: toNumber(timer.updatedAt, Date.now()),
-            lastUsedAt: toNumber(timer.lastUsedAt, timer.updatedAt || Date.now())
-          };
-        })
-        .filter(Boolean)
-        .sort(compareSavedTimers);
-    } catch (error) {
-      return [];
-    }
-  }
-
-  function saveSavedTimers() {
-    localStorage.setItem(SAVED_TIMERS_KEY, JSON.stringify(state.savedTimers));
-  }
-
-  function handleSaveTimer() {
-    var name = timerNameInput.value.trim();
-
-    if (!name) {
-      timerNameInput.focus();
-      timerNameInput.placeholder = "Name this timer";
-      return;
-    }
-
-    var now = Date.now();
-    var settings = readSettingsFromInputs();
-    var existing = state.savedTimers.find(function (timer) {
-      return timer.name.toLowerCase() === name.toLowerCase();
-    });
-
-    if (existing) {
-      existing.name = name;
-      existing.settings = settings;
-      existing.updatedAt = now;
-      existing.lastUsedAt = now;
-    } else {
-      state.savedTimers.push({
-        id: createTimerId(),
-        name: name,
-        settings: settings,
-        updatedAt: now,
-        lastUsedAt: now
-      });
-    }
-
-    state.savedTimers.sort(compareSavedTimers);
-    saveSavedTimers();
-    renderSavedTimers();
-    timerNameInput.value = "";
-  }
-
-  function handleSavedTimerClick(event) {
-    var loadButton = event.target.closest("[data-load-timer]");
-    var deleteButton = event.target.closest("[data-delete-timer]");
-
-    if (loadButton) {
-      loadSavedTimer(loadButton.getAttribute("data-load-timer"));
-    }
-
-    if (deleteButton) {
-      deleteSavedTimer(deleteButton.getAttribute("data-delete-timer"));
-    }
-  }
-
-  function loadSavedTimer(id) {
-    var timer = findSavedTimer(id);
-
-    if (!timer) {
-      return;
-    }
-
-    timer.lastUsedAt = Date.now();
-    state.settings = timer.settings;
-    writeSettingsToInputs(state.settings);
-    saveSettings(state.settings);
-    state.savedTimers.sort(compareSavedTimers);
-    saveSavedTimers();
-    renderSavedTimers();
-    resetTimer(false);
-  }
-
-  function deleteSavedTimer(id) {
-    state.savedTimers = state.savedTimers.filter(function (timer) {
-      return timer.id !== id;
-    });
-    saveSavedTimers();
-    renderSavedTimers();
-  }
-
-  function findSavedTimer(id) {
-    return state.savedTimers.find(function (timer) {
-      return timer.id === id;
-    });
-  }
-
-  function renderSavedTimers() {
-    savedTimerList.textContent = "";
-
-    if (!state.savedTimers.length) {
-      var empty = document.createElement("p");
-      empty.className = "empty-saved-timers";
-      empty.textContent = "No saved timers yet.";
-      savedTimerList.appendChild(empty);
-      return;
-    }
-
-    state.savedTimers.forEach(function (timer) {
-      var item = document.createElement("div");
-      item.className = "saved-timer-item";
-
-      var loadButton = document.createElement("button");
-      loadButton.className = "saved-timer-load";
-      loadButton.type = "button";
-      loadButton.setAttribute("data-load-timer", timer.id);
-
-      var name = document.createElement("span");
-      name.className = "saved-timer-name";
-      name.textContent = timer.name;
-
-      var meta = document.createElement("span");
-      meta.className = "saved-timer-meta";
-      meta.textContent = getTimerSummary(timer.settings);
-
-      var deleteButton = document.createElement("button");
-      deleteButton.className = "saved-timer-delete";
-      deleteButton.type = "button";
-      deleteButton.setAttribute("data-delete-timer", timer.id);
-      deleteButton.textContent = "Delete";
-
-      loadButton.appendChild(name);
-      loadButton.appendChild(meta);
-      item.appendChild(loadButton);
-      item.appendChild(deleteButton);
-      savedTimerList.appendChild(item);
-    });
-  }
-
-  function getTimerSummary(settings) {
-    return formatShortDuration(settings.workSeconds) + " wrestle / " + formatShortDuration(settings.restSeconds) + " rest / " + settings.rounds + " rounds";
-  }
-
-  function compareSavedTimers(a, b) {
-    return (b.lastUsedAt || b.updatedAt) - (a.lastUsedAt || a.updatedAt);
-  }
-
-  function createTimerId() {
-    return "timer-" + Date.now().toString(36) + "-" + Math.random().toString(36).slice(2, 8);
-  }
-
   async function requestWakeLock() {
     if (!("wakeLock" in navigator) || state.wakeLock) {
       return;
@@ -1730,7 +1576,6 @@
   function setCountdownTime(totalSeconds) {
     var time = formatTimeString(totalSeconds);
     countdownEl.textContent = time;
-    syncMaskText(countdownEl, time);
     countdownEl.setAttribute("aria-label", time);
   }
 
@@ -1739,13 +1584,6 @@
     var minutes = Math.floor(seconds / 60);
     var remainder = seconds % 60;
     return String(minutes).padStart(2, "0") + ":" + String(remainder).padStart(2, "0");
-  }
-
-  function formatShortDuration(totalSeconds) {
-    var seconds = Math.max(0, totalSeconds);
-    var minutes = Math.floor(seconds / 60);
-    var remainder = seconds % 60;
-    return minutes + ":" + String(remainder).padStart(2, "0");
   }
 
   function toNumber(value, fallback) {

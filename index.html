@@ -3,211 +3,220 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <meta name="theme-color" content="#050505">
+    <meta name="theme-color" content="#6a707a">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-title" content="Wrestling Timer">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="application-name" content="Wrestling Timer">
     <title>Wrestling Workout Timer</title>
     <link rel="manifest" href="manifest.webmanifest?v=20260702-premium25">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Montserrat:wght@700;800;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Montserrat:wght@600;700;800;900&display=swap" rel="stylesheet">
     <link rel="icon" href="assets/icons/icon.svg" type="image/svg+xml">
     <link rel="icon" href="assets/icons/favicon-32.png" sizes="32x32" type="image/png">
     <link rel="apple-touch-icon" href="assets/icons/apple-touch-icon.png">
-    <link rel="stylesheet" href="style.css?v=20260718-landscape1">
+    <link rel="stylesheet" href="style.css?v=20260730-native-match1">
   </head>
   <body>
-    <main class="app" id="app">
+    <main class="app phase-ready" id="app">
       <section class="timer-panel" aria-labelledby="phaseLabel">
-        <div class="brand-row">
-          <p class="kicker">Wrestling Timer</p>
-          <div class="brand-actions">
-            <button class="settings-toggle" id="settingsToggleButton" type="button" aria-label="Open workout setup" aria-expanded="false" aria-controls="settingsPanel">
-              <svg aria-hidden="true" viewBox="0 0 24 24">
-                <path d="M12 15.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7Z" />
-                <path d="M19.4 15a1.75 1.75 0 0 0 .35 1.93l.05.05a2 2 0 1 1-2.83 2.83l-.05-.05A1.75 1.75 0 0 0 15 19.4a1.75 1.75 0 0 0-1 .6V20a2 2 0 1 1-4 0v-.08a1.75 1.75 0 0 0-1-.52 1.75 1.75 0 0 0-1.93.35l-.05.05a2 2 0 1 1-2.83-2.83l.05-.05A1.75 1.75 0 0 0 4.6 15a1.75 1.75 0 0 0-.6-1H4a2 2 0 1 1 0-4h.08a1.75 1.75 0 0 0 .52-1 1.75 1.75 0 0 0-.35-1.93l-.05-.05a2 2 0 1 1 2.83-2.83l.05.05A1.75 1.75 0 0 0 9 4.6a1.75 1.75 0 0 0 1-.6V4a2 2 0 1 1 4 0v.08a1.75 1.75 0 0 0 1 .52 1.75 1.75 0 0 0 1.93-.35l.05-.05a2 2 0 1 1 2.83 2.83l-.05.05A1.75 1.75 0 0 0 19.4 9c.2.32.4.65.6 1H20a2 2 0 1 1 0 4h-.08c-.12.35-.3.68-.52 1Z" />
-              </svg>
-            </button>
-          </div>
-        </div>
-
         <div class="timer-display">
           <p class="phase-label" id="phaseLabel">GET READY</p>
           <p class="countdown" id="countdown" aria-live="polite" aria-label="00:10">00:10</p>
-          <p class="round-counter" id="roundCounter">Round 1 of 8</p>
+          <p class="round-counter" id="roundCounter">ROUND 1 OF 8</p>
         </div>
 
-        <p class="audio-resume-notice" id="audioResumeNotice" role="status" hidden>Tap play to resume with sound</p>
+        <p class="audio-resume-notice" id="audioResumeNotice" role="status" hidden>Timer running - tap anywhere to restore sound</p>
 
         <div class="control-console" aria-label="Timer controls">
-          <div class="console-orbit" aria-hidden="true"></div>
           <button class="arc-button arc-reset" id="resetButton" type="button" aria-label="Reset timer">
-            <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round">
               <path d="M3 12a9 9 0 1 0 3-6.7" />
               <path d="M3 4v6h6" />
             </svg>
           </button>
 
           <button class="arc-button arc-back" id="skipBackButton" type="button" aria-label="Previous interval">
-            <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="m11 18-6-6 6-6" />
-              <path d="m19 18-6-6 6-6" />
+            <svg aria-hidden="true" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M5 5h2v14H5zM19 5v14l-10-7z" />
             </svg>
           </button>
 
           <button class="play-button" id="startButton" type="button" aria-label="Start timer">
             <svg class="play-icon" aria-hidden="true" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M6 3v18l15-9z" />
+              <path d="M7 4v16l13-8z" />
             </svg>
             <svg class="pause-icon" aria-hidden="true" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M6 3h5v18H6z" />
-              <path d="M13 3h5v18h-5z" />
+              <path d="M6 4h5v16H6zM14 4h5v16h-5z" />
             </svg>
             <span class="sr-only" id="playButtonLabel">Start</span>
           </button>
 
           <button class="arc-button arc-forward" id="skipButton" type="button" aria-label="Next interval">
-            <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="m13 6 6 6-6 6" />
-              <path d="m5 6 6 6-6 6" />
+            <svg aria-hidden="true" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M17 5h2v14h-2zM5 5l10 7L5 19z" />
             </svg>
           </button>
 
           <div class="manual-cues arc-button arc-whistle" id="manualCues" aria-label="Manual cue controls">
             <button data-manual-cue="whistle" type="button" aria-label="Whistle">
-              <svg aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
-                <path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path>
-                <path d="M19.07 4.93a10 10 0 0 1 0 14.14"></path>
+              <svg aria-hidden="true" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M3 9h4.4L13 5v14l-5.6-4H3V9Zm12.6-.7a5.2 5.2 0 0 1 0 7.4l-1.4-1.4a3.2 3.2 0 0 0 0-4.6l1.4-1.4Zm3-3a9.5 9.5 0 0 1 0 13.4l-1.4-1.4a7.5 7.5 0 0 0 0-10.6l1.4-1.4Z" />
               </svg>
             </button>
           </div>
         </div>
+
+        <button class="settings-toggle" id="settingsToggleButton" type="button" aria-label="Open workout setup" aria-expanded="false" aria-controls="settingsPanel">
+          <svg aria-hidden="true" viewBox="0 0 24 24">
+            <path d="M12 15.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7Z" />
+            <path d="M19.4 15a1.75 1.75 0 0 0 .35 1.93l.05.05a2 2 0 1 1-2.83 2.83l-.05-.05A1.75 1.75 0 0 0 15 19.4a1.75 1.75 0 0 0-1 .6V20a2 2 0 1 1-4 0v-.08a1.75 1.75 0 0 0-1-.52 1.75 1.75 0 0 0-1.93.35l-.05.05a2 2 0 1 1-2.83-2.83l.05-.05A1.75 1.75 0 0 0 4.6 15a1.75 1.75 0 0 0-.6-1H4a2 2 0 1 1 0-4h.08a1.75 1.75 0 0 0 .52-1 1.75 1.75 0 0 0-.35-1.93l-.05-.05a2 2 0 1 1 2.83-2.83l.05.05A1.75 1.75 0 0 0 9 4.6a1.75 1.75 0 0 0 1-.6V4a2 2 0 1 1 4 0v.08a1.75 1.75 0 0 0 1 .52 1.75 1.75 0 0 0 1.93-.35l.05-.05a2 2 0 1 1 2.83 2.83l-.05.05A1.75 1.75 0 0 0 19.4 9c.2.32.4.65.6 1H20a2 2 0 1 1 0 4h-.08c-.12.35-.3.68-.52 1Z" />
+          </svg>
+        </button>
       </section>
 
-      <button class="settings-scrim" id="settingsScrim" type="button" aria-label="Close workout setup" hidden></button>
+      <div class="settings-scrim" id="settingsScrim" aria-hidden="true" hidden></div>
 
       <section class="settings-panel" id="settingsPanel" aria-hidden="true" aria-labelledby="settingsTitle" aria-modal="true" inert role="dialog">
         <div class="settings-header">
           <h1 id="settingsTitle">Workout Setup</h1>
-          <button class="settings-close" id="settingsCloseButton" type="button" aria-label="Close workout setup">
-            <svg aria-hidden="true" viewBox="0 0 24 24">
-              <path d="M18 6 6 18" />
-              <path d="m6 6 12 12" />
-            </svg>
-          </button>
+          <button class="settings-apply" id="settingsApplyButton" type="button">Save &amp; Apply</button>
+          <button class="settings-close" id="settingsCloseButton" type="button" aria-label="Close workout setup" hidden></button>
         </div>
 
         <form id="settingsForm">
-          <fieldset class="duration-field">
-            <legend>Wrestle Duration</legend>
-            <div class="time-inputs">
-              <label>
-                <span>Min</span>
-                <div class="stepper-control">
-                  <button type="button" data-stepper-target="workMinutes" data-stepper-delta="-1" aria-label="Decrease wrestle minutes">-</button>
-                  <input id="workMinutes" inputmode="numeric" min="0" max="59" type="number" value="0">
-                  <button type="button" data-stepper-target="workMinutes" data-stepper-delta="1" aria-label="Increase wrestle minutes">+</button>
+          <section class="setup-section" aria-labelledby="intervalsTitle">
+            <h2 id="intervalsTitle">Intervals</h2>
+            <div class="duration-grid">
+              <fieldset class="duration-field duration-work">
+                <legend>Wrestle</legend>
+                <div class="time-inputs">
+                  <label>
+                    <span>MIN</span>
+                    <div class="stepper-control">
+                      <button type="button" data-stepper-target="workMinutes" data-stepper-delta="-1" aria-label="Decrease wrestle minutes">−</button>
+                      <input id="workMinutes" inputmode="numeric" min="0" max="60" type="number" value="0">
+                      <button type="button" data-stepper-target="workMinutes" data-stepper-delta="1" aria-label="Increase wrestle minutes">+</button>
+                    </div>
+                  </label>
+                  <span class="time-colon">:</span>
+                  <label>
+                    <span>SEC</span>
+                    <div class="stepper-control">
+                      <button type="button" data-stepper-target="workSeconds" data-stepper-delta="-1" aria-label="Decrease wrestle seconds">−</button>
+                      <input id="workSeconds" inputmode="numeric" min="0" max="59" type="number" value="30">
+                      <button type="button" data-stepper-target="workSeconds" data-stepper-delta="1" aria-label="Increase wrestle seconds">+</button>
+                    </div>
+                  </label>
                 </div>
-              </label>
-              <label>
-                <span>Sec</span>
-                <div class="stepper-control">
-                  <button type="button" data-stepper-target="workSeconds" data-stepper-delta="-5" aria-label="Decrease wrestle seconds">-</button>
-                  <input id="workSeconds" inputmode="numeric" min="0" max="59" step="5" type="number" value="30">
-                  <button type="button" data-stepper-target="workSeconds" data-stepper-delta="5" aria-label="Increase wrestle seconds">+</button>
-                </div>
-              </label>
-            </div>
-          </fieldset>
+              </fieldset>
 
-          <fieldset class="duration-field">
-            <legend>Rest Duration</legend>
-            <div class="time-inputs">
-              <label>
-                <span>Min</span>
-                <div class="stepper-control">
-                  <button type="button" data-stepper-target="restMinutes" data-stepper-delta="-1" aria-label="Decrease rest minutes">-</button>
-                  <input id="restMinutes" inputmode="numeric" min="0" max="59" type="number" value="0">
-                  <button type="button" data-stepper-target="restMinutes" data-stepper-delta="1" aria-label="Increase rest minutes">+</button>
+              <fieldset class="duration-field duration-rest">
+                <legend>Rest</legend>
+                <div class="time-inputs">
+                  <label>
+                    <span>MIN</span>
+                    <div class="stepper-control">
+                      <button type="button" data-stepper-target="restMinutes" data-stepper-delta="-1" aria-label="Decrease rest minutes">−</button>
+                      <input id="restMinutes" inputmode="numeric" min="0" max="60" type="number" value="0">
+                      <button type="button" data-stepper-target="restMinutes" data-stepper-delta="1" aria-label="Increase rest minutes">+</button>
+                    </div>
+                  </label>
+                  <span class="time-colon">:</span>
+                  <label>
+                    <span>SEC</span>
+                    <div class="stepper-control">
+                      <button type="button" data-stepper-target="restSeconds" data-stepper-delta="-1" aria-label="Decrease rest seconds">−</button>
+                      <input id="restSeconds" inputmode="numeric" min="0" max="59" type="number" value="15">
+                      <button type="button" data-stepper-target="restSeconds" data-stepper-delta="1" aria-label="Increase rest seconds">+</button>
+                    </div>
+                  </label>
                 </div>
-              </label>
-              <label>
-                <span>Sec</span>
-                <div class="stepper-control">
-                  <button type="button" data-stepper-target="restSeconds" data-stepper-delta="-5" aria-label="Decrease rest seconds">-</button>
-                  <input id="restSeconds" inputmode="numeric" min="0" max="59" step="5" type="number" value="15">
-                  <button type="button" data-stepper-target="restSeconds" data-stepper-delta="5" aria-label="Increase rest seconds">+</button>
+              </fieldset>
+
+              <fieldset class="duration-field duration-ready">
+                <legend>Get Ready</legend>
+                <div class="time-inputs">
+                  <label>
+                    <span>MIN</span>
+                    <div class="stepper-control">
+                      <button type="button" data-stepper-target="readyMinutes" data-stepper-delta="-1" aria-label="Decrease ready minutes">−</button>
+                      <input id="readyMinutes" inputmode="numeric" min="0" max="2" type="number" value="0">
+                      <button type="button" data-stepper-target="readyMinutes" data-stepper-delta="1" aria-label="Increase ready minutes">+</button>
+                    </div>
+                  </label>
+                  <span class="time-colon">:</span>
+                  <label>
+                    <span>SEC</span>
+                    <div class="stepper-control">
+                      <button type="button" data-stepper-target="readySeconds" data-stepper-delta="-1" aria-label="Decrease ready seconds">−</button>
+                      <input id="readySeconds" inputmode="numeric" min="0" max="59" type="number" value="10">
+                      <button type="button" data-stepper-target="readySeconds" data-stepper-delta="1" aria-label="Increase ready seconds">+</button>
+                    </div>
+                  </label>
                 </div>
-              </label>
+              </fieldset>
             </div>
-          </fieldset>
+            <p class="wheel-help">↕ Tap + or − to move the wheels</p>
 
-          <fieldset class="duration-field">
-            <legend>Get Ready</legend>
-            <div class="time-inputs">
-              <label>
-                <span>Min</span>
-                <div class="stepper-control">
-                  <button type="button" data-stepper-target="readyMinutes" data-stepper-delta="-1" aria-label="Decrease ready minutes">-</button>
-                  <input id="readyMinutes" inputmode="numeric" min="0" max="59" type="number" value="0">
-                  <button type="button" data-stepper-target="readyMinutes" data-stepper-delta="1" aria-label="Increase ready minutes">+</button>
-                </div>
-              </label>
-              <label>
-                <span>Sec</span>
-                <div class="stepper-control">
-                  <button type="button" data-stepper-target="readySeconds" data-stepper-delta="-5" aria-label="Decrease ready seconds">-</button>
-                  <input id="readySeconds" inputmode="numeric" min="0" max="59" step="5" type="number" value="10">
-                  <button type="button" data-stepper-target="readySeconds" data-stepper-delta="5" aria-label="Increase ready seconds">+</button>
-                </div>
-              </label>
-            </div>
-          </fieldset>
-
-          <label class="round-field">
-            <span>Rounds</span>
-            <div class="stepper-control stepper-control-wide">
-              <button type="button" data-stepper-target="rounds" data-stepper-delta="-1" aria-label="Decrease rounds">-</button>
-              <input id="rounds" inputmode="numeric" min="1" max="99" type="number" value="8">
-              <button type="button" data-stepper-target="rounds" data-stepper-delta="1" aria-label="Increase rounds">+</button>
-            </div>
-          </label>
-
-          <label class="volume-field" for="whistleVolume">
-            <span class="volume-heading">
-              <span>Whistle Volume</span>
-              <output id="whistleVolumeValue" for="whistleVolume">150%</output>
-            </span>
-            <input id="whistleVolume" max="200" min="25" step="5" type="range" value="150">
-            <span class="volume-help">Independent boost for every whistle. Phone volume still sets the overall maximum.</span>
-          </label>
-
-          <section class="timer-library" aria-labelledby="savedTimersTitle">
-            <h2 id="savedTimersTitle">Saved Timers</h2>
-            <div class="save-timer-row">
-              <label class="timer-name-field">
-                <span>Name</span>
-                <input id="timerName" maxlength="40" placeholder="Match Day Conditioning" type="text">
-              </label>
-              <button id="saveTimerButton" type="button">Save</button>
-            </div>
-            <div class="saved-timer-list" id="savedTimerList" aria-live="polite"></div>
+            <label class="round-field">
+              <span>ROUNDS</span>
+              <div class="round-stepper">
+                <button type="button" data-stepper-target="rounds" data-stepper-delta="-1" aria-label="Decrease rounds">−</button>
+                <input id="rounds" inputmode="numeric" min="1" max="99" type="number" value="8">
+                <button type="button" data-stepper-target="rounds" data-stepper-delta="1" aria-label="Increase rounds">+</button>
+              </div>
+            </label>
           </section>
 
-          <section class="sound-check" aria-labelledby="soundCheckTitle">
-            <h2 id="soundCheckTitle">Sound Check</h2>
-            <div class="sound-check-grid" id="soundCheck">
-              <button data-sound-check="whistle" type="button">Whistle</button>
-              <button data-sound-check="tenSecondClapper" type="button">10 Sec Fight Clapper</button>
+          <section class="setup-section">
+            <h2>Timer Text</h2>
+            <label class="text-field">
+              <span>Wrestle label</span>
+              <input id="wrestleLabel" maxlength="24" autocapitalize="characters" autocomplete="off" spellcheck="false" type="text" value="WRESTLE">
+            </label>
+          </section>
+
+          <section class="setup-section">
+            <h2>Background Colors</h2>
+            <div class="color-grid">
+              <label><span>Get Ready</span><input id="readyColor" type="color" value="#69717a"></label>
+              <label><span>Wrestle</span><input id="workColor" type="color" value="#f23b3f"></label>
+              <label><span>Rest</span><input id="restColor" type="color" value="#15944d"></label>
             </div>
           </section>
+
+          <section class="setup-section sound-section">
+            <h2>Sound</h2>
+            <div class="volume-field">
+              <span class="volume-heading">
+                <span>Whistle volume</span>
+                <output id="whistleVolumeValue" for="whistleVolume">150%</output>
+                <button data-sound-check="whistle" type="button">Test</button>
+              </span>
+              <input id="whistleVolume" max="200" min="0" step="5" type="range" value="150">
+            </div>
+
+            <label class="toggle-field">
+              <span>10-second warning</span>
+              <input id="tenSecondWarningEnabled" type="checkbox" checked>
+            </label>
+
+            <div class="volume-field warning-volume-field">
+              <span class="volume-heading">
+                <span>Warning volume</span>
+                <output id="warningVolumeValue" for="warningVolume">300%</output>
+                <button data-sound-check="tenSecondClapper" type="button">Test</button>
+              </span>
+              <input id="warningVolume" max="300" min="0" step="5" type="range" value="300">
+            </div>
+          </section>
+
         </form>
       </section>
     </main>
 
-    <script src="app.js?v=20260721-stable-audio-focus1" defer></script>
+    <script src="app.js?v=20260730-native-match1" defer></script>
   </body>
 </html>

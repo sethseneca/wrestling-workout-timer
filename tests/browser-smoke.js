@@ -241,7 +241,9 @@ async function assertLandscapeLayout(client, width, height) {
     assert.ok(bounds.top >= -0.5 && bounds.bottom <= height + 0.5, `${name} text should fit vertically at ${width}x${height}`);
   }
 
-  assert.ok(layout.timerDisplay.right <= layout.console.left, `Timer and controls should not overlap at ${width}x${height}`);
+  assert.ok(layout.countdownText.left >= layout.console.right, `Timer text and controls should not overlap at ${width}x${height}`);
+  assert.ok(layout.phaseText.left >= layout.console.right, `Phase text and controls should not overlap at ${width}x${height}`);
+  assert.ok(layout.roundText.left >= layout.console.right, `Round text and controls should not overlap at ${width}x${height}`);
   assert.deepEqual(layout.overlaps, [], `Main controls should not overlap at ${width}x${height}`);
   return layout;
 }
@@ -549,6 +551,12 @@ async function main() {
             playLabel: playLabelWhileRunning,
             playLabelAfterPause: document.getElementById("playButtonLabel").textContent,
             phase: document.getElementById("phaseLabel").textContent,
+            readyColor: document.getElementById("readyColor").value,
+            restColor: document.getElementById("restColor").value,
+            tenSecondWarningEnabled: document.getElementById("tenSecondWarningEnabled").checked,
+            warningVolume: document.getElementById("warningVolumeValue").textContent,
+            workColor: document.getElementById("workColor").value,
+            wrestleLabel: document.getElementById("wrestleLabel").value,
             whistleLoudness,
             watchdogAfter,
             watchdogBefore,
@@ -564,6 +572,12 @@ async function main() {
     assert.equal(result.playLabel, "Pause");
     assert.equal(result.playLabelAfterPause, "Resume");
     assert.equal(result.phase, "WRESTLE");
+    assert.equal(result.wrestleLabel, "WRESTLE");
+    assert.equal(result.tenSecondWarningEnabled, true);
+    assert.equal(result.warningVolume, "300%");
+    assert.equal(result.readyColor, "#69707a");
+    assert.equal(result.workColor, "#f23b3d");
+    assert.equal(result.restColor, "#14944d");
     assert.match(result.countdownDuringLongSession, /^09:5[6-9]$/);
     assert.equal(result.whistleVolume, "175%");
     assert.equal(result.audioElements, 0);
@@ -581,7 +595,7 @@ async function main() {
       const gap = result.clapperHitTimes[index] - result.clapperHitTimes[index - 1];
       assert.ok(gap >= 0.2 && gap <= 0.4, "The three hits should land in rapid clap-clap-clap succession");
     }
-    assert.ok(result.gainValues.includes(1), "The clapper should play at normal gain");
+    assert.ok(result.gainValues.includes(3), "The clapper should use the native app's default 300% warning gain");
     assert.ok(result.oscillatorStartsWhileRunning >= 1, "A long running session should keep its audio graph active");
     assert.equal(result.oscillatorStopsWhileRunning, 0, "The keep-alive should remain active throughout the running session");
     assert.ok(result.oscillatorStopsAfterPause >= 1, "Pausing should stop the audio keep-alive");

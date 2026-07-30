@@ -351,6 +351,44 @@ test("persists the independent whistle volume and applies it to the cue", async 
   assert.equal(harness.audioContexts[0].waveShapers.length, 0);
 });
 
+test("matches the native label, colors, warning controls, and completion text", async () => {
+  const harness = createHarness();
+  harness.elements.get("workMinutes").value = "0";
+  harness.elements.get("workSeconds").value = "20";
+  harness.elements.get("restMinutes").value = "0";
+  harness.elements.get("restSeconds").value = "0";
+  harness.elements.get("readyMinutes").value = "0";
+  harness.elements.get("readySeconds").value = "0";
+  harness.elements.get("rounds").value = "1";
+  harness.elements.get("wrestleLabel").value = "scramble";
+  harness.elements.get("tenSecondWarningEnabled").checked = false;
+  harness.elements.get("warningVolume").value = "225";
+  harness.elements.get("readyColor").value = "#445566";
+  harness.elements.get("workColor").value = "#aa2233";
+  harness.elements.get("restColor").value = "#118844";
+  harness.api.handleSettingsInput();
+
+  assert.equal(harness.api.state.settings.wrestleLabel, "SCRAMBLE");
+  assert.equal(harness.api.state.settings.tenSecondWarningEnabled, false);
+  assert.equal(harness.api.state.settings.warningVolume, 225);
+  assert.equal(harness.api.state.settings.readyColor, "#445566");
+  assert.equal(harness.api.state.settings.workColor, "#aa2233");
+  assert.equal(harness.api.state.settings.restColor, "#118844");
+  assert.equal(harness.api.buildSequence(harness.api.state.settings)[0].label, "SCRAMBLE");
+
+  await harness.api.handleStart();
+  harness.api.state.targetWallTime = Date.now() + 9000;
+  harness.api.tick();
+  const clapperStarts = harness.audioContexts[0].startedSources.filter(
+    (source) => source.buffer === harness.api.state.audioBuffers.tenSecondClapper
+  );
+  assert.equal(clapperStarts.length, 0, "Disabled native warning control should suppress the clapper");
+
+  harness.api.finishWorkout(false);
+  assert.equal(harness.elements.get("phaseLabel").textContent, "SCRAMBLE");
+  assert.equal(harness.elements.get("roundCounter").textContent, "WORKOUT COMPLETE");
+});
+
 test("falls back to the peak limiter when soft saturation is unavailable", async () => {
   const harness = createHarness([{ waveShaper: false }]);
   assert.equal(await harness.api.unlockAudio(), true);
@@ -396,6 +434,7 @@ test("a 10-minute session keeps its audio graph alive for the full running lifec
     (source) => source.buffer === harness.api.state.audioBuffers.tenSecondClapper
   );
   assert.equal(fightClapperSequences.length, 1, "The 10-minute Wrestle phase should play one complete three-clap sequence");
+  assert.ok(audioContext.gainValues.includes(3), "The warning should use the native app's default 300% volume");
   assert.equal(secondKeepAlive.stopped, false);
 
   harness.api.state.targetWallTime = Date.now() - 1;
