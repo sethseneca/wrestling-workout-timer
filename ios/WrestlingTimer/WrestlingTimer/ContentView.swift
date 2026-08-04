@@ -23,6 +23,7 @@ struct ContentView: View {
             .animation(.linear(duration: 0.1), value: timer.phaseProgress)
 
             timerReadout
+                .padding(.leading, showingSoundboard ? 112 : 0)
                 .padding(.trailing, showingSoundboard ? 326 : 0)
                 .animation(.easeInOut(duration: 0.22), value: showingSoundboard)
 
@@ -102,7 +103,7 @@ struct ContentView: View {
         }
         .shadow(color: .black.opacity(0.40), radius: 0, x: 1.5, y: 2.5)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .padding(.horizontal, 110)
+        .padding(.horizontal, showingSoundboard ? 8 : 110)
         .contentShape(Rectangle())
         .onTapGesture {
             guard !timer.isRunning else { return }
@@ -170,8 +171,6 @@ struct ContentView: View {
 
 private struct SoundboardPanel: View {
     @EnvironmentObject private var timer: WorkoutTimer
-    @State private var playingSound: String?
-    @State private var feedbackGeneration = 0
     let onClose: () -> Void
 
     private let columns = [
@@ -246,39 +245,26 @@ private struct SoundboardPanel: View {
                 .padding(.horizontal, 9)
                 .padding(.vertical, 5)
                 .background(.green.opacity(0.13), in: RoundedRectangle(cornerRadius: 11))
-            } else if let playingSound {
-                HStack(spacing: 7) {
-                    Image(systemName: "waveform")
-                        .foregroundStyle(.cyan)
-                    Text("PLAYING \(playingSound)")
-                        .font(.caption.weight(.bold))
-                        .lineLimit(1)
-                    Spacer()
-                }
-                .padding(.horizontal, 9)
-                .padding(.vertical, 8)
-                .background(.cyan.opacity(0.13), in: RoundedRectangle(cornerRadius: 11))
-                .transition(.opacity.combined(with: .move(edge: .top)))
             }
 
             LazyVGrid(columns: columns, spacing: 8) {
                 SoundPadButton(title: "READY, SET", icon: "quote.bubble.fill", tint: .blue) {
-                    play("READY, SET") { timer.playManualReadySet() }
+                    timer.playManualReadySet()
                 }
                 SoundPadButton(title: "START WHISTLE", icon: "speaker.wave.3.fill", tint: .green) {
-                    play("START WHISTLE") { timer.playManualStartWhistle() }
+                    timer.playManualStartWhistle()
                 }
                 SoundPadButton(title: "THREE CLAPS", icon: "waveform", tint: .orange) {
-                    play("THREE CLAPS") { timer.playManualClapper() }
+                    timer.playManualClapper()
                 }
                 SoundPadButton(title: "SHORT WHISTLE", icon: "speaker.wave.2.fill", tint: .mint) {
-                    play("SHORT WHISTLE") { timer.playManualShortWhistle() }
+                    timer.playManualShortWhistle()
                 }
                 SoundPadButton(title: "FINAL HORN", icon: "flag.checkered", tint: .red) {
-                    play("FINAL HORN") { timer.playManualFinalHorn() }
+                    timer.playManualFinalHorn()
                 }
                 SoundPadButton(title: "AIR HORN", icon: "megaphone.fill", tint: .purple) {
-                    play("AIR HORN", feedbackDuration: 3.35) { timer.playManualAirHorn() }
+                    timer.playManualAirHorn()
                 }
             }
 
@@ -329,29 +315,8 @@ private struct SoundboardPanel: View {
         )
     }
 
-    private func play(_ title: String, feedbackDuration: TimeInterval = 1.6, action: () -> Void) {
-        action()
-        feedbackGeneration += 1
-        let generation = feedbackGeneration
-        withAnimation(.easeOut(duration: 0.12)) {
-            playingSound = title
-        }
-        UIAccessibility.post(notification: .announcement, argument: "Playing \(title.capitalized)")
-
-        DispatchQueue.main.asyncAfter(deadline: .now() + feedbackDuration) {
-            guard feedbackGeneration == generation else { return }
-            withAnimation(.easeOut(duration: 0.16)) {
-                playingSound = nil
-            }
-        }
-    }
-
     private func stopManualSounds() {
         timer.stopManualSounds()
-        feedbackGeneration += 1
-        withAnimation(.easeOut(duration: 0.12)) {
-            playingSound = nil
-        }
         UINotificationFeedbackGenerator().notificationOccurred(.success)
         UIAccessibility.post(notification: .announcement, argument: "Manual sounds stopped")
     }
