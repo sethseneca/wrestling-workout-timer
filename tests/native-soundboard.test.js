@@ -60,3 +60,27 @@ test("ready set is replaced by the bundled Round One cue", () => {
     /Assets\/(ready|set|whistle-start|final-horn)\.m4a in Resources/
   );
 });
+
+test("timer uses the final horn at every Rest start", () => {
+  assert.match(
+    workoutTimer,
+    /case \.wrestle: return \.whistle\s*case \.rest: return \.airHorn/
+  );
+  assert.match(
+    workoutTimer,
+    /let immediateStartCue:[\s\S]*cueForPhaseStart\(startingSegment\.phase\)[\s\S]*audio\.playTimerCueNow\(\s*immediateStartCue/
+  );
+  assert.match(
+    workoutTimer,
+    /if let cue = cueForPhaseStart\(segment\.phase\) \{\s*cues\.append\(ScheduledCue\(kind: cue, offset: segment\.start\)\)/
+  );
+  assert.match(
+    audioScheduler,
+    /case \.whistle, \.airHorn:[\s\S]*buffers\[cue\][\s\S]*scheduledWhistleNode\.scheduleBuffer/
+  );
+  assert.match(
+    audioScheduler,
+    /func playTimerCueNow[\s\S]*immediateTimerGain\.globalGain[\s\S]*immediateTimerNode\.scheduleBuffer/
+  );
+  assert.match(workoutTimer, /ScheduledCue\(kind: \.whistle, offset: total\)/);
+});

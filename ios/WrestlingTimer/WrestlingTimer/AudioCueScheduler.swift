@@ -21,6 +21,8 @@ final class AudioCueScheduler {
     private let scheduledWhistleGain = AVAudioUnitEQ(numberOfBands: 0)
     private let scheduledClapperNode = AVAudioPlayerNode()
     private let scheduledClapperGain = AVAudioUnitEQ(numberOfBands: 0)
+    private let immediateTimerNode = AVAudioPlayerNode()
+    private let immediateTimerGain = AVAudioUnitEQ(numberOfBands: 0)
     private let manualNodes = (0..<12).map { _ in AVAudioPlayerNode() }
     private let manualGains = (0..<12).map { _ in AVAudioUnitEQ(numberOfBands: 0) }
     private let keepAliveNode = AVAudioPlayerNode()
@@ -72,6 +74,18 @@ final class AudioCueScheduler {
         node.stop()
         node.scheduleBuffer(buffer, at: nil, options: [])
         node.play()
+    }
+
+    func playTimerCueNow(_ kind: CueKind, volume: Float) {
+        guard kind == .whistle || kind == .airHorn else { return }
+        guard configureAudioSession(duckBackgroundAudio: isDuckingBackgroundAudio) else { return }
+        prepareIfNeeded()
+        guard activateEngine(), let buffer = buffers[kind] else { return }
+
+        immediateTimerGain.globalGain = decibels(for: volume)
+        immediateTimerNode.stop()
+        immediateTimerNode.scheduleBuffer(buffer, at: nil, options: [])
+        immediateTimerNode.play()
     }
 
     func setVolumes(whistle: Float, warning: Float) {
@@ -150,6 +164,8 @@ final class AudioCueScheduler {
         engine.attach(scheduledWhistleGain)
         engine.attach(scheduledClapperNode)
         engine.attach(scheduledClapperGain)
+        engine.attach(immediateTimerNode)
+        engine.attach(immediateTimerGain)
         manualNodes.forEach(engine.attach)
         manualGains.forEach(engine.attach)
         engine.attach(keepAliveNode)
@@ -159,6 +175,8 @@ final class AudioCueScheduler {
         engine.connect(scheduledWhistleGain, to: mixer, format: buffers[.whistle]?.format)
         engine.connect(scheduledClapperNode, to: scheduledClapperGain, format: buffers[.clapper]?.format)
         engine.connect(scheduledClapperGain, to: mixer, format: buffers[.clapper]?.format)
+        engine.connect(immediateTimerNode, to: immediateTimerGain, format: buffers[.whistle]?.format)
+        engine.connect(immediateTimerGain, to: mixer, format: buffers[.whistle]?.format)
 
         let manualFormat = buffers[.whistle]?.format
         for (node, gain) in zip(manualNodes, manualGains) {
@@ -180,8 +198,8 @@ final class AudioCueScheduler {
 
     private func scheduleTimerCue(_ cue: CueKind, at time: AVAudioTime?) {
         switch cue {
-        case .whistle:
-            if let buffer = buffers[.whistle] {
+        case .whistle, .airHorn:
+            if let buffer = buffers[cue] {
                 scheduledWhistleNode.scheduleBuffer(buffer, at: time, options: [])
                 scheduledWhistleNode.play()
             }
@@ -198,6 +216,7 @@ final class AudioCueScheduler {
     private func stopTimerNodes() {
         scheduledWhistleNode.stop()
         scheduledClapperNode.stop()
+        immediateTimerNode.stop()
         keepAliveNode.stop()
     }
 

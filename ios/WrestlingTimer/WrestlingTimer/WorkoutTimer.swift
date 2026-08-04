@@ -109,9 +109,10 @@ final class WorkoutTimer: ObservableObject {
 
         let pausedElapsed = elapsedBeforeStart
         let startingSegment = segments[currentSegmentIndex(at: pausedElapsed)]
-        let shouldWhistleOnStart =
-            abs(pausedElapsed - startingSegment.start) < 0.001
-            && (startingSegment.phase == .wrestle || startingSegment.phase == .rest)
+        let startsAtSegmentBoundary = abs(pausedElapsed - startingSegment.start) < 0.001
+        let immediateStartCue: CueKind? = startsAtSegmentBoundary
+            ? cueForPhaseStart(startingSegment.phase)
+            : nil
         startDate = Date()
         isRunning = true
         beginTicking()
@@ -132,8 +133,11 @@ final class WorkoutTimer: ObservableObject {
             } else {
                 self.audio.stopTimer()
             }
-            if self.settings.automaticTimerSoundsEnabled && shouldWhistleOnStart {
-                self.audio.playNow(.whistle, volume: Float(self.settings.whistleVolume))
+            if self.settings.automaticTimerSoundsEnabled, let immediateStartCue {
+                self.audio.playTimerCueNow(
+                    immediateStartCue,
+                    volume: Float(self.settings.whistleVolume)
+                )
             }
         }
     }
@@ -367,8 +371,8 @@ final class WorkoutTimer: ObservableObject {
         var cues: [ScheduledCue] = []
 
         for segment in segments {
-            if segment.phase == .wrestle || segment.phase == .rest {
-                cues.append(ScheduledCue(kind: .whistle, offset: segment.start))
+            if let cue = cueForPhaseStart(segment.phase) {
+                cues.append(ScheduledCue(kind: cue, offset: segment.start))
             }
             if settings.tenSecondWarningEnabled, segment.phase == .wrestle, segment.duration > 10 {
                 cues.append(ScheduledCue(kind: .clapper, offset: segment.start + segment.duration - 10))
@@ -376,5 +380,13 @@ final class WorkoutTimer: ObservableObject {
         }
         cues.append(ScheduledCue(kind: .whistle, offset: total))
         return cues
+    }
+
+    private func cueForPhaseStart(_ phase: WorkoutPhase) -> CueKind? {
+        switch phase {
+        case .wrestle: return .whistle
+        case .rest: return .airHorn
+        case .ready: return nil
+        }
     }
 }
