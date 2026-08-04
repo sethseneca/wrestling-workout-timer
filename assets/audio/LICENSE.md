@@ -5,12 +5,12 @@
 - `three.m4a`, `two.m4a`, `one.m4a` - trimmed AAC conversions built from `54321` by voiceoverpaul/Freesound Community on Pixabay, licensed under the Pixabay Content License.
 - `rest-horn.m4a`, `final-horn.m4a` - duplicate whistle cue files built from Freesound sound `218318` by SpliceSound, licensed Creative Commons 0.
 - `ten-second-pop.m4a` - trimmed AAC conversion built from BigSoundBank Clapperboard (`1011`), licensed CC0/public domain.
-- `ios/WrestlingTimer/WrestlingTimer/Assets/air-horn.m4a` - 3.35-second mono AAC conversion of the active portion of Pixabay sound `186076`, `Air Horn`, by SoundReality (Jurij), licensed under the Pixabay Content License: https://pixabay.com/sound-effects/film-special-effects-air-horn-186076/
-  - Source MP3 SHA-256: `a59a2172e827d0aa45fbf5beb1c137a963ad404e43137a5d47d9eed79d3d5d60`
-  - Bundled M4A SHA-256: `4a0316f6dceeb0cebb55c2983241619b7360bf51ef89bebc329b9446a43db213`
+- `ios/WrestlingTimer/WrestlingTimer/Assets/air-horn.m4a` - 11.6-second mono AAC conversion of `Air horn sound effect long.mp3`, supplied by the project owner on 2026-08-04 for this private app. Conversion removes only the source file's leading and trailing dead air and preserves the complete active horn.
+  - Supplied source MP3 SHA-256: `1c9c9d39ad8971b0bd3a0204f5124f1d1b5e43625352cbed99108ebeb782a5c1`
+  - Bundled M4A SHA-256: `71f52c5db339a4e78f8596f8056042823cbc0e91a54d0a12a8800a4337492c2f`
 
 ## Native iPhone bundle
 
 The native app copies `ready.m4a`, `set.m4a`, `whistle-start.m4a`, `final-horn.m4a`, `air-horn.m4a`, `rest-horn.m4a`, and `ten-second-clapper.m4a` into `ios/WrestlingTimer/WrestlingTimer/Assets/`. The native `whistle-start.m4a` copy is converted to mono 44.1 kHz AAC so every manual sound uses the same AVAudioEngine format; its source and ownership remain the project-owner-provided recording listed above.
 
-The native soundboard's `Air Horn` uses the licensed Pixabay recording above, trimmed to remove its silent tail and converted to the app's shared mono 44.1 kHz format.
+The native soundboard's `Air Horn` uses the project-owner-supplied recording above, trimmed to remove dead air and converted to the app's shared mono 44.1 kHz format.
