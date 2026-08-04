@@ -25,6 +25,7 @@ final class AudioCueScheduler {
     private let immediateTimerGain = AVAudioUnitEQ(numberOfBands: 0)
     private let manualNodes = (0..<12).map { _ in AVAudioPlayerNode() }
     private let manualGains = (0..<12).map { _ in AVAudioUnitEQ(numberOfBands: 0) }
+    private var manualKinds = Array<CueKind?>(repeating: nil, count: 12)
     private let keepAliveNode = AVAudioPlayerNode()
     private var buffers: [CueKind: AVAudioPCMBuffer] = [:]
     private var silentBuffer: AVAudioPCMBuffer?
@@ -69,8 +70,9 @@ final class AudioCueScheduler {
         guard activateEngine() else { return }
 
         guard let buffer = buffers[kind] else { return }
-        let (node, gain) = nextManualNode()
-        gain.globalGain = decibels(for: volume)
+        let (voice, node, gain) = nextManualNode()
+        manualKinds[voice] = kind
+        gain.globalGain = decibels(for: manualVolume(for: kind, volume: volume))
         node.stop()
         node.scheduleBuffer(buffer, at: nil, options: [])
         node.play()
@@ -94,8 +96,10 @@ final class AudioCueScheduler {
     }
 
     func setManualVolume(_ volume: Float) {
-        let gain = decibels(for: volume)
-        manualGains.forEach { $0.globalGain = gain }
+        for (voice, gain) in manualGains.enumerated() {
+            let kind = manualKinds[voice]
+            gain.globalGain = decibels(for: manualVolume(for: kind, volume: volume))
+        }
     }
 
     func setBackgroundAudioDucked(_ shouldDuck: Bool) {
@@ -116,6 +120,7 @@ final class AudioCueScheduler {
     func stopManualSounds() {
         guard isPrepared else { return }
         manualNodes.forEach { $0.stop() }
+        manualKinds = Array(repeating: nil, count: manualNodes.count)
         nextManualVoice = 0
     }
 
@@ -190,10 +195,14 @@ final class AudioCueScheduler {
         isPrepared = true
     }
 
-    private func nextManualNode() -> (AVAudioPlayerNode, AVAudioUnitEQ) {
+    private func nextManualNode() -> (Int, AVAudioPlayerNode, AVAudioUnitEQ) {
         let voice = nextManualVoice
         nextManualVoice = (voice + 1) % manualNodes.count
-        return (manualNodes[voice], manualGains[voice])
+        return (voice, manualNodes[voice], manualGains[voice])
+    }
+
+    private func manualVolume(for kind: CueKind?, volume: Float) -> Float {
+        kind == .clapper ? volume * 2 : volume
     }
 
     private func scheduleTimerCue(_ cue: CueKind, at time: AVAudioTime?) {

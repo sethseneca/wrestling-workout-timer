@@ -38,7 +38,14 @@ test("soundboard slider updates every manual gain while audio is playing", () =>
   );
   assert.match(
     audioScheduler,
-    /func setManualVolume[\s\S]*manualGains\.forEach \{ \$0\.globalGain = gain \}/
+    /func setManualVolume[\s\S]*manualGains\.enumerated\(\)[\s\S]*manualVolume\(for: kind, volume: volume\)/
+  );
+});
+
+test("the original three-clap sound gets a clean manual playback boost", () => {
+  assert.match(
+    audioScheduler,
+    /private func manualVolume\(for kind: CueKind\?, volume: Float\)[\s\S]*kind == \.clapper \? volume \* 2 : volume/
   );
 });
 
@@ -104,9 +111,9 @@ test("every final horn route uses the exact two-second shared asset", () => {
   assert.match(audioLicense, /2\.0 seconds with a 0\.5-second fade/);
 });
 
-test("native and browser use the same weighted three-clap master", () => {
+test("native and browser use the same original three-clap master", () => {
   const assetHash = crypto.createHash("sha256").update(nativeClapperAsset).digest("hex");
-  assert.equal(assetHash, "c674ebd57349b4a38c6933cbecd39d48fec678b09d14b689a6a36afaec7faca4");
+  assert.equal(assetHash, "3a11c2f1327f609ebb3399ef992982f572f3f70af1b1788815eb2c50b61ba342");
   assert.deepEqual(nativeClapperAsset, browserClapperAsset);
-  assert.match(audioLicense, /parallel compression, low-mid body, attack definition/);
+  assert.match(audioLicense, /original three-hit master is restored without added reflections, EQ, or compression/);
 });

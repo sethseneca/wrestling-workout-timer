@@ -5,9 +5,8 @@
 - `three.m4a`, `two.m4a`, `one.m4a` - trimmed AAC conversions built from `54321` by voiceoverpaul/Freesound Community on Pixabay, licensed under the Pixabay Content License.
 - `rest-horn.m4a`, `final-horn.m4a` - duplicate whistle cue files built from Freesound sound `218318` by SpliceSound, licensed Creative Commons 0.
 - `ten-second-pop.m4a` - trimmed AAC conversion built from BigSoundBank Clapperboard (`1011`), licensed CC0/public domain.
-- `ten-second-clapper.m4a` and `ios/WrestlingTimer/WrestlingTimer/Assets/ten-second-clapper.m4a` - processed mono AAC master built from BigSoundBank sound `1590`, `Gavel, 3 Blows`, recorded by Joseph Sardin and licensed CC0/public domain. The 2026-08-04 master keeps the three original strikes while adding parallel compression, low-mid body, attack definition, short arena-style reflections, and peak limiting.
-  - Previous three-hit M4A SHA-256: `3a11c2f1327f609ebb3399ef992982f572f3f70af1b1788815eb2c50b61ba342`
-  - Processed shared M4A SHA-256: `c674ebd57349b4a38c6933cbecd39d48fec678b09d14b689a6a36afaec7faca4`
+- `ten-second-clapper.m4a` and `ios/WrestlingTimer/WrestlingTimer/Assets/ten-second-clapper.m4a` - mono AAC master built from BigSoundBank sound `1590`, `Gavel, 3 Blows`, recorded by Joseph Sardin and licensed CC0/public domain. The original three-hit master is restored without added reflections, EQ, or compression. The native Three Claps pad applies a clean 2x playback gain so the same recording plays louder without manufacturing extra hits.
+  - Shared original M4A SHA-256: `3a11c2f1327f609ebb3399ef992982f572f3f70af1b1788815eb2c50b61ba342`
 - `ios/WrestlingTimer/WrestlingTimer/Assets/air-horn.m4a` - 2.0-second mono AAC excerpt of `Air horn sound effect long.mp3`, supplied by the project owner on 2026-08-04 for this private app. Conversion removes the source file's leading dead air and applies a smooth 0.5-second fade to the sustained horn.
   - Supplied source MP3 SHA-256: `1c9c9d39ad8971b0bd3a0204f5124f1d1b5e43625352cbed99108ebeb782a5c1`
   - Bundled M4A SHA-256: `2347b213b0b254ee762b4116f0100d6b7e250e5bb2ee57222ff130cc9aa4caa9`
