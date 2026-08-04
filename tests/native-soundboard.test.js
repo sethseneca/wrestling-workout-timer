@@ -25,3 +25,19 @@ test("soundboard slider updates every manual gain while audio is playing", () =>
     /func setManualVolume[\s\S]*manualGains\.forEach \{ \$0\.globalGain = gain \}/
   );
 });
+
+test("manual start whistle never suppresses a timer whistle", () => {
+  assert.doesNotMatch(contentView, /NEXT WHISTLE SKIPPED|Manual start already played|Button\("Undo"\)/);
+  assert.doesNotMatch(workoutTimer, /nextStartCueHandled|suppressNextWhistleAtOrAfter/);
+  assert.match(workoutTimer, /func playManualStartWhistle\(\) \{\s*audio\.playNow\(\.startWhistle/);
+});
+
+test("soundboard has one full-width final horn backed by the air horn asset", () => {
+  assert.equal((contentView.match(/title: "FINAL HORN"/g) || []).length, 1);
+  assert.doesNotMatch(contentView, /title: "AIR HORN"/);
+  assert.match(
+    workoutTimer,
+    /func playManualFinalHorn\(\) \{\s*audio\.playNow\(\.airHorn/
+  );
+  assert.doesNotMatch(audioScheduler, /case finalHorn|buffers\[\.finalHorn\]/);
+});

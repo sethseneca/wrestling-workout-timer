@@ -202,28 +202,6 @@ private struct SoundboardPanel: View {
             .padding(.vertical, 6)
             .background(.white.opacity(0.08), in: RoundedRectangle(cornerRadius: 12))
 
-            if timer.nextStartCueHandled {
-                HStack(spacing: 7) {
-                    Image(systemName: "checkmark.circle.fill")
-                        .foregroundStyle(.green)
-                    VStack(alignment: .leading, spacing: 0) {
-                        Text("NEXT WHISTLE SKIPPED")
-                            .font(.caption.weight(.bold))
-                        Text("Manual start already played")
-                            .font(.caption2)
-                            .foregroundStyle(.white.opacity(0.62))
-                    }
-                    Spacer()
-                    Button("Undo") { timer.cancelNextStartCueOverride() }
-                        .font(.caption.weight(.bold))
-                        .buttonStyle(.bordered)
-                        .controlSize(.small)
-                }
-                .padding(.horizontal, 9)
-                .padding(.vertical, 5)
-                .background(.green.opacity(0.13), in: RoundedRectangle(cornerRadius: 11))
-            }
-
             LazyVGrid(columns: columns, spacing: 8) {
                 SoundPadButton(title: "READY, SET", icon: "quote.bubble.fill", tint: .blue) {
                     timer.playManualReadySet()
@@ -237,12 +215,10 @@ private struct SoundboardPanel: View {
                 SoundPadButton(title: "SHORT WHISTLE", icon: "speaker.wave.2.fill", tint: .mint) {
                     timer.playManualShortWhistle()
                 }
-                SoundPadButton(title: "FINAL HORN", icon: "flag.checkered", tint: .red) {
-                    timer.playManualFinalHorn()
-                }
-                SoundPadButton(title: "AIR HORN", icon: "megaphone.fill", tint: .purple) {
-                    timer.playManualAirHorn()
-                }
+            }
+
+            SoundPadButton(title: "FINAL HORN", icon: "flag.checkered", tint: .red) {
+                timer.playManualFinalHorn()
             }
 
             VStack(spacing: 2) {

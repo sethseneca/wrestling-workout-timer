@@ -5,7 +5,6 @@ import Darwin
 enum CueKind: Hashable {
     case whistle
     case startWhistle
-    case finalHorn
     case airHorn
     case clapper
     case readySet
@@ -151,7 +150,6 @@ final class AudioCueScheduler {
         guard !isPrepared else { return }
         buffers[.whistle] = loadBuffer(named: "rest-horn")
         buffers[.startWhistle] = loadBuffer(named: "whistle-start")
-        buffers[.finalHorn] = loadBuffer(named: "final-horn")
         buffers[.airHorn] = loadBuffer(named: "air-horn")
         buffers[.clapper] = loadBuffer(named: "ten-second-clapper")
         buffers[.wheelClick] = makeWheelClickBuffer()
