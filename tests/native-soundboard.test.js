@@ -18,6 +18,12 @@ const audioLicense = fs.readFileSync(
   "utf8"
 );
 const airHornAsset = fs.readFileSync(path.join(nativeSource, "Assets", "air-horn.m4a"));
+const nativeClapperAsset = fs.readFileSync(
+  path.join(nativeSource, "Assets", "ten-second-clapper.m4a")
+);
+const browserClapperAsset = fs.readFileSync(
+  path.join(nativeSource, "..", "..", "..", "assets", "audio", "ten-second-clapper.m4a")
+);
 
 test("soundboard header has no stop or done controls", () => {
   assert.doesNotMatch(contentView, /STOP SOUND/);
@@ -96,4 +102,11 @@ test("every final horn route uses the exact two-second shared asset", () => {
   assert.equal(assetHash, "2347b213b0b254ee762b4116f0100d6b7e250e5bb2ee57222ff130cc9aa4caa9");
   assert.match(audioLicense, /2\.0-second mono AAC excerpt/);
   assert.match(audioLicense, /2\.0 seconds with a 0\.5-second fade/);
+});
+
+test("native and browser use the same weighted three-clap master", () => {
+  const assetHash = crypto.createHash("sha256").update(nativeClapperAsset).digest("hex");
+  assert.equal(assetHash, "c674ebd57349b4a38c6933cbecd39d48fec678b09d14b689a6a36afaec7faca4");
+  assert.deepEqual(nativeClapperAsset, browserClapperAsset);
+  assert.match(audioLicense, /parallel compression, low-mid body, attack definition/);
 });

@@ -8,7 +8,7 @@
       { src: "assets/audio/rest-horn.m4a?v=20260717-unified-whistle1", type: "audio/mp4" }
     ],
     tenSecondClapper: [
-      { src: "assets/audio/ten-second-clapper.m4a?v=20260718-three-clap1", type: "audio/mp4" }
+      { src: "assets/audio/ten-second-clapper.m4a?v=20260804-heavy-clap1", type: "audio/mp4" }
     ]
   };
   var DEFAULTS = {
