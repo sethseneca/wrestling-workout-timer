@@ -55,17 +55,13 @@ struct ContentView: View {
                 .ignoresSafeArea(.container, edges: .bottom)
 
             if showingSoundboard {
-                SoundboardPanel {
-                    withAnimation(.easeInOut(duration: 0.22)) {
-                        showingSoundboard = false
-                    }
-                }
-                .environmentObject(timer)
-                .frame(width: 318)
-                .padding(.vertical, 8)
-                .padding(.trailing, 4)
-                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .trailing)
-                .transition(.move(edge: .trailing).combined(with: .opacity))
+                SoundboardPanel()
+                    .environmentObject(timer)
+                    .frame(width: 318)
+                    .padding(.vertical, 8)
+                    .padding(.trailing, 4)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .trailing)
+                    .transition(.move(edge: .trailing).combined(with: .opacity))
             }
         }
         .foregroundStyle(.white)
@@ -171,7 +167,6 @@ struct ContentView: View {
 
 private struct SoundboardPanel: View {
     @EnvironmentObject private var timer: WorkoutTimer
-    let onClose: () -> Void
 
     private let columns = [
         GridItem(.flexible(), spacing: 8),
@@ -187,24 +182,6 @@ private struct SoundboardPanel: View {
                     .minimumScaleFactor(0.8)
                     .layoutPriority(1)
                 Spacer()
-                Button(action: stopManualSounds) {
-                    Label("STOP SOUND", systemImage: "stop.fill")
-                        .font(.caption2.weight(.black))
-                        .foregroundStyle(.white)
-                        .padding(.horizontal, 8)
-                        .padding(.vertical, 6)
-                        .background(.red.opacity(0.88), in: Capsule())
-                }
-                .buttonStyle(.plain)
-                .accessibilityLabel("Stop manual sounds")
-                Button(action: onClose) {
-                    Text("DONE")
-                        .font(.caption.weight(.black))
-                        .foregroundStyle(.white.opacity(0.82))
-                        .padding(.vertical, 6)
-                }
-                .buttonStyle(.plain)
-                .accessibilityLabel("Close soundboard")
             }
 
             Toggle(isOn: automaticTimerSoundsEnabled) {
@@ -315,11 +292,6 @@ private struct SoundboardPanel: View {
         )
     }
 
-    private func stopManualSounds() {
-        timer.stopManualSounds()
-        UINotificationFeedbackGenerator().notificationOccurred(.success)
-        UIAccessibility.post(notification: .announcement, argument: "Manual sounds stopped")
-    }
 }
 
 private struct SoundPadButton: View {

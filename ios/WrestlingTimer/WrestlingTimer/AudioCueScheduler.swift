@@ -88,6 +88,11 @@ final class AudioCueScheduler {
         scheduledClapperGain.globalGain = decibels(for: warning)
     }
 
+    func setManualVolume(_ volume: Float) {
+        let gain = decibels(for: volume)
+        manualGains.forEach { $0.globalGain = gain }
+    }
+
     func setBackgroundAudioDucked(_ shouldDuck: Bool) {
         guard shouldDuck != isDuckingBackgroundAudio else { return }
         guard configureAudioSession(duckBackgroundAudio: shouldDuck) else { return }

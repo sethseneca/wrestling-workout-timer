@@ -231,10 +231,6 @@ final class WorkoutTimer: ObservableObject {
         audio.playNow(.clapper, volume: Float(settings.soundboardVolume))
     }
 
-    func stopManualSounds() {
-        audio.stopManualSounds()
-    }
-
     func cancelNextStartCueOverride() {
         nextStartCueHandled = false
     }
@@ -264,6 +260,7 @@ final class WorkoutTimer: ObservableObject {
     func setSoundboardVolume(_ volume: Double) {
         let clampedVolume = min(max(volume, 0), 1)
         settings.soundboardVolume = clampedVolume
+        audio.setManualVolume(Float(clampedVolume))
         UserDefaults.standard.set(clampedVolume, forKey: "soundboardVolume")
     }
 
