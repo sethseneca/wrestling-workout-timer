@@ -24,7 +24,7 @@ struct TimerSettings {
     var tenSecondWarningEnabled = true
     var tenSecondWarningVolume = 3.0
     var automaticTimerSoundsEnabled = true
-    var soundboardVolume = 1.5
+    var soundboardVolume = 1.0
     var readyColor = Color(red: 0.41, green: 0.44, blue: 0.48)
     var wrestleColor = Color(red: 0.95, green: 0.23, blue: 0.25)
     var restColor = Color(red: 0.08, green: 0.58, blue: 0.30)
@@ -59,7 +59,10 @@ final class WorkoutTimer: ObservableObject {
             settings.automaticTimerSoundsEnabled = UserDefaults.standard.bool(forKey: "automaticTimerSoundsEnabled")
         }
         if UserDefaults.standard.object(forKey: "soundboardVolume") != nil {
-            settings.soundboardVolume = UserDefaults.standard.double(forKey: "soundboardVolume")
+            settings.soundboardVolume = min(
+                max(UserDefaults.standard.double(forKey: "soundboardVolume"), 0),
+                1
+            )
         }
         reset(stopAudio: false)
     }
@@ -259,8 +262,9 @@ final class WorkoutTimer: ObservableObject {
     }
 
     func setSoundboardVolume(_ volume: Double) {
-        settings.soundboardVolume = volume
-        UserDefaults.standard.set(volume, forKey: "soundboardVolume")
+        let clampedVolume = min(max(volume, 0), 1)
+        settings.soundboardVolume = clampedVolume
+        UserDefaults.standard.set(clampedVolume, forKey: "soundboardVolume")
     }
 
     func setCurrentRemainingSeconds(_ seconds: Int) {

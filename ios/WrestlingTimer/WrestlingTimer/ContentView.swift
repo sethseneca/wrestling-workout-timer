@@ -138,7 +138,7 @@ struct ContentView: View {
             .accessibilityLabel(timer.isRunning ? "Pause timer" : "Start timer")
             railButton("forward.end.fill", label: "Next interval") { timer.nextInterval() }
             railButton(
-                showingSoundboard ? "xmark" : "square.grid.2x2.fill",
+                showingSoundboard ? "chevron.right" : "square.grid.2x2.fill",
                 size: 26,
                 label: showingSoundboard ? "Close soundboard" : "Open soundboard"
             ) {
@@ -170,6 +170,8 @@ struct ContentView: View {
 
 private struct SoundboardPanel: View {
     @EnvironmentObject private var timer: WorkoutTimer
+    @State private var playingSound: String?
+    @State private var feedbackGeneration = 0
     let onClose: () -> Void
 
     private let columns = [
@@ -180,31 +182,41 @@ private struct SoundboardPanel: View {
     var body: some View {
         VStack(spacing: 8) {
             HStack {
-                Label("SOUNDBOARD", systemImage: "square.grid.2x2.fill")
-                    .font(.headline.weight(.black))
+                Text("SOUNDBOARD")
+                    .font(.subheadline.weight(.black))
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.8)
+                    .layoutPriority(1)
                 Spacer()
-                Button { timer.stopManualSounds() } label: {
-                    Image(systemName: "stop.circle.fill")
-                        .font(.title2)
-                        .foregroundStyle(.red.opacity(0.88))
+                Button(action: stopManualSounds) {
+                    Label("STOP SOUND", systemImage: "stop.fill")
+                        .font(.caption2.weight(.black))
+                        .foregroundStyle(.white)
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 6)
+                        .background(.red.opacity(0.88), in: Capsule())
                 }
                 .buttonStyle(.plain)
                 .accessibilityLabel("Stop manual sounds")
                 Button(action: onClose) {
-                    Image(systemName: "xmark.circle.fill")
-                        .font(.title2)
-                        .foregroundStyle(.white.opacity(0.72))
+                    Text("DONE")
+                        .font(.caption.weight(.black))
+                        .foregroundStyle(.white.opacity(0.82))
+                        .padding(.vertical, 6)
                 }
                 .buttonStyle(.plain)
                 .accessibilityLabel("Close soundboard")
             }
 
             Toggle(isOn: automaticTimerSoundsEnabled) {
-                VStack(alignment: .leading, spacing: 0) {
-                    Text("TIMER SOUNDS")
-                        .font(.subheadline.weight(.bold))
-                    Text(timer.settings.automaticTimerSoundsEnabled ? "Automatic cues on" : "Manual sounds only")
-                        .font(.caption2)
+                HStack(spacing: 6) {
+                    Image(systemName: "timer")
+                        .foregroundStyle(.white.opacity(0.72))
+                    Text("TIMER CUES")
+                        .font(.caption.weight(.black))
+                    Spacer()
+                    Text(timer.settings.automaticTimerSoundsEnabled ? "ON" : "OFF")
+                        .font(.caption2.monospacedDigit().weight(.bold))
                         .foregroundStyle(.white.opacity(0.58))
                 }
             }
@@ -219,14 +231,14 @@ private struct SoundboardPanel: View {
                     Image(systemName: "checkmark.circle.fill")
                         .foregroundStyle(.green)
                     VStack(alignment: .leading, spacing: 0) {
-                        Text("START CUE HANDLED")
+                        Text("NEXT WHISTLE SKIPPED")
                             .font(.caption.weight(.bold))
-                        Text("Next timer start will be silent")
+                        Text("Manual start already played")
                             .font(.caption2)
                             .foregroundStyle(.white.opacity(0.62))
                     }
                     Spacer()
-                    Button("Cancel") { timer.cancelNextStartCueOverride() }
+                    Button("Undo") { timer.cancelNextStartCueOverride() }
                         .font(.caption.weight(.bold))
                         .buttonStyle(.bordered)
                         .controlSize(.small)
@@ -234,40 +246,61 @@ private struct SoundboardPanel: View {
                 .padding(.horizontal, 9)
                 .padding(.vertical, 5)
                 .background(.green.opacity(0.13), in: RoundedRectangle(cornerRadius: 11))
+            } else if let playingSound {
+                HStack(spacing: 7) {
+                    Image(systemName: "waveform")
+                        .foregroundStyle(.cyan)
+                    Text("PLAYING \(playingSound)")
+                        .font(.caption.weight(.bold))
+                        .lineLimit(1)
+                    Spacer()
+                }
+                .padding(.horizontal, 9)
+                .padding(.vertical, 8)
+                .background(.cyan.opacity(0.13), in: RoundedRectangle(cornerRadius: 11))
+                .transition(.opacity.combined(with: .move(edge: .top)))
             }
 
             LazyVGrid(columns: columns, spacing: 8) {
-                SoundPadButton(title: "READY, SET", icon: "mic.fill", tint: .blue) {
-                    timer.playManualReadySet()
+                SoundPadButton(title: "READY, SET", icon: "quote.bubble.fill", tint: .blue) {
+                    play("READY, SET") { timer.playManualReadySet() }
                 }
                 SoundPadButton(title: "START WHISTLE", icon: "speaker.wave.3.fill", tint: .green) {
-                    timer.playManualStartWhistle()
+                    play("START WHISTLE") { timer.playManualStartWhistle() }
                 }
                 SoundPadButton(title: "THREE CLAPS", icon: "waveform", tint: .orange) {
-                    timer.playManualClapper()
+                    play("THREE CLAPS") { timer.playManualClapper() }
                 }
                 SoundPadButton(title: "SHORT WHISTLE", icon: "speaker.wave.2.fill", tint: .mint) {
-                    timer.playManualShortWhistle()
+                    play("SHORT WHISTLE") { timer.playManualShortWhistle() }
                 }
-                SoundPadButton(title: "FINAL HORN", icon: "bell.fill", tint: .red) {
-                    timer.playManualFinalHorn()
+                SoundPadButton(title: "FINAL HORN", icon: "flag.checkered", tint: .red) {
+                    play("FINAL HORN") { timer.playManualFinalHorn() }
                 }
                 SoundPadButton(title: "AIR HORN", icon: "megaphone.fill", tint: .purple) {
-                    timer.playManualAirHorn()
+                    play("AIR HORN") { timer.playManualAirHorn() }
                 }
             }
 
-            HStack(spacing: 8) {
-                Image(systemName: "speaker.fill")
-                    .font(.caption)
-                    .foregroundStyle(.white.opacity(0.65))
-                Slider(value: soundboardVolume, in: 0...2, step: 0.05)
-                    .tint(.white)
-                    .accessibilityLabel("Soundboard volume")
-                Text("\(Int((timer.settings.soundboardVolume * 100).rounded()))%")
-                    .font(.caption.monospacedDigit().weight(.semibold))
-                    .foregroundStyle(.white.opacity(0.68))
-                    .frame(width: 40, alignment: .trailing)
+            VStack(spacing: 2) {
+                HStack {
+                    Text("SOUNDBOARD VOLUME")
+                        .font(.caption2.weight(.black))
+                        .foregroundStyle(.white.opacity(0.72))
+                    Spacer()
+                    Text("\(Int((timer.settings.soundboardVolume * 100).rounded()))%")
+                        .font(.caption2.monospacedDigit().weight(.bold))
+                        .foregroundStyle(.white.opacity(0.68))
+                }
+                HStack(spacing: 8) {
+                    Image(systemName: "speaker.fill")
+                        .font(.caption)
+                        .foregroundStyle(.white.opacity(0.65))
+                    Slider(value: soundboardVolume, in: 0...1, step: 0.05)
+                        .tint(.white)
+                        .accessibilityLabel("Soundboard volume")
+                        .accessibilityValue("\(Int((timer.settings.soundboardVolume * 100).rounded())) percent")
+                }
             }
             .padding(.horizontal, 4)
         }
@@ -294,6 +327,33 @@ private struct SoundboardPanel: View {
             get: { timer.settings.soundboardVolume },
             set: { timer.setSoundboardVolume($0) }
         )
+    }
+
+    private func play(_ title: String, action: () -> Void) {
+        action()
+        feedbackGeneration += 1
+        let generation = feedbackGeneration
+        withAnimation(.easeOut(duration: 0.12)) {
+            playingSound = title
+        }
+        UIAccessibility.post(notification: .announcement, argument: "Playing \(title.capitalized)")
+
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.6) {
+            guard feedbackGeneration == generation else { return }
+            withAnimation(.easeOut(duration: 0.16)) {
+                playingSound = nil
+            }
+        }
+    }
+
+    private func stopManualSounds() {
+        timer.stopManualSounds()
+        feedbackGeneration += 1
+        withAnimation(.easeOut(duration: 0.12)) {
+            playingSound = nil
+        }
+        UINotificationFeedbackGenerator().notificationOccurred(.success)
+        UIAccessibility.post(notification: .announcement, argument: "Manual sounds stopped")
     }
 }
 
