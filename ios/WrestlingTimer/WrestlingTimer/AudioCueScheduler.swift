@@ -147,7 +147,7 @@ final class AudioCueScheduler {
         buffers[.whistle] = loadBuffer(named: "rest-horn")
         buffers[.startWhistle] = loadBuffer(named: "whistle-start")
         buffers[.finalHorn] = loadBuffer(named: "final-horn")
-        buffers[.airHorn] = makeAirHornBuffer()
+        buffers[.airHorn] = loadBuffer(named: "air-horn")
         buffers[.clapper] = loadBuffer(named: "ten-second-clapper")
         buffers[.wheelClick] = makeWheelClickBuffer()
         readyBuffer = loadBuffer(named: "ready")
@@ -270,30 +270,4 @@ final class AudioCueScheduler {
         return buffer
     }
 
-    private func makeAirHornBuffer() -> AVAudioPCMBuffer? {
-        let sampleRate = 44_100.0
-        guard let format = AVAudioFormat(standardFormatWithSampleRate: sampleRate, channels: 1) else { return nil }
-        let duration = 0.9
-        let frameCount = AVAudioFrameCount(sampleRate * duration)
-        guard
-            let buffer = AVAudioPCMBuffer(pcmFormat: format, frameCapacity: frameCount),
-            let samples = buffer.floatChannelData?[0]
-        else {
-            return nil
-        }
-
-        buffer.frameLength = frameCount
-        for frame in 0..<Int(frameCount) {
-            let time = Double(frame) / sampleRate
-            let attack = min(time / 0.018, 1)
-            let release = min(max((duration - time) / 0.18, 0), 1)
-            let envelope = attack * release
-            let vibrato = 5.5 * sin(2 * Double.pi * 6.2 * time)
-            let low = sin(2 * Double.pi * (370 + vibrato) * time)
-            let high = sin(2 * Double.pi * (466 + vibrato * 1.18) * time)
-            let mixed = 0.58 * low + 0.42 * high
-            samples[frame] = Float(tanh(1.55 * envelope * mixed) * 0.7)
-        }
-        return buffer
-    }
 }

@@ -18,6 +18,7 @@
 		A1000000000000000000000A /* Assets/set.m4a in Resources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000012 /* Assets/set.m4a */; };
 		A1000000000000000000000B /* Assets/whistle-start.m4a in Resources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000013 /* Assets/whistle-start.m4a */; };
 		A1000000000000000000000C /* Assets/final-horn.m4a in Resources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000014 /* Assets/final-horn.m4a */; };
+		A1000000000000000000000D /* Assets/air-horn.m4a in Resources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000015 /* Assets/air-horn.m4a */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -34,6 +35,7 @@
 		A20000000000000000000012 /* Assets/set.m4a */ = {isa = PBXFileReference; lastKnownFileType = file; path = "Assets/set.m4a"; sourceTree = "<group>"; };
 		A20000000000000000000013 /* Assets/whistle-start.m4a */ = {isa = PBXFileReference; lastKnownFileType = file; path = "Assets/whistle-start.m4a"; sourceTree = "<group>"; };
 		A20000000000000000000014 /* Assets/final-horn.m4a */ = {isa = PBXFileReference; lastKnownFileType = file; path = "Assets/final-horn.m4a"; sourceTree = "<group>"; };
+		A20000000000000000000015 /* Assets/air-horn.m4a */ = {isa = PBXFileReference; lastKnownFileType = file; path = "Assets/air-horn.m4a"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -69,6 +71,7 @@
 				A20000000000000000000012 /* Assets/set.m4a */,
 				A20000000000000000000013 /* Assets/whistle-start.m4a */,
 				A20000000000000000000014 /* Assets/final-horn.m4a */,
+				A20000000000000000000015 /* Assets/air-horn.m4a */,
 				A20000000000000000000010 /* Assets.xcassets */,
 			);
 			path = WrestlingTimer;
@@ -145,6 +148,7 @@
 				A1000000000000000000000A /* Assets/set.m4a in Resources */,
 				A1000000000000000000000B /* Assets/whistle-start.m4a in Resources */,
 				A1000000000000000000000C /* Assets/final-horn.m4a in Resources */,
+				A1000000000000000000000D /* Assets/air-horn.m4a in Resources */,
 				A10000000000000000000008 /* Assets.xcassets in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

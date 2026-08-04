@@ -278,7 +278,7 @@ private struct SoundboardPanel: View {
                     play("FINAL HORN") { timer.playManualFinalHorn() }
                 }
                 SoundPadButton(title: "AIR HORN", icon: "megaphone.fill", tint: .purple) {
-                    play("AIR HORN") { timer.playManualAirHorn() }
+                    play("AIR HORN", feedbackDuration: 3.35) { timer.playManualAirHorn() }
                 }
             }
 
@@ -329,7 +329,7 @@ private struct SoundboardPanel: View {
         )
     }
 
-    private func play(_ title: String, action: () -> Void) {
+    private func play(_ title: String, feedbackDuration: TimeInterval = 1.6, action: () -> Void) {
         action()
         feedbackGeneration += 1
         let generation = feedbackGeneration
@@ -338,7 +338,7 @@ private struct SoundboardPanel: View {
         }
         UIAccessibility.post(notification: .announcement, argument: "Playing \(title.capitalized)")
 
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1.6) {
+        DispatchQueue.main.asyncAfter(deadline: .now() + feedbackDuration) {
             guard feedbackGeneration == generation else { return }
             withAnimation(.easeOut(duration: 0.16)) {
                 playingSound = nil
