@@ -4,10 +4,9 @@ import Darwin
 
 enum CueKind: Hashable {
     case whistle
-    case startWhistle
     case airHorn
     case clapper
-    case readySet
+    case roundOne
     case wheelClick
 }
 
@@ -26,8 +25,6 @@ final class AudioCueScheduler {
     private let manualGains = (0..<12).map { _ in AVAudioUnitEQ(numberOfBands: 0) }
     private let keepAliveNode = AVAudioPlayerNode()
     private var buffers: [CueKind: AVAudioPCMBuffer] = [:]
-    private var readyBuffer: AVAudioPCMBuffer?
-    private var setBuffer: AVAudioPCMBuffer?
     private var silentBuffer: AVAudioPCMBuffer?
     private var isPrepared = false
     private var isDuckingBackgroundAudio = false
@@ -68,11 +65,6 @@ final class AudioCueScheduler {
         guard configureAudioSession(duckBackgroundAudio: isDuckingBackgroundAudio) else { return }
         prepareIfNeeded()
         guard activateEngine() else { return }
-
-        if kind == .readySet {
-            playReadySet(volume: volume)
-            return
-        }
 
         guard let buffer = buffers[kind] else { return }
         let (node, gain) = nextManualNode()
@@ -149,12 +141,10 @@ final class AudioCueScheduler {
     private func prepareIfNeeded() {
         guard !isPrepared else { return }
         buffers[.whistle] = loadBuffer(named: "rest-horn")
-        buffers[.startWhistle] = loadBuffer(named: "whistle-start")
         buffers[.airHorn] = loadBuffer(named: "air-horn")
         buffers[.clapper] = loadBuffer(named: "ten-second-clapper")
+        buffers[.roundOne] = loadBuffer(named: "round-one")
         buffers[.wheelClick] = makeWheelClickBuffer()
-        readyBuffer = loadBuffer(named: "ready")
-        setBuffer = loadBuffer(named: "set")
 
         engine.attach(scheduledWhistleNode)
         engine.attach(scheduledWhistleGain)
@@ -180,20 +170,6 @@ final class AudioCueScheduler {
         engine.connect(keepAliveNode, to: mixer, format: keepAliveFormat)
         silentBuffer = makeSilentBuffer(format: keepAliveFormat)
         isPrepared = true
-    }
-
-    private func playReadySet(volume: Float) {
-        guard
-            let readyBuffer,
-            let setBuffer
-        else { return }
-
-        let (node, gain) = nextManualNode()
-        gain.globalGain = decibels(for: volume)
-        node.stop()
-        node.scheduleBuffer(readyBuffer, at: nil, options: [])
-        node.scheduleBuffer(setBuffer, at: nil, options: [])
-        node.play()
     }
 
     private func nextManualNode() -> (AVAudioPlayerNode, AVAudioUnitEQ) {

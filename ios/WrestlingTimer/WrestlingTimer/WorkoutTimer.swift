@@ -188,10 +188,6 @@ final class WorkoutTimer: ObservableObject {
         audio.prepare()
     }
 
-    func playManualStartWhistle() {
-        audio.playNow(.startWhistle, volume: Float(settings.soundboardVolume))
-    }
-
     func playManualShortWhistle() {
         audio.playNow(.whistle, volume: Float(settings.soundboardVolume))
     }
@@ -200,8 +196,8 @@ final class WorkoutTimer: ObservableObject {
         audio.playNow(.airHorn, volume: Float(settings.soundboardVolume))
     }
 
-    func playManualReadySet() {
-        audio.playNow(.readySet, volume: Float(settings.soundboardVolume))
+    func playManualRoundOne() {
+        audio.playNow(.roundOne, volume: Float(settings.soundboardVolume))
     }
 
     func playManualClapper() {

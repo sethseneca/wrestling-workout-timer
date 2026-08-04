@@ -202,13 +202,11 @@ private struct SoundboardPanel: View {
             .padding(.vertical, 6)
             .background(.white.opacity(0.08), in: RoundedRectangle(cornerRadius: 12))
 
+            SoundPadButton(title: "ROUND ONE", icon: "quote.bubble.fill", tint: .blue) {
+                timer.playManualRoundOne()
+            }
+
             LazyVGrid(columns: columns, spacing: 8) {
-                SoundPadButton(title: "READY, SET", icon: "quote.bubble.fill", tint: .blue) {
-                    timer.playManualReadySet()
-                }
-                SoundPadButton(title: "START WHISTLE", icon: "speaker.wave.3.fill", tint: .green) {
-                    timer.playManualStartWhistle()
-                }
                 SoundPadButton(title: "THREE CLAPS", icon: "waveform", tint: .orange) {
                     timer.playManualClapper()
                 }
