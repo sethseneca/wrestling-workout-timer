@@ -1,4 +1,5 @@
 const assert = require("node:assert/strict");
+const crypto = require("node:crypto");
 const fs = require("node:fs");
 const path = require("node:path");
 const test = require("node:test");
@@ -12,6 +13,11 @@ const xcodeProject = fs.readFileSync(
   path.join(nativeSource, "..", "WrestlingTimer.xcodeproj", "project.pbxproj"),
   "utf8"
 );
+const audioLicense = fs.readFileSync(
+  path.join(nativeSource, "..", "..", "..", "assets", "audio", "LICENSE.md"),
+  "utf8"
+);
+const airHornAsset = fs.readFileSync(path.join(nativeSource, "Assets", "air-horn.m4a"));
 
 test("soundboard header has no stop or done controls", () => {
   assert.doesNotMatch(contentView, /STOP SOUND/);
@@ -83,4 +89,11 @@ test("timer uses the final horn at every Rest start", () => {
     /func playTimerCueNow[\s\S]*immediateTimerGain\.globalGain[\s\S]*immediateTimerNode\.scheduleBuffer/
   );
   assert.match(workoutTimer, /ScheduledCue\(kind: \.whistle, offset: total\)/);
+});
+
+test("every final horn route uses the exact two-second shared asset", () => {
+  const assetHash = crypto.createHash("sha256").update(airHornAsset).digest("hex");
+  assert.equal(assetHash, "2347b213b0b254ee762b4116f0100d6b7e250e5bb2ee57222ff130cc9aa4caa9");
+  assert.match(audioLicense, /2\.0-second mono AAC excerpt/);
+  assert.match(audioLicense, /2\.0 seconds with a 0\.5-second fade/);
 });
