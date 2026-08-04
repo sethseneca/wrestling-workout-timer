@@ -2,9 +2,13 @@ import AVFoundation
 import AudioToolbox
 import Darwin
 
-enum CueKind {
+enum CueKind: Hashable {
     case whistle
+    case startWhistle
+    case finalHorn
+    case airHorn
     case clapper
+    case readySet
     case wheelClick
 }
 
@@ -15,22 +19,24 @@ struct ScheduledCue {
 
 final class AudioCueScheduler {
     private let engine = AVAudioEngine()
-    private let whistleNode = AVAudioPlayerNode()
-    private let whistleGain = AVAudioUnitEQ(numberOfBands: 0)
-    private let immediateWhistleNodes = (0..<8).map { _ in AVAudioPlayerNode() }
-    private let immediateWhistleGains = (0..<8).map { _ in AVAudioUnitEQ(numberOfBands: 0) }
-    private let clapperNode = AVAudioPlayerNode()
-    private let clapperBoost = AVAudioUnitEQ(numberOfBands: 0)
-    private let wheelClickNode = AVAudioPlayerNode()
-    private let wheelClickGain = AVAudioUnitEQ(numberOfBands: 0)
+    private let scheduledWhistleNode = AVAudioPlayerNode()
+    private let scheduledWhistleGain = AVAudioUnitEQ(numberOfBands: 0)
+    private let scheduledClapperNode = AVAudioPlayerNode()
+    private let scheduledClapperGain = AVAudioUnitEQ(numberOfBands: 0)
+    private let manualNodes = (0..<12).map { _ in AVAudioPlayerNode() }
+    private let manualGains = (0..<12).map { _ in AVAudioUnitEQ(numberOfBands: 0) }
     private let keepAliveNode = AVAudioPlayerNode()
-    private var whistleBuffer: AVAudioPCMBuffer?
-    private var clapperBuffer: AVAudioPCMBuffer?
-    private var wheelClickBuffer: AVAudioPCMBuffer?
+    private var buffers: [CueKind: AVAudioPCMBuffer] = [:]
+    private var readyBuffer: AVAudioPCMBuffer?
+    private var setBuffer: AVAudioPCMBuffer?
     private var silentBuffer: AVAudioPCMBuffer?
     private var isPrepared = false
     private var isDuckingBackgroundAudio = false
-    private var nextImmediateWhistleVoice = 0
+    private var nextManualVoice = 0
+
+    func prepare() {
+        prepareIfNeeded()
+    }
 
     func start(
         cues: [ScheduledCue],
@@ -42,16 +48,9 @@ final class AudioCueScheduler {
         guard configureAudioSession(duckBackgroundAudio: duckBackgroundAudio) else { return }
         isDuckingBackgroundAudio = duckBackgroundAudio
         prepareIfNeeded()
-        stopNodes()
+        stopTimerNodes()
         setVolumes(whistle: whistleVolume, warning: warningVolume)
-
-        do {
-            let session = AVAudioSession.sharedInstance()
-            try session.setActive(true)
-            if !engine.isRunning { try engine.start() }
-        } catch {
-            return
-        }
+        guard activateEngine() else { return }
 
         if let silentBuffer {
             keepAliveNode.scheduleBuffer(silentBuffer, at: nil, options: [.loops])
@@ -59,46 +58,34 @@ final class AudioCueScheduler {
         }
 
         let startHostTime = mach_absolute_time()
-        for cue in cues where cue.offset >= elapsed {
+        for cue in cues where cue.offset > elapsed + 0.001 {
             let delay = max(0.08, cue.offset - elapsed)
             let scheduledTime = AVAudioTime(hostTime: startHostTime + AVAudioTime.hostTime(forSeconds: delay))
-            schedule(cue: cue.kind, at: scheduledTime)
+            scheduleTimerCue(cue.kind, at: scheduledTime)
         }
     }
 
     func playNow(_ kind: CueKind, volume: Float) {
         guard configureAudioSession(duckBackgroundAudio: isDuckingBackgroundAudio) else { return }
         prepareIfNeeded()
-        switch kind {
-        case .whistle: break
-        case .clapper: clapperBoost.globalGain = decibels(for: volume)
-        case .wheelClick: wheelClickGain.globalGain = decibels(for: volume)
-        }
-        do {
-            let session = AVAudioSession.sharedInstance()
-            try session.setActive(true)
-            if !engine.isRunning { try engine.start() }
-        } catch {
+        guard activateEngine() else { return }
+
+        if kind == .readySet {
+            playReadySet(volume: volume)
             return
         }
-        switch kind {
-        case .whistle:
-            playImmediateWhistle(volume: volume)
-        case .clapper:
-            schedule(cue: kind, at: nil)
-        case .wheelClick:
-            if let wheelClickBuffer {
-                wheelClickNode.stop()
-                wheelClickNode.scheduleBuffer(wheelClickBuffer, at: nil, options: [])
-                wheelClickNode.play()
-            }
-        }
+
+        guard let buffer = buffers[kind] else { return }
+        let (node, gain) = nextManualNode()
+        gain.globalGain = decibels(for: volume)
+        node.stop()
+        node.scheduleBuffer(buffer, at: nil, options: [])
+        node.play()
     }
 
     func setVolumes(whistle: Float, warning: Float) {
-        whistleGain.globalGain = decibels(for: whistle)
-        immediateWhistleGains.forEach { $0.globalGain = decibels(for: whistle) }
-        clapperBoost.globalGain = decibels(for: warning)
+        scheduledWhistleGain.globalGain = decibels(for: whistle)
+        scheduledClapperGain.globalGain = decibels(for: warning)
     }
 
     func setBackgroundAudioDucked(_ shouldDuck: Bool) {
@@ -107,12 +94,28 @@ final class AudioCueScheduler {
         isDuckingBackgroundAudio = shouldDuck
     }
 
-    func stop() {
+    func stopTimer() {
         guard isPrepared else {
             isDuckingBackgroundAudio = false
             return
         }
-        stopNodes()
+        stopTimerNodes()
+        setBackgroundAudioDucked(false)
+    }
+
+    func stopManualSounds() {
+        guard isPrepared else { return }
+        manualNodes.forEach { $0.stop() }
+        nextManualVoice = 0
+    }
+
+    func stopAll() {
+        guard isPrepared else {
+            isDuckingBackgroundAudio = false
+            return
+        }
+        stopTimerNodes()
+        stopManualSounds()
         if engine.isRunning { engine.pause() }
         try? AVAudioSession.sharedInstance().setActive(false, options: [.notifyOthersOnDeactivation])
         isDuckingBackgroundAudio = false
@@ -129,32 +132,46 @@ final class AudioCueScheduler {
         }
     }
 
+    private func activateEngine() -> Bool {
+        do {
+            try AVAudioSession.sharedInstance().setActive(true)
+            if !engine.isRunning { try engine.start() }
+            return true
+        } catch {
+            return false
+        }
+    }
+
     private func prepareIfNeeded() {
         guard !isPrepared else { return }
-        whistleBuffer = loadBuffer(named: "rest-horn")
-        clapperBuffer = loadBuffer(named: "ten-second-clapper")
-        wheelClickBuffer = makeWheelClickBuffer()
+        buffers[.whistle] = loadBuffer(named: "rest-horn")
+        buffers[.startWhistle] = loadBuffer(named: "whistle-start")
+        buffers[.finalHorn] = loadBuffer(named: "final-horn")
+        buffers[.airHorn] = makeAirHornBuffer()
+        buffers[.clapper] = loadBuffer(named: "ten-second-clapper")
+        buffers[.wheelClick] = makeWheelClickBuffer()
+        readyBuffer = loadBuffer(named: "ready")
+        setBuffer = loadBuffer(named: "set")
 
-        engine.attach(whistleNode)
-        engine.attach(whistleGain)
-        immediateWhistleNodes.forEach(engine.attach)
-        immediateWhistleGains.forEach(engine.attach)
-        engine.attach(clapperNode)
-        engine.attach(clapperBoost)
-        engine.attach(wheelClickNode)
-        engine.attach(wheelClickGain)
+        engine.attach(scheduledWhistleNode)
+        engine.attach(scheduledWhistleGain)
+        engine.attach(scheduledClapperNode)
+        engine.attach(scheduledClapperGain)
+        manualNodes.forEach(engine.attach)
+        manualGains.forEach(engine.attach)
         engine.attach(keepAliveNode)
+
         let mixer = engine.mainMixerNode
-        engine.connect(whistleNode, to: whistleGain, format: whistleBuffer?.format)
-        engine.connect(whistleGain, to: mixer, format: whistleBuffer?.format)
-        for (node, gain) in zip(immediateWhistleNodes, immediateWhistleGains) {
-            engine.connect(node, to: gain, format: whistleBuffer?.format)
-            engine.connect(gain, to: mixer, format: whistleBuffer?.format)
+        engine.connect(scheduledWhistleNode, to: scheduledWhistleGain, format: buffers[.whistle]?.format)
+        engine.connect(scheduledWhistleGain, to: mixer, format: buffers[.whistle]?.format)
+        engine.connect(scheduledClapperNode, to: scheduledClapperGain, format: buffers[.clapper]?.format)
+        engine.connect(scheduledClapperGain, to: mixer, format: buffers[.clapper]?.format)
+
+        let manualFormat = buffers[.whistle]?.format
+        for (node, gain) in zip(manualNodes, manualGains) {
+            engine.connect(node, to: gain, format: manualFormat)
+            engine.connect(gain, to: mixer, format: manualFormat)
         }
-        engine.connect(clapperNode, to: clapperBoost, format: clapperBuffer?.format)
-        engine.connect(clapperBoost, to: mixer, format: clapperBuffer?.format)
-        engine.connect(wheelClickNode, to: wheelClickGain, format: wheelClickBuffer?.format)
-        engine.connect(wheelClickGain, to: mixer, format: wheelClickBuffer?.format)
 
         let keepAliveFormat = mixer.outputFormat(forBus: 0)
         engine.connect(keepAliveNode, to: mixer, format: keepAliveFormat)
@@ -162,16 +179,47 @@ final class AudioCueScheduler {
         isPrepared = true
     }
 
-    private func playImmediateWhistle(volume: Float) {
-        guard let whistleBuffer else { return }
-        let voice = nextImmediateWhistleVoice
-        nextImmediateWhistleVoice = (voice + 1) % immediateWhistleNodes.count
+    private func playReadySet(volume: Float) {
+        guard
+            let readyBuffer,
+            let setBuffer
+        else { return }
 
-        let node = immediateWhistleNodes[voice]
-        immediateWhistleGains[voice].globalGain = decibels(for: volume)
+        let (node, gain) = nextManualNode()
+        gain.globalGain = decibels(for: volume)
         node.stop()
-        node.scheduleBuffer(whistleBuffer, at: nil, options: [])
+        node.scheduleBuffer(readyBuffer, at: nil, options: [])
+        node.scheduleBuffer(setBuffer, at: nil, options: [])
         node.play()
+    }
+
+    private func nextManualNode() -> (AVAudioPlayerNode, AVAudioUnitEQ) {
+        let voice = nextManualVoice
+        nextManualVoice = (voice + 1) % manualNodes.count
+        return (manualNodes[voice], manualGains[voice])
+    }
+
+    private func scheduleTimerCue(_ cue: CueKind, at time: AVAudioTime?) {
+        switch cue {
+        case .whistle:
+            if let buffer = buffers[.whistle] {
+                scheduledWhistleNode.scheduleBuffer(buffer, at: time, options: [])
+                scheduledWhistleNode.play()
+            }
+        case .clapper:
+            if let buffer = buffers[.clapper] {
+                scheduledClapperNode.scheduleBuffer(buffer, at: time, options: [])
+                scheduledClapperNode.play()
+            }
+        default:
+            break
+        }
+    }
+
+    private func stopTimerNodes() {
+        scheduledWhistleNode.stop()
+        scheduledClapperNode.stop()
+        keepAliveNode.stop()
     }
 
     private func decibels(for linearVolume: Float) -> Float {
@@ -179,40 +227,14 @@ final class AudioCueScheduler {
         return min(max(20 * log10f(linearVolume), -96), 24)
     }
 
-    private func schedule(cue: CueKind, at time: AVAudioTime?) {
-        switch cue {
-        case .whistle:
-            if let whistleBuffer {
-                whistleNode.scheduleBuffer(whistleBuffer, at: time, options: [])
-                whistleNode.play()
-            }
-        case .clapper:
-            if let clapperBuffer {
-                clapperNode.scheduleBuffer(clapperBuffer, at: time, options: [])
-                clapperNode.play()
-            }
-        case .wheelClick:
-            if let wheelClickBuffer {
-                wheelClickNode.scheduleBuffer(wheelClickBuffer, at: time, options: [])
-                wheelClickNode.play()
-            }
-        }
-    }
-
-    private func stopNodes() {
-        whistleNode.stop()
-        immediateWhistleNodes.forEach { $0.stop() }
-        nextImmediateWhistleVoice = 0
-        clapperNode.stop()
-        wheelClickNode.stop()
-        keepAliveNode.stop()
-    }
-
     private func loadBuffer(named name: String) -> AVAudioPCMBuffer? {
         guard let url = Bundle.main.url(forResource: name, withExtension: "m4a") else { return nil }
         do {
             let file = try AVAudioFile(forReading: url)
-            guard let buffer = AVAudioPCMBuffer(pcmFormat: file.processingFormat, frameCapacity: AVAudioFrameCount(file.length)) else { return nil }
+            guard let buffer = AVAudioPCMBuffer(
+                pcmFormat: file.processingFormat,
+                frameCapacity: AVAudioFrameCount(file.length)
+            ) else { return nil }
             try file.read(into: buffer)
             return buffer
         } catch {
@@ -244,6 +266,33 @@ final class AudioCueScheduler {
             let time = Double(frame) / sampleRate
             let envelope = exp(-time * 190)
             samples[frame] = Float(0.42 * envelope * sin(2 * Double.pi * 1_650 * time))
+        }
+        return buffer
+    }
+
+    private func makeAirHornBuffer() -> AVAudioPCMBuffer? {
+        let sampleRate = 44_100.0
+        guard let format = AVAudioFormat(standardFormatWithSampleRate: sampleRate, channels: 1) else { return nil }
+        let duration = 0.9
+        let frameCount = AVAudioFrameCount(sampleRate * duration)
+        guard
+            let buffer = AVAudioPCMBuffer(pcmFormat: format, frameCapacity: frameCount),
+            let samples = buffer.floatChannelData?[0]
+        else {
+            return nil
+        }
+
+        buffer.frameLength = frameCount
+        for frame in 0..<Int(frameCount) {
+            let time = Double(frame) / sampleRate
+            let attack = min(time / 0.018, 1)
+            let release = min(max((duration - time) / 0.18, 0), 1)
+            let envelope = attack * release
+            let vibrato = 5.5 * sin(2 * Double.pi * 6.2 * time)
+            let low = sin(2 * Double.pi * (370 + vibrato) * time)
+            let high = sin(2 * Double.pi * (466 + vibrato * 1.18) * time)
+            let mixed = 0.58 * low + 0.42 * high
+            samples[frame] = Float(tanh(1.55 * envelope * mixed) * 0.7)
         }
         return buffer
     }

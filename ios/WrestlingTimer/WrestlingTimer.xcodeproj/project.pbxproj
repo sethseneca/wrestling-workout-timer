@@ -14,6 +14,10 @@
 		A10000000000000000000005 /* Assets/rest-horn.m4a in Resources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000006 /* Assets/rest-horn.m4a */; };
 		A10000000000000000000006 /* Assets/ten-second-clapper.m4a in Resources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000007 /* Assets/ten-second-clapper.m4a */; };
 		A10000000000000000000008 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000010 /* Assets.xcassets */; };
+		A10000000000000000000009 /* Assets/ready.m4a in Resources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000011 /* Assets/ready.m4a */; };
+		A1000000000000000000000A /* Assets/set.m4a in Resources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000012 /* Assets/set.m4a */; };
+		A1000000000000000000000B /* Assets/whistle-start.m4a in Resources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000013 /* Assets/whistle-start.m4a */; };
+		A1000000000000000000000C /* Assets/final-horn.m4a in Resources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000014 /* Assets/final-horn.m4a */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -26,6 +30,10 @@
 		A20000000000000000000007 /* Assets/ten-second-clapper.m4a */ = {isa = PBXFileReference; lastKnownFileType = file; path = "Assets/ten-second-clapper.m4a"; sourceTree = "<group>"; };
 		A20000000000000000000009 /* Wrestling Timer.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Wrestling Timer.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		A20000000000000000000010 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		A20000000000000000000011 /* Assets/ready.m4a */ = {isa = PBXFileReference; lastKnownFileType = file; path = "Assets/ready.m4a"; sourceTree = "<group>"; };
+		A20000000000000000000012 /* Assets/set.m4a */ = {isa = PBXFileReference; lastKnownFileType = file; path = "Assets/set.m4a"; sourceTree = "<group>"; };
+		A20000000000000000000013 /* Assets/whistle-start.m4a */ = {isa = PBXFileReference; lastKnownFileType = file; path = "Assets/whistle-start.m4a"; sourceTree = "<group>"; };
+		A20000000000000000000014 /* Assets/final-horn.m4a */ = {isa = PBXFileReference; lastKnownFileType = file; path = "Assets/final-horn.m4a"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -57,6 +65,10 @@
 				A20000000000000000000005 /* Info.plist */,
 				A20000000000000000000006 /* Assets/rest-horn.m4a */,
 				A20000000000000000000007 /* Assets/ten-second-clapper.m4a */,
+				A20000000000000000000011 /* Assets/ready.m4a */,
+				A20000000000000000000012 /* Assets/set.m4a */,
+				A20000000000000000000013 /* Assets/whistle-start.m4a */,
+				A20000000000000000000014 /* Assets/final-horn.m4a */,
 				A20000000000000000000010 /* Assets.xcassets */,
 			);
 			path = WrestlingTimer;
@@ -129,6 +141,10 @@
 			files = (
 				A10000000000000000000005 /* Assets/rest-horn.m4a in Resources */,
 				A10000000000000000000006 /* Assets/ten-second-clapper.m4a in Resources */,
+				A10000000000000000000009 /* Assets/ready.m4a in Resources */,
+				A1000000000000000000000A /* Assets/set.m4a in Resources */,
+				A1000000000000000000000B /* Assets/whistle-start.m4a in Resources */,
+				A1000000000000000000000C /* Assets/final-horn.m4a in Resources */,
 				A10000000000000000000008 /* Assets.xcassets in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

@@ -23,6 +23,8 @@ struct TimerSettings {
     var wrestleLabel = "WRESTLE"
     var tenSecondWarningEnabled = true
     var tenSecondWarningVolume = 3.0
+    var automaticTimerSoundsEnabled = true
+    var soundboardVolume = 1.5
     var readyColor = Color(red: 0.41, green: 0.44, blue: 0.48)
     var wrestleColor = Color(red: 0.95, green: 0.23, blue: 0.25)
     var restColor = Color(red: 0.08, green: 0.58, blue: 0.30)
@@ -44,6 +46,7 @@ final class WorkoutTimer: ObservableObject {
     @Published private(set) var isRunning = false
     @Published private(set) var isFinished = false
     @Published private(set) var phaseProgress = 0.0
+    @Published private(set) var nextStartCueHandled = false
 
     private lazy var audio = AudioCueScheduler()
     private var tickTimer: Timer?
@@ -52,6 +55,12 @@ final class WorkoutTimer: ObservableObject {
     private var elapsedBeforeStart: TimeInterval = 0
 
     init() {
+        if UserDefaults.standard.object(forKey: "automaticTimerSoundsEnabled") != nil {
+            settings.automaticTimerSoundsEnabled = UserDefaults.standard.bool(forKey: "automaticTimerSoundsEnabled")
+        }
+        if UserDefaults.standard.object(forKey: "soundboardVolume") != nil {
+            settings.soundboardVolume = UserDefaults.standard.double(forKey: "soundboardVolume")
+        }
         reset(stopAudio: false)
     }
 
@@ -92,8 +101,10 @@ final class WorkoutTimer: ObservableObject {
     }
 
     func start() {
+        let pendingStartCueOverride = nextStartCueHandled
         if isFinished {
             reset()
+            nextStartCueHandled = pendingStartCueOverride
         }
 
         let pausedElapsed = elapsedBeforeStart
@@ -101,6 +112,8 @@ final class WorkoutTimer: ObservableObject {
         let shouldWhistleOnStart =
             abs(pausedElapsed - startingSegment.start) < 0.001
             && (startingSegment.phase == .wrestle || startingSegment.phase == .rest)
+        let startCueWasHandled = nextStartCueHandled
+        if startCueWasHandled { nextStartCueHandled = false }
 
         startDate = Date()
         isRunning = true
@@ -111,14 +124,20 @@ final class WorkoutTimer: ObservableObject {
             guard let self, self.isRunning else { return }
             let audioElapsed = self.elapsed
             let startingPhase = self.segments.last(where: { $0.start <= audioElapsed })?.phase ?? .wrestle
-            self.audio.start(
-                cues: self.makeCues(),
-                whistleVolume: Float(self.settings.whistleVolume),
-                warningVolume: Float(self.settings.tenSecondWarningVolume),
-                elapsed: audioElapsed,
-                duckBackgroundAudio: startingPhase == .rest
-            )
-            if shouldWhistleOnStart {
+            if self.settings.automaticTimerSoundsEnabled {
+                self.audio.start(
+                    cues: self.makeCues(
+                        suppressNextWhistleAtOrAfter: startCueWasHandled ? audioElapsed : nil
+                    ),
+                    whistleVolume: Float(self.settings.whistleVolume),
+                    warningVolume: Float(self.settings.tenSecondWarningVolume),
+                    elapsed: audioElapsed,
+                    duckBackgroundAudio: startingPhase == .rest
+                )
+            } else {
+                self.audio.stopTimer()
+            }
+            if self.settings.automaticTimerSoundsEnabled && shouldWhistleOnStart && !startCueWasHandled {
                 self.audio.playNow(.whistle, volume: Float(self.settings.whistleVolume))
             }
         }
@@ -131,7 +150,7 @@ final class WorkoutTimer: ObservableObject {
         tickTimer?.invalidate()
         tickTimer = nil
         refresh()
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.02) { [weak self] in self?.audio.stop() }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.02) { [weak self] in self?.audio.stopTimer() }
     }
 
     func reset(stopAudio: Bool = true) {
@@ -139,9 +158,10 @@ final class WorkoutTimer: ObservableObject {
         elapsedBeforeStart = 0
         isRunning = false
         isFinished = false
+        nextStartCueHandled = false
         tickTimer?.invalidate()
         tickTimer = nil
-        if stopAudio { audio.stop() }
+        if stopAudio { audio.stopTimer() }
         segments = makeSegments()
         refresh()
     }
@@ -168,6 +188,107 @@ final class WorkoutTimer: ObservableObject {
 
     func wheelClick() {
         audio.playNow(.wheelClick, volume: 0.65)
+    }
+
+    func prepareSoundboard() {
+        audio.prepare()
+    }
+
+    func playManualStartWhistle() {
+        audio.playNow(.startWhistle, volume: Float(settings.soundboardVolume))
+        guard !isRunning else { return }
+        if isFinished {
+            nextStartCueHandled = true
+            return
+        }
+        guard !segments.isEmpty else { return }
+        let segment = segments[currentSegmentIndex()]
+        if abs(elapsedBeforeStart - segment.start) < 0.001 {
+            nextStartCueHandled = true
+        }
+    }
+
+    func playManualShortWhistle() {
+        audio.playNow(.whistle, volume: Float(settings.soundboardVolume))
+    }
+
+    func playManualFinalHorn() {
+        audio.playNow(.finalHorn, volume: Float(settings.soundboardVolume))
+    }
+
+    func playManualAirHorn() {
+        audio.playNow(.airHorn, volume: Float(settings.soundboardVolume))
+    }
+
+    func playManualReadySet() {
+        audio.playNow(.readySet, volume: Float(settings.soundboardVolume))
+    }
+
+    func playManualClapper() {
+        audio.playNow(.clapper, volume: Float(settings.soundboardVolume))
+    }
+
+    func stopManualSounds() {
+        audio.stopManualSounds()
+    }
+
+    func cancelNextStartCueOverride() {
+        nextStartCueHandled = false
+    }
+
+    func setAutomaticTimerSoundsEnabled(_ enabled: Bool) {
+        settings.automaticTimerSoundsEnabled = enabled
+        UserDefaults.standard.set(enabled, forKey: "automaticTimerSoundsEnabled")
+
+        guard isRunning else {
+            if !enabled { audio.stopTimer() }
+            return
+        }
+
+        if enabled {
+            audio.start(
+                cues: makeCues(),
+                whistleVolume: Float(settings.whistleVolume),
+                warningVolume: Float(settings.tenSecondWarningVolume),
+                elapsed: elapsed,
+                duckBackgroundAudio: phase == .rest
+            )
+        } else {
+            audio.stopTimer()
+        }
+    }
+
+    func setSoundboardVolume(_ volume: Double) {
+        settings.soundboardVolume = volume
+        UserDefaults.standard.set(volume, forKey: "soundboardVolume")
+    }
+
+    func setCurrentRemainingSeconds(_ seconds: Int) {
+        guard !isRunning, !segments.isEmpty else { return }
+        let index = currentSegmentIndex()
+        let segment = segments[index]
+        let elapsedInSegment = max(0, elapsedBeforeStart - segment.start)
+        let newDuration = elapsedInSegment + TimeInterval(min(max(seconds, 1), 3_599))
+        let delta = newDuration - segment.duration
+
+        segments[index] = WorkoutSegment(
+            phase: segment.phase,
+            duration: newDuration,
+            round: segment.round,
+            start: segment.start
+        )
+        if index + 1 < segments.count {
+            for laterIndex in (index + 1)..<segments.count {
+                let later = segments[laterIndex]
+                segments[laterIndex] = WorkoutSegment(
+                    phase: later.phase,
+                    duration: later.duration,
+                    round: later.round,
+                    start: later.start + delta
+                )
+            }
+        }
+        refresh()
     }
 
     func setWhistleVolume(_ volume: Double) {
@@ -213,7 +334,9 @@ final class WorkoutTimer: ObservableObject {
         let segment = segments[index]
         phase = segment.phase
         round = segment.round
-        audio.setBackgroundAudioDucked(isRunning && phase == .rest)
+        audio.setBackgroundAudioDucked(
+            isRunning && settings.automaticTimerSoundsEnabled && phase == .rest
+        )
         let remaining = max(0, segment.duration - (currentElapsed - segment.start))
         remainingSeconds = Int(ceil(remaining))
         phaseProgress = segment.duration > 0
@@ -228,7 +351,7 @@ final class WorkoutTimer: ObservableObject {
     private func beginTicking() {
         tickTimer?.invalidate()
         tickTimer = Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true) { [weak self] _ in
-            self?.refresh()
+            Task { @MainActor [weak self] in self?.refresh() }
         }
         if let tickTimer { RunLoop.main.add(tickTimer, forMode: .common) }
     }
@@ -269,7 +392,7 @@ final class WorkoutTimer: ObservableObject {
         return items
     }
 
-    private func makeCues() -> [ScheduledCue] {
+    private func makeCues(suppressNextWhistleAtOrAfter suppressionPoint: TimeInterval? = nil) -> [ScheduledCue] {
         let total = segments.last.map { $0.start + $0.duration } ?? 0
         var cues: [ScheduledCue] = []
 
@@ -282,6 +405,10 @@ final class WorkoutTimer: ObservableObject {
             }
         }
         cues.append(ScheduledCue(kind: .whistle, offset: total))
+        if let suppressionPoint,
+           let index = cues.firstIndex(where: { $0.kind == .whistle && $0.offset >= suppressionPoint - 0.001 }) {
+            cues.remove(at: index)
+        }
         return cues
     }
 }

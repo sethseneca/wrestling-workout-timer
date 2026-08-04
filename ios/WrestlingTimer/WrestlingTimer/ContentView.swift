@@ -4,6 +4,8 @@ import UIKit
 struct ContentView: View {
     @EnvironmentObject private var timer: WorkoutTimer
     @State private var showingSetup = false
+    @State private var showingSoundboard = false
+    @State private var showingTimeEditor = false
 
     var body: some View {
         ZStack {
@@ -21,6 +23,8 @@ struct ContentView: View {
             .animation(.linear(duration: 0.1), value: timer.phaseProgress)
 
             timerReadout
+                .padding(.trailing, showingSoundboard ? 326 : 0)
+                .animation(.easeInOut(duration: 0.22), value: showingSoundboard)
 
             Button { showingSetup = true } label: {
                 ZStack {
@@ -39,6 +43,8 @@ struct ContentView: View {
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomTrailing)
             .padding(.trailing, 2)
             .padding(.bottom, 8)
+            .opacity(showingSoundboard ? 0 : 1)
+            .allowsHitTesting(!showingSoundboard)
 
             controlRail
                 .frame(width: 104)
@@ -46,6 +52,20 @@ struct ContentView: View {
                 .padding(.leading, 4)
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
                 .ignoresSafeArea(.container, edges: .bottom)
+
+            if showingSoundboard {
+                SoundboardPanel {
+                    withAnimation(.easeInOut(duration: 0.22)) {
+                        showingSoundboard = false
+                    }
+                }
+                .environmentObject(timer)
+                .frame(width: 318)
+                .padding(.vertical, 8)
+                .padding(.trailing, 4)
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .trailing)
+                .transition(.move(edge: .trailing).combined(with: .opacity))
+            }
         }
         .foregroundStyle(.white)
         .preferredColorScheme(.dark)
@@ -53,31 +73,42 @@ struct ContentView: View {
             SetupView()
                 .environmentObject(timer)
         }
+        .sheet(isPresented: $showingTimeEditor) {
+            CurrentTimeEditorView(initialSeconds: timer.remainingSeconds) { seconds in
+                timer.setCurrentRemainingSeconds(seconds)
+            }
+        }
     }
 
     private var timerReadout: some View {
         VStack(spacing: 1) {
             Text(timer.phaseTitle)
-                .font(fightFont(size: 48))
+                .font(fightFont(size: showingSoundboard ? 34 : 48))
                 .tracking(0.5)
                 .lineLimit(1)
                 .minimumScaleFactor(0.65)
-                .offset(y: 22)
+                .offset(y: showingSoundboard ? 8 : 22)
 
             Text(timer.countdownText)
-                .font(fightFont(size: 222))
+                .font(fightFont(size: showingSoundboard ? 126 : 222))
                 .monospacedDigit()
                 .minimumScaleFactor(0.55)
                 .lineLimit(1)
-                .offset(y: 36)
+                .offset(y: showingSoundboard ? 12 : 36)
 
             Text(timer.isFinished ? "WORKOUT COMPLETE" : timer.roundText.uppercased())
-                .font(fightFont(size: 48, weight: .heavy))
+                .font(fightFont(size: showingSoundboard ? 32 : 48, weight: .heavy))
                 .tracking(0.4)
         }
         .shadow(color: .black.opacity(0.40), radius: 0, x: 1.5, y: 2.5)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .padding(.horizontal, 110)
+        .contentShape(Rectangle())
+        .onTapGesture {
+            guard !timer.isRunning else { return }
+            showingTimeEditor = true
+        }
+        .accessibilityHint(timer.isRunning ? "Pause to edit the time" : "Tap to edit the current time")
     }
 
     private func fightFont(size: CGFloat, weight: UIFont.Weight = .black) -> Font {
@@ -106,7 +137,15 @@ struct ContentView: View {
             .buttonStyle(RailButtonStyle())
             .accessibilityLabel(timer.isRunning ? "Pause timer" : "Start timer")
             railButton("forward.end.fill", label: "Next interval") { timer.nextInterval() }
-            railButton("speaker.wave.3.fill", size: 26, label: "Whistle") { timer.whistle() }
+            railButton(
+                showingSoundboard ? "xmark" : "square.grid.2x2.fill",
+                size: 26,
+                label: showingSoundboard ? "Close soundboard" : "Open soundboard"
+            ) {
+                withAnimation(.easeInOut(duration: 0.22)) {
+                    showingSoundboard.toggle()
+                }
+            }
         }
         .foregroundStyle(.white.opacity(0.82))
         .background(.black.opacity(0.8), in: Capsule())
@@ -126,6 +165,256 @@ struct ContentView: View {
         }
         .buttonStyle(RailButtonStyle())
         .accessibilityLabel(label)
+    }
+}
+
+private struct SoundboardPanel: View {
+    @EnvironmentObject private var timer: WorkoutTimer
+    let onClose: () -> Void
+
+    private let columns = [
+        GridItem(.flexible(), spacing: 8),
+        GridItem(.flexible(), spacing: 8)
+    ]
+
+    var body: some View {
+        VStack(spacing: 8) {
+            HStack {
+                Label("SOUNDBOARD", systemImage: "square.grid.2x2.fill")
+                    .font(.headline.weight(.black))
+                Spacer()
+                Button { timer.stopManualSounds() } label: {
+                    Image(systemName: "stop.circle.fill")
+                        .font(.title2)
+                        .foregroundStyle(.red.opacity(0.88))
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel("Stop manual sounds")
+                Button(action: onClose) {
+                    Image(systemName: "xmark.circle.fill")
+                        .font(.title2)
+                        .foregroundStyle(.white.opacity(0.72))
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel("Close soundboard")
+            }
+
+            Toggle(isOn: automaticTimerSoundsEnabled) {
+                VStack(alignment: .leading, spacing: 0) {
+                    Text("TIMER SOUNDS")
+                        .font(.subheadline.weight(.bold))
+                    Text(timer.settings.automaticTimerSoundsEnabled ? "Automatic cues on" : "Manual sounds only")
+                        .font(.caption2)
+                        .foregroundStyle(.white.opacity(0.58))
+                }
+            }
+            .toggleStyle(.switch)
+            .tint(.green)
+            .padding(.horizontal, 10)
+            .padding(.vertical, 6)
+            .background(.white.opacity(0.08), in: RoundedRectangle(cornerRadius: 12))
+
+            if timer.nextStartCueHandled {
+                HStack(spacing: 7) {
+                    Image(systemName: "checkmark.circle.fill")
+                        .foregroundStyle(.green)
+                    VStack(alignment: .leading, spacing: 0) {
+                        Text("START CUE HANDLED")
+                            .font(.caption.weight(.bold))
+                        Text("Next timer start will be silent")
+                            .font(.caption2)
+                            .foregroundStyle(.white.opacity(0.62))
+                    }
+                    Spacer()
+                    Button("Cancel") { timer.cancelNextStartCueOverride() }
+                        .font(.caption.weight(.bold))
+                        .buttonStyle(.bordered)
+                        .controlSize(.small)
+                }
+                .padding(.horizontal, 9)
+                .padding(.vertical, 5)
+                .background(.green.opacity(0.13), in: RoundedRectangle(cornerRadius: 11))
+            }
+
+            LazyVGrid(columns: columns, spacing: 8) {
+                SoundPadButton(title: "READY, SET", icon: "mic.fill", tint: .blue) {
+                    timer.playManualReadySet()
+                }
+                SoundPadButton(title: "START WHISTLE", icon: "speaker.wave.3.fill", tint: .green) {
+                    timer.playManualStartWhistle()
+                }
+                SoundPadButton(title: "THREE CLAPS", icon: "waveform", tint: .orange) {
+                    timer.playManualClapper()
+                }
+                SoundPadButton(title: "SHORT WHISTLE", icon: "speaker.wave.2.fill", tint: .mint) {
+                    timer.playManualShortWhistle()
+                }
+                SoundPadButton(title: "FINAL HORN", icon: "bell.fill", tint: .red) {
+                    timer.playManualFinalHorn()
+                }
+                SoundPadButton(title: "AIR HORN", icon: "megaphone.fill", tint: .purple) {
+                    timer.playManualAirHorn()
+                }
+            }
+
+            HStack(spacing: 8) {
+                Image(systemName: "speaker.fill")
+                    .font(.caption)
+                    .foregroundStyle(.white.opacity(0.65))
+                Slider(value: soundboardVolume, in: 0...2, step: 0.05)
+                    .tint(.white)
+                    .accessibilityLabel("Soundboard volume")
+                Text("\(Int((timer.settings.soundboardVolume * 100).rounded()))%")
+                    .font(.caption.monospacedDigit().weight(.semibold))
+                    .foregroundStyle(.white.opacity(0.68))
+                    .frame(width: 40, alignment: .trailing)
+            }
+            .padding(.horizontal, 4)
+        }
+        .padding(10)
+        .foregroundStyle(.white)
+        .background(.black.opacity(0.94), in: RoundedRectangle(cornerRadius: 22))
+        .overlay {
+            RoundedRectangle(cornerRadius: 22)
+                .stroke(.white.opacity(0.14), lineWidth: 1)
+        }
+        .shadow(color: .black.opacity(0.42), radius: 18, x: -4, y: 0)
+        .onAppear { timer.prepareSoundboard() }
+    }
+
+    private var automaticTimerSoundsEnabled: Binding<Bool> {
+        Binding(
+            get: { timer.settings.automaticTimerSoundsEnabled },
+            set: { timer.setAutomaticTimerSoundsEnabled($0) }
+        )
+    }
+
+    private var soundboardVolume: Binding<Double> {
+        Binding(
+            get: { timer.settings.soundboardVolume },
+            set: { timer.setSoundboardVolume($0) }
+        )
+    }
+}
+
+private struct SoundPadButton: View {
+    let title: String
+    let icon: String
+    let tint: Color
+    let action: () -> Void
+
+    var body: some View {
+        Button {
+            UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+            action()
+        } label: {
+            VStack(spacing: 4) {
+                Image(systemName: icon)
+                    .font(.system(size: 24, weight: .bold))
+                Text(title)
+                    .font(.caption2.weight(.black))
+                    .tracking(0.3)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.75)
+            }
+            .foregroundStyle(.white)
+            .frame(maxWidth: .infinity, minHeight: 58)
+            .background(tint.opacity(0.72), in: RoundedRectangle(cornerRadius: 13))
+            .overlay {
+                RoundedRectangle(cornerRadius: 13)
+                    .stroke(.white.opacity(0.18), lineWidth: 1)
+            }
+            .contentShape(RoundedRectangle(cornerRadius: 13))
+        }
+        .buttonStyle(SoundPadButtonStyle())
+        .accessibilityLabel(title.capitalized)
+    }
+}
+
+private struct SoundPadButtonStyle: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .brightness(configuration.isPressed ? 0.12 : 0)
+            .scaleEffect(configuration.isPressed ? 0.96 : 1)
+            .animation(.easeOut(duration: 0.07), value: configuration.isPressed)
+    }
+}
+
+private struct CurrentTimeEditorView: View {
+    @Environment(\.dismiss) private var dismiss
+    @State private var selectedSeconds: Int
+    let onApply: (Int) -> Void
+
+    init(initialSeconds: Int, onApply: @escaping (Int) -> Void) {
+        _selectedSeconds = State(initialValue: min(max(initialSeconds, 1), 3_599))
+        self.onApply = onApply
+    }
+
+    var body: some View {
+        NavigationStack {
+            HStack(spacing: 8) {
+                timeWheel(title: "MINUTES", values: 0...59, selection: minutes, twoDigits: false)
+
+                Text(":")
+                    .font(.system(size: 42, weight: .black, design: .rounded))
+                    .padding(.top, 18)
+
+                timeWheel(title: "SECONDS", values: 0...59, selection: secondsPart, twoDigits: true)
+            }
+            .padding(.horizontal)
+            .navigationTitle("Edit Current Time")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Cancel") { dismiss() }
+                }
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Apply") {
+                        onApply(max(1, selectedSeconds))
+                        dismiss()
+                    }
+                    .fontWeight(.bold)
+                }
+            }
+        }
+        .presentationDetents([.medium])
+    }
+
+    private func timeWheel(
+        title: String,
+        values: ClosedRange<Int>,
+        selection: Binding<Int>,
+        twoDigits: Bool
+    ) -> some View {
+        VStack(spacing: 0) {
+            Text(title)
+                .font(.caption.weight(.bold))
+                .foregroundStyle(.secondary)
+            Picker(title, selection: selection) {
+                ForEach(values, id: \.self) { value in
+                    Text(twoDigits ? String(format: "%02d", value) : "\(value)")
+                        .font(.title.monospacedDigit())
+                        .tag(value)
+                }
+            }
+            .pickerStyle(.wheel)
+            .frame(width: 118, height: 160)
+            .clipped()
+        }
+    }
+
+    private var minutes: Binding<Int> {
+        Binding(
+            get: { selectedSeconds / 60 },
+            set: { selectedSeconds = $0 * 60 + selectedSeconds % 60 }
+        )
+    }
+
+    private var secondsPart: Binding<Int> {
+        Binding(
+            get: { selectedSeconds % 60 },
+            set: { selectedSeconds = (selectedSeconds / 60) * 60 + $0 }
+        )
     }
 }
 
