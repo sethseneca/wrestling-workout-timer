@@ -48,10 +48,12 @@ final class WorkoutTimer: ObservableObject {
     @Published private(set) var phaseProgress = 0.0
 
     private lazy var audio = AudioCueScheduler()
+    private let liveActivity = WorkoutLiveActivityController()
     private var tickTimer: Timer?
     private var segments: [WorkoutSegment] = []
     private var startDate: Date?
     private var elapsedBeforeStart: TimeInterval = 0
+    private var lastLiveActivitySegmentIndex: Int?
 
     init() {
         if UserDefaults.standard.object(forKey: "automaticTimerSoundsEnabled") != nil {
@@ -116,7 +118,8 @@ final class WorkoutTimer: ObservableObject {
         startDate = Date()
         isRunning = true
         beginTicking()
-        refresh()
+        refresh(updateLiveActivity: false)
+        syncLiveActivity()
 
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.02) { [weak self] in
             guard let self, self.isRunning else { return }
@@ -148,7 +151,8 @@ final class WorkoutTimer: ObservableObject {
         isRunning = false
         tickTimer?.invalidate()
         tickTimer = nil
-        refresh()
+        refresh(updateLiveActivity: false)
+        syncLiveActivity()
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.02) { [weak self] in self?.audio.stopTimer() }
     }
 
@@ -160,8 +164,10 @@ final class WorkoutTimer: ObservableObject {
         tickTimer?.invalidate()
         tickTimer = nil
         if stopAudio { audio.stopTimer() }
+        liveActivity.end()
+        lastLiveActivitySegmentIndex = nil
         segments = makeSegments()
-        refresh()
+        refresh(updateLiveActivity: false)
     }
 
     func previousInterval() {
@@ -262,7 +268,10 @@ final class WorkoutTimer: ObservableObject {
                 )
             }
         }
-        refresh()
+        refresh(updateLiveActivity: false)
+        if liveActivity.hasActiveActivity {
+            syncLiveActivity()
+        }
     }
 
     func setWhistleVolume(_ volume: Double) {
@@ -281,12 +290,13 @@ final class WorkoutTimer: ObservableObject {
         )
     }
 
-    func refresh() {
+    func refresh(updateLiveActivity: Bool = true) {
         guard !segments.isEmpty else { return }
         let currentElapsed = elapsed
         let total = segments.last!.start + segments.last!.duration
 
         if currentElapsed >= total {
+            let shouldEndLiveActivity = !isFinished
             audio.setBackgroundAudioDucked(false)
             remainingSeconds = 0
             phaseProgress = 1
@@ -300,6 +310,10 @@ final class WorkoutTimer: ObservableObject {
                 tickTimer = nil
             }
             isFinished = true
+            if shouldEndLiveActivity {
+                liveActivity.end()
+                lastLiveActivitySegmentIndex = nil
+            }
             return
         }
 
@@ -316,6 +330,9 @@ final class WorkoutTimer: ObservableObject {
         phaseProgress = segment.duration > 0
             ? min(max((currentElapsed - segment.start) / segment.duration, 0), 1)
             : 1
+        if updateLiveActivity, isRunning, lastLiveActivitySegmentIndex != index {
+            syncLiveActivity(segmentIndex: index)
+        }
     }
 
     private var elapsed: TimeInterval {
@@ -335,7 +352,42 @@ final class WorkoutTimer: ObservableObject {
         elapsedBeforeStart = segments[segmentIndex].start
         startDate = nil
         isFinished = false
-        if isRunning { start() } else { refresh() }
+        if isRunning {
+            start()
+        } else {
+            refresh(updateLiveActivity: false)
+            if liveActivity.hasActiveActivity {
+                syncLiveActivity(segmentIndex: segmentIndex)
+            }
+        }
+    }
+
+    private func syncLiveActivity(segmentIndex: Int? = nil) {
+        guard !segments.isEmpty, !isFinished else { return }
+        let currentElapsed = elapsed
+        let index = segmentIndex ?? currentSegmentIndex(at: currentElapsed)
+        guard segments.indices.contains(index) else { return }
+
+        let segment = segments[index]
+        let elapsedInSegment = min(max(currentElapsed - segment.start, 0), segment.duration)
+        let remaining = max(0, segment.duration - elapsedInSegment)
+        let now = Date()
+        let state = WorkoutActivityAttributes.ContentState(
+            phase: phaseTitle,
+            round: segment.round,
+            totalRounds: settings.rounds,
+            timerStart: now.addingTimeInterval(-elapsedInSegment),
+            timerEnd: now.addingTimeInterval(remaining),
+            remainingSeconds: Int(ceil(remaining)),
+            isRunning: isRunning
+        )
+
+        if isRunning {
+            liveActivity.startOrUpdate(state)
+        } else {
+            liveActivity.updateIfActive(state)
+        }
+        lastLiveActivitySegmentIndex = index
     }
 
     private func currentSegmentIndex(at elapsed: TimeInterval? = nil) -> Int {
