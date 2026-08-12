@@ -19,8 +19,10 @@ struct WrestlingTimerLiveActivity: Widget {
             DynamicIsland {
                 DynamicIslandExpandedRegion(.leading) {
                     Label(context.state.phase, systemImage: "timer")
-                        .font(.headline.weight(.black))
+                        .font(.subheadline.weight(.black))
                         .foregroundStyle(context.state.phaseColor)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.75)
                 }
 
                 DynamicIslandExpandedRegion(.trailing) {
@@ -44,9 +46,8 @@ struct WrestlingTimerLiveActivity: Widget {
                 CountdownText(state: context.state, font: .caption.monospacedDigit().weight(.bold))
                     .frame(minWidth: 42)
             } minimal: {
-                Image(systemName: "timer")
-                    .foregroundStyle(context.state.phaseColor)
-                    .accessibilityLabel("Wrestling timer")
+                CountdownText(state: context.state, font: .caption2.monospacedDigit().weight(.bold))
+                    .frame(minWidth: 36)
             }
             .keylineTint(context.state.phaseColor)
         }
@@ -96,7 +97,9 @@ private struct CountdownText: View {
             }
         }
         .font(font)
+        .foregroundStyle(.white)
         .monospacedDigit()
+        .lineLimit(1)
         .contentTransition(.numericText(countsDown: true))
         .accessibilityLabel(state.isRunning ? "Time remaining" : "Paused time remaining")
     }
@@ -113,6 +116,7 @@ private struct WorkoutProgressView: View {
                 ProgressView(value: 0)
             }
         }
+        .labelsHidden()
         .tint(state.phaseColor)
     }
 }
