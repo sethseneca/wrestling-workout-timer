@@ -68,9 +68,12 @@ struct ContentView: View {
                             ? 88
                             : max(
                                 0,
-                                geometry.size.height
+                                    geometry.size.height
                                     - 16
-                                    + geometry.safeAreaInsets.bottom
+                                    + controlBottomExtension(
+                                        for: layoutOrientation,
+                                        safeAreaInsets: geometry.safeAreaInsets
+                                    )
                             )
                     )
                     .frame(
@@ -371,6 +374,10 @@ struct ContentView: View {
         safeAreaInsets: EdgeInsets
     ) -> CGSize {
         let edgeGap: CGFloat = 6
+        let bottomExtension = controlBottomExtension(
+            for: orientation,
+            safeAreaInsets: safeAreaInsets
+        )
 
         switch orientation {
         case .portrait:
@@ -378,14 +385,22 @@ struct ContentView: View {
         case .landscapeLeft:
             return CGSize(
                 width: -max(0, safeAreaInsets.leading - edgeGap),
-                height: safeAreaInsets.bottom / 2
+                height: bottomExtension / 2
             )
         case .landscapeRight:
             return CGSize(
                 width: max(0, safeAreaInsets.trailing - edgeGap),
-                height: safeAreaInsets.bottom / 2
+                height: bottomExtension / 2
             )
         }
+    }
+
+    private func controlBottomExtension(
+        for orientation: TimerLayoutOrientation,
+        safeAreaInsets: EdgeInsets
+    ) -> CGFloat {
+        guard !orientation.isPortrait else { return 0 }
+        return max(0, safeAreaInsets.bottom - 8)
     }
 
     private func audioMenuInsets(for orientation: TimerLayoutOrientation) -> EdgeInsets {
