@@ -1080,8 +1080,7 @@ private struct SetupView: View {
                             DurationPreset(seconds: 5, label: "5 SEC", accessibilityLabel: "5 seconds"),
                             DurationPreset(seconds: 10, label: "10 SEC", accessibilityLabel: "10 seconds"),
                             DurationPreset(seconds: 15, label: "15 SEC", accessibilityLabel: "15 seconds"),
-                            DurationPreset(seconds: 30, label: "30 SEC", accessibilityLabel: "30 seconds"),
-                            DurationPreset(seconds: 60, label: "1 MIN", accessibilityLabel: "1 minute")
+                            DurationPreset(seconds: 30, label: "30 SEC", accessibilityLabel: "30 seconds")
                         ],
                         customRange: 1...120,
                         customDefault: 10
@@ -1110,7 +1109,8 @@ private struct SetupView: View {
                             DurationPreset(seconds: 5, label: "5 SEC", accessibilityLabel: "5 seconds"),
                             DurationPreset(seconds: 10, label: "10 SEC", accessibilityLabel: "10 seconds"),
                             DurationPreset(seconds: 20, label: "20 SEC", accessibilityLabel: "20 seconds"),
-                            DurationPreset(seconds: 30, label: "30 SEC", accessibilityLabel: "30 seconds")
+                            DurationPreset(seconds: 30, label: "30 SEC", accessibilityLabel: "30 seconds"),
+                            DurationPreset(seconds: 45, label: "45 SEC", accessibilityLabel: "45 seconds")
                         ],
                         customRange: 1...3_600,
                         customDefault: 15

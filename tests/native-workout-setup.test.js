@@ -40,16 +40,17 @@ test("phase durations use the requested preset blocks with None only for Get Rea
   const wrestle = between(setupSource, 'title: "Wrestle"', 'title: "Rest"');
   const rest = between(setupSource, 'title: "Rest"', "RoundSelector(");
 
-  for (const seconds of [0, 5, 10, 15, 30, 60]) {
+  for (const seconds of [0, 5, 10, 15, 30]) {
     assert.match(ready, new RegExp(`DurationPreset\\(seconds: ${seconds},`));
   }
   for (const seconds of [15, 30, 60, 120, 360]) {
     assert.match(wrestle, new RegExp(`DurationPreset\\(seconds: ${seconds},`));
   }
-  for (const seconds of [5, 10, 20, 30]) {
+  for (const seconds of [5, 10, 20, 30, 45]) {
     assert.match(rest, new RegExp(`DurationPreset\\(seconds: ${seconds},`));
   }
 
+  assert.doesNotMatch(ready, /DurationPreset\(seconds: 60,/);
   assert.match(ready, /label: "NONE"/);
   assert.doesNotMatch(wrestle, /label: "NONE"/);
   assert.doesNotMatch(rest, /label: "NONE"/);
