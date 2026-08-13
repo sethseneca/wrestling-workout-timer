@@ -79,6 +79,59 @@ final class WrestlingTimerUITests: XCTestCase {
         assertWorkoutSetupOwnsConfiguration(in: app)
     }
 
+    func testWorkoutSetupPresetSelectionAndDiscard() throws {
+        XCUIDevice.shared.orientation = .portrait
+
+        let app = XCUIApplication()
+        app.launch()
+
+        app.buttons["Open workout setup"].tap()
+        XCTAssertTrue(app.navigationBars["Workout Setup"].waitForExistence(timeout: 3))
+
+        let readyTen = app.buttons["Get Ready 10 seconds"]
+        let readyNone = app.buttons["Get Ready None"]
+        XCTAssertTrue(readyTen.waitForExistence(timeout: 2))
+        XCTAssertTrue(readyNone.exists)
+
+        readyTen.tap()
+        XCTAssertTrue(readyTen.isSelected)
+        app.buttons["Save & Apply"].tap()
+        XCTAssertTrue(app.buttons["Open workout setup"].waitForExistence(timeout: 3))
+
+        app.buttons["Open workout setup"].tap()
+        XCTAssertTrue(readyNone.waitForExistence(timeout: 2))
+        readyNone.tap()
+        XCTAssertTrue(readyNone.isSelected)
+        app.buttons["Discard workout changes"].tap()
+        XCTAssertTrue(app.buttons["Open workout setup"].waitForExistence(timeout: 3))
+
+        app.buttons["Open workout setup"].tap()
+        XCTAssertTrue(readyTen.waitForExistence(timeout: 2))
+        XCTAssertTrue(readyTen.isSelected, "Closing with X must discard the unsaved None selection.")
+
+        let wrestleTwoMinutes = app.buttons["Wrestle 2 minutes"]
+        reveal(wrestleTwoMinutes, in: app)
+        wrestleTwoMinutes.tap()
+        XCTAssertTrue(wrestleTwoMinutes.isSelected)
+
+        let restTwentySeconds = app.buttons["Rest 20 seconds"]
+        reveal(restTwentySeconds, in: app)
+        restTwentySeconds.tap()
+        XCTAssertTrue(restTwentySeconds.isSelected)
+
+        app.buttons["Save & Apply"].tap()
+        XCTAssertTrue(app.buttons["Open workout setup"].waitForExistence(timeout: 3))
+
+        app.buttons["Open workout setup"].tap()
+        XCTAssertTrue(app.navigationBars["Workout Setup"].waitForExistence(timeout: 3))
+        reveal(app.buttons["Wrestle 2 minutes"], in: app)
+        XCTAssertTrue(app.buttons["Wrestle 2 minutes"].isSelected)
+        reveal(app.buttons["Rest 20 seconds"], in: app)
+        XCTAssertTrue(app.buttons["Rest 20 seconds"].isSelected)
+        captureScreen(named: "setup-preset-selection")
+        app.buttons["Discard workout changes"].tap()
+    }
+
     func testMinimizedWorkoutSurvivesMidpointHandoff() throws {
         let app = XCUIApplication()
         app.launchEnvironment["WRESTLING_DEVICE_VERIFY"] = "1"
@@ -208,10 +261,20 @@ final class WrestlingTimerUITests: XCTestCase {
     private func assertWorkoutSetupOwnsConfiguration(in app: XCUIApplication) {
         app.buttons["Open workout setup"].tap()
         XCTAssertTrue(app.navigationBars["Workout Setup"].waitForExistence(timeout: 3))
-        XCTAssertTrue(app.textFields["Wrestle label"].exists)
+        XCTAssertTrue(app.buttons["Discard workout changes"].exists)
+        XCTAssertTrue(app.buttons["Get Ready None"].exists)
+        XCTAssertTrue(app.buttons["Get Ready 10 seconds"].exists)
+        XCTAssertEqual(app.pickers.count, 0, "Workout durations must not use scrolling wheels.")
         XCTAssertFalse(app.sliders["Whistle volume"].exists, "Audio controls must not be duplicated in workout setup.")
         app.buttons["Save & Apply"].tap()
         XCTAssertTrue(app.buttons["Open workout setup"].waitForExistence(timeout: 3))
+    }
+
+    private func reveal(_ element: XCUIElement, in app: XCUIApplication) {
+        for _ in 0..<6 where !element.isHittable {
+            app.swipeUp()
+        }
+        XCTAssertTrue(element.isHittable)
     }
 
     private func captureScreen(named name: String) {

@@ -89,7 +89,7 @@ struct ContentView: View {
         .foregroundStyle(.white)
         .preferredColorScheme(.dark)
         .sheet(isPresented: $showingSetup) {
-            SetupView()
+            SetupView(initialSettings: timer.settings)
                 .environmentObject(timer)
         }
         .sheet(isPresented: $showingTimeEditor) {
@@ -1047,185 +1047,434 @@ private struct CurrentTimeEditorView: View {
 private struct SetupView: View {
     @EnvironmentObject private var timer: WorkoutTimer
     @Environment(\.dismiss) private var dismiss
+    @State private var draft: TimerSettings
+
+    init(initialSettings: TimerSettings) {
+        var normalized = initialSettings
+        normalized.wrestleSeconds = min(max(normalized.wrestleSeconds, 1), 3_600)
+        normalized.restSeconds = min(max(normalized.restSeconds, 1), 3_600)
+        normalized.readySeconds = min(max(normalized.readySeconds, 0), 120)
+        normalized.rounds = min(max(normalized.rounds, 1), 99)
+        _draft = State(initialValue: normalized)
+    }
 
     var body: some View {
         NavigationStack {
-            Form {
-                Section("Intervals") {
-                    VStack(spacing: 8) {
-                        HStack(alignment: .top, spacing: 8) {
-                            DurationSelector(
-                                title: "Wrestle",
-                                tint: timer.color(for: .wrestle),
-                                seconds: wrestleSeconds,
-                                range: 1...3_600
-                            )
-                            DurationSelector(
-                                title: "Rest",
-                                tint: timer.color(for: .rest),
-                                seconds: restSeconds,
-                                range: 0...3_600
-                            )
-                            DurationSelector(
-                                title: "Get Ready",
-                                tint: timer.color(for: .ready),
-                                seconds: readySeconds,
-                                range: 0...120
-                            )
-                        }
-
-                        Label("Swipe wheels up or down", systemImage: "arrow.up.arrow.down")
-                            .font(.caption)
+            ScrollView {
+                VStack(alignment: .leading, spacing: 18) {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("BUILD YOUR WORKOUT")
+                            .font(.caption.weight(.black))
+                            .tracking(1.2)
                             .foregroundStyle(.secondary)
+                        Text("Tap one time for each phase.")
+                            .font(.title3.weight(.bold))
                     }
-                    .padding(.vertical, 4)
 
-                    Stepper(value: rounds, in: 1...99) {
-                        HStack(spacing: 8) {
-                            Text("ROUNDS")
-                                .font(.caption.weight(.bold))
-                                .foregroundStyle(.secondary)
-                            Text("\(timer.settings.rounds)")
-                                .font(.title3.weight(.bold))
-                                .monospacedDigit()
-                        }
+                    PhaseDurationCard(
+                        title: "Get Ready",
+                        tint: draft.readyColor,
+                        seconds: $draft.readySeconds,
+                        presets: [
+                            DurationPreset(seconds: 0, label: "NONE", accessibilityLabel: "None"),
+                            DurationPreset(seconds: 5, label: "5 SEC", accessibilityLabel: "5 seconds"),
+                            DurationPreset(seconds: 10, label: "10 SEC", accessibilityLabel: "10 seconds"),
+                            DurationPreset(seconds: 15, label: "15 SEC", accessibilityLabel: "15 seconds"),
+                            DurationPreset(seconds: 30, label: "30 SEC", accessibilityLabel: "30 seconds"),
+                            DurationPreset(seconds: 60, label: "1 MIN", accessibilityLabel: "1 minute")
+                        ],
+                        customRange: 1...120,
+                        customDefault: 10
+                    )
+
+                    PhaseDurationCard(
+                        title: "Wrestle",
+                        tint: draft.wrestleColor,
+                        seconds: $draft.wrestleSeconds,
+                        presets: [
+                            DurationPreset(seconds: 15, label: "15 SEC", accessibilityLabel: "15 seconds"),
+                            DurationPreset(seconds: 30, label: "30 SEC", accessibilityLabel: "30 seconds"),
+                            DurationPreset(seconds: 60, label: "1 MIN", accessibilityLabel: "1 minute"),
+                            DurationPreset(seconds: 120, label: "2 MIN", accessibilityLabel: "2 minutes"),
+                            DurationPreset(seconds: 360, label: "6 MIN", accessibilityLabel: "6 minutes")
+                        ],
+                        customRange: 1...3_600,
+                        customDefault: 30
+                    )
+
+                    PhaseDurationCard(
+                        title: "Rest",
+                        tint: draft.restColor,
+                        seconds: $draft.restSeconds,
+                        presets: [
+                            DurationPreset(seconds: 5, label: "5 SEC", accessibilityLabel: "5 seconds"),
+                            DurationPreset(seconds: 10, label: "10 SEC", accessibilityLabel: "10 seconds"),
+                            DurationPreset(seconds: 20, label: "20 SEC", accessibilityLabel: "20 seconds"),
+                            DurationPreset(seconds: 30, label: "30 SEC", accessibilityLabel: "30 seconds")
+                        ],
+                        customRange: 1...3_600,
+                        customDefault: 15
+                    )
+
+                    RoundSelector(rounds: $draft.rounds)
+
+                    DisplaySettingsCard(
+                        wrestleLabel: $draft.wrestleLabel,
+                        readyColor: $draft.readyColor,
+                        wrestleColor: $draft.wrestleColor,
+                        restColor: $draft.restColor
+                    )
+                }
+                .padding(.horizontal, 16)
+                .padding(.top, 12)
+                .padding(.bottom, 24)
+            }
+            .scrollIndicators(.hidden)
+            .background(Color(uiColor: .systemGroupedBackground).ignoresSafeArea())
+            .navigationTitle("Workout Setup")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .topBarLeading) {
+                    Button {
+                        dismiss()
+                    } label: {
+                        Image(systemName: "xmark")
+                            .font(.system(size: 16, weight: .black))
+                            .frame(width: 36, height: 36)
                     }
-                }
-                Section("Timer Text") {
-                    TextField("Wrestle label", text: wrestleLabel)
-                        .textInputAutocapitalization(.characters)
-                        .autocorrectionDisabled()
-                }
-                Section("Background Colors") {
-                    ColorPicker("Get Ready", selection: readyColor, supportsOpacity: false)
-                    ColorPicker("Wrestle", selection: wrestleColor, supportsOpacity: false)
-                    ColorPicker("Rest", selection: restColor, supportsOpacity: false)
+                    .accessibilityLabel("Discard workout changes")
                 }
             }
-            .navigationTitle("Workout Setup")
-            .toolbar {
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button("Save & Apply") {
-                        timer.reset()
-                        dismiss()
-                    }
-                    .fontWeight(.semibold)
+            .safeAreaInset(edge: .bottom) {
+                Button {
+                    timer.settings = draft
+                    timer.reset()
+                    dismiss()
+                } label: {
+                    Text("SAVE & APPLY")
+                        .font(.headline.weight(.black))
+                        .tracking(0.7)
+                        .frame(maxWidth: .infinity, minHeight: 54)
                 }
+                .buttonStyle(.plain)
+                .foregroundStyle(.white)
+                .background(draft.wrestleColor, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+                .overlay {
+                    RoundedRectangle(cornerRadius: 16, style: .continuous)
+                        .stroke(.white.opacity(0.22), lineWidth: 1)
+                }
+                .shadow(color: draft.wrestleColor.opacity(0.28), radius: 12, y: 5)
+                .padding(.horizontal, 16)
+                .padding(.top, 10)
+                .padding(.bottom, 8)
+                .background(.ultraThinMaterial)
+                .accessibilityLabel("Save & Apply")
             }
             .interactiveDismissDisabled()
         }
     }
-
-    private var wrestleSeconds: Binding<Int> { Binding(get: { timer.settings.wrestleSeconds }, set: { timer.settings.wrestleSeconds = $0 }) }
-    private var restSeconds: Binding<Int> { Binding(get: { timer.settings.restSeconds }, set: { timer.settings.restSeconds = $0 }) }
-    private var readySeconds: Binding<Int> { Binding(get: { timer.settings.readySeconds }, set: { timer.settings.readySeconds = $0 }) }
-    private var rounds: Binding<Int> { Binding(get: { timer.settings.rounds }, set: { timer.settings.rounds = $0 }) }
-    private var wrestleLabel: Binding<String> { Binding(get: { timer.settings.wrestleLabel }, set: { timer.settings.wrestleLabel = $0 }) }
-    private var readyColor: Binding<Color> { Binding(get: { timer.settings.readyColor }, set: { timer.settings.readyColor = $0 }) }
-    private var wrestleColor: Binding<Color> { Binding(get: { timer.settings.wrestleColor }, set: { timer.settings.wrestleColor = $0 }) }
-    private var restColor: Binding<Color> { Binding(get: { timer.settings.restColor }, set: { timer.settings.restColor = $0 }) }
 }
 
-private struct DurationSelector: View {
+private struct DurationPreset: Identifiable {
+    let seconds: Int
+    let label: String
+    let accessibilityLabel: String
+
+    var id: Int { seconds }
+}
+
+private struct TimeAdjustment: Identifiable {
+    let delta: Int
+    let label: String
+
+    var id: Int { delta }
+}
+
+private struct PhaseDurationCard: View {
     @EnvironmentObject private var timer: WorkoutTimer
     let title: String
     let tint: Color
     @Binding var seconds: Int
-    let range: ClosedRange<Int>
+    let presets: [DurationPreset]
+    let customRange: ClosedRange<Int>
+    let customDefault: Int
+    @State private var customSelected: Bool
+
+    private let columns = [
+        GridItem(.flexible(), spacing: 9),
+        GridItem(.flexible(), spacing: 9),
+        GridItem(.flexible(), spacing: 9)
+    ]
+    private let adjustments = [
+        TimeAdjustment(delta: -60, label: "−1m"),
+        TimeAdjustment(delta: -5, label: "−5s"),
+        TimeAdjustment(delta: 5, label: "+5s"),
+        TimeAdjustment(delta: 60, label: "+1m")
+    ]
+
+    init(
+        title: String,
+        tint: Color,
+        seconds: Binding<Int>,
+        presets: [DurationPreset],
+        customRange: ClosedRange<Int>,
+        customDefault: Int
+    ) {
+        self.title = title
+        self.tint = tint
+        _seconds = seconds
+        self.presets = presets
+        self.customRange = customRange
+        self.customDefault = customDefault
+        _customSelected = State(
+            initialValue: !presets.contains(where: { $0.seconds == seconds.wrappedValue })
+        )
+    }
 
     var body: some View {
-        VStack(spacing: 6) {
-            Text(title.uppercased())
-                .font(.subheadline.weight(.bold))
-                .tracking(0.8)
-                .foregroundStyle(tint)
-                .frame(maxWidth: .infinity)
+        VStack(alignment: .leading, spacing: 12) {
+            HStack(spacing: 10) {
+                Circle()
+                    .fill(tint)
+                    .frame(width: 10, height: 10)
+                Text(title.uppercased())
+                    .font(.headline.weight(.black))
+                    .tracking(0.8)
 
-            HStack(alignment: .center, spacing: 6) {
-                VStack(spacing: 2) {
-                    Text("MIN")
-                        .font(.caption2.weight(.semibold))
-                        .foregroundStyle(.secondary)
+                Spacer()
 
-                    Picker("Minutes", selection: minutes) {
-                        ForEach(0...maximumMinutes, id: \.self) { minute in
-                            Text("\(minute)")
-                                .monospacedDigit()
-                                .tag(minute)
-                        }
-                    }
-                    .labelsHidden()
-                    .pickerStyle(.wheel)
-                    .frame(width: 88, height: 108)
-                    .clipped()
-                    .background(.black.opacity(0.14), in: RoundedRectangle(cornerRadius: 12))
-                    .overlay {
-                        RoundedRectangle(cornerRadius: 12)
-                            .stroke(tint.opacity(0.28), lineWidth: 1)
-                    }
-                    .accessibilityLabel("\(title) minutes")
+                Text(seconds == 0 ? "OFF" : clockText(seconds))
+                    .font(.subheadline.weight(.black))
+                    .monospacedDigit()
+                    .foregroundStyle(tint)
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 6)
+                    .background(tint.opacity(0.12), in: Capsule())
+            }
+
+            LazyVGrid(columns: columns, spacing: 9) {
+                ForEach(presets) { preset in
+                    presetButton(preset)
                 }
+                customButton
+            }
 
-                Text(":")
-                    .font(.title2.bold())
-                    .padding(.top, 14)
+            if customSelected {
+                customEditor
+                    .transition(.opacity.combined(with: .move(edge: .top)))
+            }
+        }
+        .padding(16)
+        .frame(maxWidth: .infinity)
+        .background(Color.white.opacity(0.055), in: RoundedRectangle(cornerRadius: 22, style: .continuous))
+        .overlay {
+            RoundedRectangle(cornerRadius: 22, style: .continuous)
+                .stroke(tint.opacity(0.24), lineWidth: 1)
+        }
+        .animation(.easeOut(duration: 0.16), value: customSelected)
+    }
 
-                VStack(spacing: 2) {
-                    Text("SEC")
-                        .font(.caption2.weight(.semibold))
-                        .foregroundStyle(.secondary)
+    private func presetButton(_ preset: DurationPreset) -> some View {
+        let selected = !customSelected && seconds == preset.seconds
 
-                    Picker("Seconds", selection: secondsPart) {
-                        ForEach(0...59, id: \.self) { second in
-                            Text(String(format: "%02d", second))
-                                .monospacedDigit()
-                                .tag(second)
-                        }
+        return Button {
+            ControlHaptics.shared.play(.selection, enabled: timer.settings.controlHapticsEnabled)
+            customSelected = false
+            seconds = preset.seconds
+        } label: {
+            HStack(spacing: 5) {
+                Text(preset.label)
+                    .font(.subheadline.weight(.black))
+                    .minimumScaleFactor(0.8)
+                    .lineLimit(1)
+                if selected {
+                    Image(systemName: "checkmark.circle.fill")
+                        .font(.caption.weight(.black))
+                }
+            }
+            .frame(maxWidth: .infinity, minHeight: 52)
+            .foregroundStyle(selected ? Color.white : Color.primary.opacity(0.78))
+            .background(
+                selected ? tint.opacity(0.36) : Color.white.opacity(0.045),
+                in: RoundedRectangle(cornerRadius: 13, style: .continuous)
+            )
+            .overlay {
+                RoundedRectangle(cornerRadius: 13, style: .continuous)
+                    .stroke(selected ? tint : Color.white.opacity(0.09), lineWidth: selected ? 2 : 1)
+            }
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel("\(title) \(preset.accessibilityLabel)")
+        .accessibilityValue(selected ? "Selected" : "Not selected")
+        .accessibilityAddTraits(selected ? .isSelected : [])
+    }
+
+    private var customButton: some View {
+        Button {
+            ControlHaptics.shared.play(.selection, enabled: timer.settings.controlHapticsEnabled)
+            if !customRange.contains(seconds) {
+                seconds = min(max(customDefault, customRange.lowerBound), customRange.upperBound)
+            }
+            customSelected = true
+        } label: {
+            HStack(spacing: 5) {
+                Text("CUSTOM")
+                    .font(.subheadline.weight(.black))
+                    .minimumScaleFactor(0.76)
+                    .lineLimit(1)
+                if customSelected {
+                    Image(systemName: "checkmark.circle.fill")
+                        .font(.caption.weight(.black))
+                }
+            }
+            .frame(maxWidth: .infinity, minHeight: 52)
+            .foregroundStyle(customSelected ? Color.white : Color.primary.opacity(0.78))
+            .background(
+                customSelected ? tint.opacity(0.36) : Color.white.opacity(0.045),
+                in: RoundedRectangle(cornerRadius: 13, style: .continuous)
+            )
+            .overlay {
+                RoundedRectangle(cornerRadius: 13, style: .continuous)
+                    .stroke(customSelected ? tint : Color.white.opacity(0.09), lineWidth: customSelected ? 2 : 1)
+            }
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel("\(title) Custom")
+        .accessibilityValue(customSelected ? "Selected" : "Not selected")
+        .accessibilityAddTraits(customSelected ? .isSelected : [])
+    }
+
+    private var customEditor: some View {
+        VStack(spacing: 10) {
+            Text(clockText(seconds))
+                .font(.system(size: 36, weight: .black, design: .rounded))
+                .monospacedDigit()
+                .frame(maxWidth: .infinity)
+                .accessibilityLabel("\(title) custom time \(clockText(seconds))")
+
+            HStack(spacing: 8) {
+                ForEach(adjustments) { adjustment in
+                    let enabled = clamped(seconds + adjustment.delta) != seconds
+                    Button {
+                        ControlHaptics.shared.play(.selection, enabled: timer.settings.controlHapticsEnabled)
+                        seconds = clamped(seconds + adjustment.delta)
+                    } label: {
+                        Text(adjustment.label)
+                            .font(.subheadline.weight(.black))
+                            .frame(maxWidth: .infinity, minHeight: 44)
                     }
-                    .labelsHidden()
-                    .pickerStyle(.wheel)
-                    .frame(width: 88, height: 108)
-                    .clipped()
-                    .background(.black.opacity(0.14), in: RoundedRectangle(cornerRadius: 12))
-                    .overlay {
-                        RoundedRectangle(cornerRadius: 12)
-                            .stroke(tint.opacity(0.28), lineWidth: 1)
-                    }
-                    .accessibilityLabel("\(title) seconds")
+                    .buttonStyle(.plain)
+                    .foregroundStyle(enabled ? Color.primary : Color.secondary.opacity(0.45))
+                    .background(Color.white.opacity(enabled ? 0.07 : 0.025), in: RoundedRectangle(cornerRadius: 11))
+                    .disabled(!enabled)
+                    .accessibilityLabel("\(title) custom \(adjustment.label)")
                 }
             }
         }
-        .padding(.horizontal, 6)
-        .padding(.vertical, 8)
-        .frame(maxWidth: .infinity)
-        .background(tint.opacity(0.08), in: RoundedRectangle(cornerRadius: 14))
-        .sensoryFeedback(.selection, trigger: seconds)
-        .onChange(of: seconds) { oldValue, newValue in
-            guard oldValue != newValue else { return }
-            timer.wheelClick()
+        .padding(12)
+        .background(Color.black.opacity(0.16), in: RoundedRectangle(cornerRadius: 15))
+    }
+
+    private func clamped(_ value: Int) -> Int {
+        min(max(value, customRange.lowerBound), customRange.upperBound)
+    }
+
+    private func clockText(_ value: Int) -> String {
+        String(format: "%d:%02d", value / 60, value % 60)
+    }
+}
+
+private struct RoundSelector: View {
+    @EnvironmentObject private var timer: WorkoutTimer
+    @Binding var rounds: Int
+
+    var body: some View {
+        HStack(spacing: 14) {
+            VStack(alignment: .leading, spacing: 3) {
+                Text("ROUNDS")
+                    .font(.headline.weight(.black))
+                    .tracking(0.8)
+                Text("Total Wrestle periods")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+
+            Spacer()
+
+            roundButton(icon: "minus", label: "Decrease rounds", enabled: rounds > 1) {
+                rounds = max(1, rounds - 1)
+            }
+
+            Text("\(rounds)")
+                .font(.system(size: 30, weight: .black, design: .rounded))
+                .monospacedDigit()
+                .frame(minWidth: 42)
+                .accessibilityLabel("\(rounds) rounds")
+
+            roundButton(icon: "plus", label: "Increase rounds", enabled: rounds < 99) {
+                rounds = min(99, rounds + 1)
+            }
+        }
+        .padding(16)
+        .background(Color.white.opacity(0.055), in: RoundedRectangle(cornerRadius: 22, style: .continuous))
+        .overlay {
+            RoundedRectangle(cornerRadius: 22, style: .continuous)
+                .stroke(Color.white.opacity(0.09), lineWidth: 1)
         }
     }
 
-    private var maximumMinutes: Int {
-        range.upperBound / 60
+    private func roundButton(
+        icon: String,
+        label: String,
+        enabled: Bool,
+        action: @escaping () -> Void
+    ) -> some View {
+        Button {
+            ControlHaptics.shared.play(.selection, enabled: timer.settings.controlHapticsEnabled)
+            action()
+        } label: {
+            Image(systemName: icon)
+                .font(.headline.weight(.black))
+                .frame(width: 44, height: 44)
+                .background(Color.white.opacity(enabled ? 0.08 : 0.03), in: Circle())
+        }
+        .buttonStyle(.plain)
+        .disabled(!enabled)
+        .opacity(enabled ? 1 : 0.38)
+        .accessibilityLabel(label)
     }
+}
 
-    private var minutes: Binding<Int> {
-        Binding(
-            get: { seconds / 60 },
-            set: { update(minutes: $0, secondsPart: seconds % 60) }
-        )
-    }
+private struct DisplaySettingsCard: View {
+    @Binding var wrestleLabel: String
+    @Binding var readyColor: Color
+    @Binding var wrestleColor: Color
+    @Binding var restColor: Color
 
-    private var secondsPart: Binding<Int> {
-        Binding(
-            get: { seconds % 60 },
-            set: { update(minutes: seconds / 60, secondsPart: $0) }
-        )
-    }
+    var body: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            Text("DISPLAY")
+                .font(.headline.weight(.black))
+                .tracking(0.8)
 
-    private func update(minutes: Int, secondsPart: Int) {
-        let requested = minutes * 60 + secondsPart
-        seconds = min(max(requested, range.lowerBound), range.upperBound)
+            TextField("Wrestle label", text: $wrestleLabel)
+                .textInputAutocapitalization(.characters)
+                .autocorrectionDisabled()
+                .padding(.horizontal, 12)
+                .frame(minHeight: 46)
+                .background(Color.black.opacity(0.16), in: RoundedRectangle(cornerRadius: 12))
+
+            Divider()
+
+            ColorPicker("Get Ready color", selection: $readyColor, supportsOpacity: false)
+            ColorPicker("Wrestle color", selection: $wrestleColor, supportsOpacity: false)
+            ColorPicker("Rest color", selection: $restColor, supportsOpacity: false)
+        }
+        .padding(16)
+        .background(Color.white.opacity(0.055), in: RoundedRectangle(cornerRadius: 22, style: .continuous))
+        .overlay {
+            RoundedRectangle(cornerRadius: 22, style: .continuous)
+                .stroke(Color.white.opacity(0.09), lineWidth: 1)
+        }
     }
 }
