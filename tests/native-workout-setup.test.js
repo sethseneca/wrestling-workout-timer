@@ -44,6 +44,15 @@ test("workout setup edits a draft and exposes explicit discard and apply actions
     setupSource,
     /Button \{\s*timer\.settings = draft\s*timer\.reset\(\)\s*dismiss\(\)/
   );
+  const saveButton = between(
+    setupSource,
+    '.safeAreaInset(edge: .bottom)',
+    '.interactiveDismissDisabled()'
+  );
+  assert.match(
+    saveButton,
+    /Text\("SAVE & APPLY"\)[\s\S]*\.frame\(maxWidth: \.infinity, minHeight: 54\)[\s\S]*\.contentShape\(Rectangle\(\)\)/
+  );
 });
 
 test("phase durations use the requested preset blocks with None only for Get Ready", () => {

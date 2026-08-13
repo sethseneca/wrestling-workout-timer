@@ -169,6 +169,36 @@ final class WrestlingTimerUITests: XCTestCase {
         assertLandscapeLayout(in: app, controlsOnRight: false, audioCorner: .bottomRight)
     }
 
+    func testSaveAndApplyAcceptsTapsAcrossTheEntireButton() throws {
+        XCUIDevice.shared.orientation = .portrait
+
+        let app = XCUIApplication()
+        app.launch()
+
+        for horizontalOffset in [0.06, 0.94] {
+            app.buttons["Open workout setup"].tap()
+            XCTAssertTrue(app.navigationBars["Workout Setup"].waitForExistence(timeout: 5))
+
+            let saveButton = app.buttons["Save & Apply"]
+            XCTAssertTrue(saveButton.waitForExistence(timeout: 3))
+            XCTAssertTrue(saveButton.isHittable)
+            XCTAssertGreaterThan(
+                saveButton.frame.width,
+                app.windows.firstMatch.frame.width * 0.80,
+                "Save & Apply must expose its full visual width as one button."
+            )
+
+            saveButton
+                .coordinate(withNormalizedOffset: CGVector(dx: horizontalOffset, dy: 0.5))
+                .tap()
+
+            XCTAssertTrue(
+                app.buttons["Open workout setup"].waitForExistence(timeout: 3),
+                "A tap near either horizontal edge must apply and close Workout Setup."
+            )
+        }
+    }
+
     func testMinimizedWorkoutSurvivesMidpointHandoff() throws {
         let app = XCUIApplication()
         app.launchEnvironment["WRESTLING_DEVICE_VERIFY"] = "1"

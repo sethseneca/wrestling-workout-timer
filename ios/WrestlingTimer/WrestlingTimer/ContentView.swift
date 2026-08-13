@@ -1173,6 +1173,7 @@ private struct SetupView: View {
                         .font(.headline.weight(.black))
                         .tracking(0.7)
                         .frame(maxWidth: .infinity, minHeight: 54)
+                        .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
                 .foregroundStyle(.white)
