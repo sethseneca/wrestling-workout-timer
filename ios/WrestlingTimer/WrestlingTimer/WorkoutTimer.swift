@@ -110,6 +110,20 @@ final class WorkoutTimer: ObservableObject {
         }
     }
 
+    func renderedPhaseProgress(at date: Date) -> Double {
+        guard isRunning, let startDate, !segments.isEmpty else {
+            return phaseProgress
+        }
+
+        let renderedElapsed = elapsedBeforeStart + max(0, date.timeIntervalSince(startDate))
+        let totalDuration = segments.last!.start + segments.last!.duration
+        guard renderedElapsed < totalDuration else { return 1 }
+
+        let segment = segments[currentSegmentIndex(at: renderedElapsed)]
+        guard segment.duration > 0 else { return 1 }
+        return min(max((renderedElapsed - segment.start) / segment.duration, 0), 1)
+    }
+
     func startOrPause() {
         if isRunning {
             pause()

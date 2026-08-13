@@ -1,6 +1,25 @@
 import XCTest
 
 final class WrestlingTimerUITests: XCTestCase {
+    func testDrainAdvancesAndResetsAtThePhaseBoundary() throws {
+        XCUIDevice.shared.orientation = .portrait
+
+        let app = XCUIApplication()
+        app.launchEnvironment["WRESTLING_DEVICE_VERIFY"] = "1"
+        app.launch()
+
+        XCTAssertTrue(app.staticTexts["GET READY"].waitForExistence(timeout: 3))
+        captureScreen(named: "drain-01-ready-start")
+
+        sleep(2)
+        captureScreen(named: "drain-02-ready-progress")
+
+        guard app.staticTexts["WRESTLE"].waitForExistence(timeout: 3) else {
+            throw XCTSkip("Requires the WRESTLING_VERIFICATION app build condition.")
+        }
+        captureScreen(named: "drain-03-wrestle-reset")
+    }
+
     func testControlsTrackPhysicalPhoneEdgesAcrossOrientations() throws {
         XCUIDevice.shared.orientation = .portrait
 

@@ -21,13 +21,19 @@ struct ContentView: View {
                 timer.color(for: timer.phase)
                     .ignoresSafeArea()
 
-                VStack(spacing: 0) {
-                    Color.black
-                        .frame(height: geometry.size.height * timer.phaseProgress)
-                    Spacer(minLength: 0)
+                TimelineView(
+                    .animation(minimumInterval: 1.0 / 60.0, paused: !timer.isRunning)
+                ) { timeline in
+                    VStack(spacing: 0) {
+                        Color.black
+                            .frame(
+                                height: geometry.size.height
+                                    * timer.renderedPhaseProgress(at: timeline.date)
+                            )
+                        Spacer(minLength: 0)
+                    }
                 }
                 .ignoresSafeArea()
-                .animation(.linear(duration: 0.1), value: timer.phaseProgress)
 
                 timerReadout(for: layoutOrientation)
                     .padding(readoutInsets(for: layoutOrientation))
