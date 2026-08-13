@@ -27,11 +27,15 @@ final class AudioCueScheduler {
     private let manualGains = (0..<12).map { _ in AVAudioUnitEQ(numberOfBands: 0) }
     private var manualKinds = Array<CueKind?>(repeating: nil, count: 12)
     private let keepAliveNode = AVAudioPlayerNode()
+    private let transitionNode = AVAudioPlayerNode()
     private var buffers: [CueKind: AVAudioPCMBuffer] = [:]
     private var silentBuffer: AVAudioPCMBuffer?
+    private var transitionBuffer: AVAudioPCMBuffer?
     private var isPrepared = false
     private var isDuckingBackgroundAudio = false
     private var nextManualVoice = 0
+    private let transitionGenerationLock = NSLock()
+    private var transitionGeneration: UInt = 0
 
     func prepare() {
         prepareIfNeeded()
@@ -42,12 +46,15 @@ final class AudioCueScheduler {
         whistleVolume: Float,
         warningVolume: Float,
         elapsed: TimeInterval,
-        duckBackgroundAudio: Bool
+        duckBackgroundAudio: Bool,
+        transitionOffsets: [TimeInterval],
+        onTransition: @escaping @Sendable (Int) -> Void
     ) {
         guard configureAudioSession(duckBackgroundAudio: duckBackgroundAudio) else { return }
         isDuckingBackgroundAudio = duckBackgroundAudio
         prepareIfNeeded()
         stopTimerNodes()
+        let activeTransitionGeneration = currentTransitionGeneration()
         setVolumes(whistle: whistleVolume, warning: warningVolume)
         guard activateEngine() else { return }
 
@@ -61,6 +68,34 @@ final class AudioCueScheduler {
             let delay = max(0.08, cue.offset - elapsed)
             let scheduledTime = AVAudioTime(hostTime: startHostTime + AVAudioTime.hostTime(forSeconds: delay))
             scheduleTimerCue(cue.kind, at: scheduledTime)
+        }
+
+        if let transitionBuffer {
+            // ActivityKit needs a short render lead so the new phase becomes
+            // visible at the audible boundary instead of after it.
+            let activityRenderLead: TimeInterval = 0.75
+            var scheduledTransition = false
+            for (transitionIndex, offset) in transitionOffsets.enumerated()
+            where offset - activityRenderLead > elapsed + 0.001 {
+                scheduledTransition = true
+                let delay = max(0.08, offset - elapsed - activityRenderLead)
+                let scheduledTime = AVAudioTime(
+                    hostTime: startHostTime + AVAudioTime.hostTime(forSeconds: delay)
+                )
+                transitionNode.scheduleBuffer(
+                    transitionBuffer,
+                    at: scheduledTime,
+                    options: [],
+                    completionCallbackType: .dataRendered
+                ) { [weak self] _ in
+                    guard self?.isCurrentTransitionGeneration(activeTransitionGeneration) == true else {
+                        return
+                    }
+                    NSLog("Audio boundary rendered for segment %d", transitionIndex + 1)
+                    onTransition(transitionIndex + 1)
+                }
+            }
+            if scheduledTransition { transitionNode.play() }
         }
     }
 
@@ -174,6 +209,7 @@ final class AudioCueScheduler {
         manualNodes.forEach(engine.attach)
         manualGains.forEach(engine.attach)
         engine.attach(keepAliveNode)
+        engine.attach(transitionNode)
 
         let mixer = engine.mainMixerNode
         engine.connect(scheduledWhistleNode, to: scheduledWhistleGain, format: buffers[.whistle]?.format)
@@ -191,7 +227,9 @@ final class AudioCueScheduler {
 
         let keepAliveFormat = mixer.outputFormat(forBus: 0)
         engine.connect(keepAliveNode, to: mixer, format: keepAliveFormat)
+        engine.connect(transitionNode, to: mixer, format: keepAliveFormat)
         silentBuffer = makeSilentBuffer(format: keepAliveFormat)
+        transitionBuffer = makeTransitionMarkerBuffer(format: keepAliveFormat)
         isPrepared = true
     }
 
@@ -223,10 +261,30 @@ final class AudioCueScheduler {
     }
 
     private func stopTimerNodes() {
+        invalidateTransitionGeneration()
         scheduledWhistleNode.stop()
         scheduledClapperNode.stop()
         immediateTimerNode.stop()
         keepAliveNode.stop()
+        transitionNode.stop()
+    }
+
+    private func invalidateTransitionGeneration() {
+        transitionGenerationLock.lock()
+        transitionGeneration &+= 1
+        transitionGenerationLock.unlock()
+    }
+
+    private func currentTransitionGeneration() -> UInt {
+        transitionGenerationLock.lock()
+        defer { transitionGenerationLock.unlock() }
+        return transitionGeneration
+    }
+
+    private func isCurrentTransitionGeneration(_ generation: UInt) -> Bool {
+        transitionGenerationLock.lock()
+        defer { transitionGenerationLock.unlock() }
+        return transitionGeneration == generation
     }
 
     private func decibels(for linearVolume: Float) -> Float {
@@ -249,11 +307,33 @@ final class AudioCueScheduler {
         }
     }
 
-    private func makeSilentBuffer(format: AVAudioFormat) -> AVAudioPCMBuffer? {
+    private func makeSilentBuffer(
+        format: AVAudioFormat,
+        duration: TimeInterval = 1
+    ) -> AVAudioPCMBuffer? {
         guard format.sampleRate > 0, format.channelCount > 0 else { return nil }
-        let frameCount = AVAudioFrameCount(format.sampleRate)
+        let frameCount = AVAudioFrameCount(max(1, format.sampleRate * duration))
         guard let buffer = AVAudioPCMBuffer(pcmFormat: format, frameCapacity: frameCount) else { return nil }
         buffer.frameLength = frameCount
+        return buffer
+    }
+
+    private func makeTransitionMarkerBuffer(format: AVAudioFormat) -> AVAudioPCMBuffer? {
+        let duration = 0.02
+        let frameCount = AVAudioFrameCount(max(1, format.sampleRate * duration))
+        guard let buffer = AVAudioPCMBuffer(pcmFormat: format, frameCapacity: frameCount) else {
+            return nil
+        }
+
+        buffer.frameLength = frameCount
+        let amplitude: Float = 0.000_01
+        for channel in 0..<Int(format.channelCount) {
+            guard let samples = buffer.floatChannelData?[channel] else { continue }
+            for frame in 0..<Int(frameCount) {
+                let time = Double(frame) / format.sampleRate
+                samples[frame] = amplitude * Float(sin(2 * Double.pi * 1_000 * time))
+            }
+        }
         return buffer
     }
 

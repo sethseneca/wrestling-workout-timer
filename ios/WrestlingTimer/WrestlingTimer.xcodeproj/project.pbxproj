@@ -16,11 +16,15 @@
 		A10000000000000000000008 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000010 /* Assets.xcassets */; };
 		A1000000000000000000000D /* Assets/air-horn.m4a in Resources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000015 /* Assets/air-horn.m4a */; };
 		A1000000000000000000000E /* Assets/round-one.m4a in Resources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000016 /* Assets/round-one.m4a */; };
+		A1000000000000000000000F /* Assets/silent.caf in Resources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000017 /* Assets/silent.caf */; };
 		B10000000000000000000001 /* WorkoutActivityAttributes.swift in Sources */ = {isa = PBXBuildFile; fileRef = B20000000000000000000001 /* WorkoutActivityAttributes.swift */; };
 		B10000000000000000000002 /* WorkoutLiveActivityController.swift in Sources */ = {isa = PBXBuildFile; fileRef = B20000000000000000000002 /* WorkoutLiveActivityController.swift */; };
 		B10000000000000000000003 /* WorkoutActivityAttributes.swift in Sources */ = {isa = PBXBuildFile; fileRef = B20000000000000000000001 /* WorkoutActivityAttributes.swift */; };
 		B10000000000000000000004 /* WrestlingTimerLiveActivity.swift in Sources */ = {isa = PBXBuildFile; fileRef = B20000000000000000000003 /* WrestlingTimerLiveActivity.swift */; };
 		B10000000000000000000005 /* WrestlingTimerLiveActivity.appex in Embed App Extensions */ = {isa = PBXBuildFile; fileRef = B20000000000000000000005 /* WrestlingTimerLiveActivity.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		B10000000000000000000006 /* WorkoutTimerIntents.swift in Sources */ = {isa = PBXBuildFile; fileRef = B20000000000000000000006 /* WorkoutTimerIntents.swift */; };
+		B10000000000000000000007 /* WorkoutTimerIntents.swift in Sources */ = {isa = PBXBuildFile; fileRef = B20000000000000000000006 /* WorkoutTimerIntents.swift */; };
+		C10000000000000000000001 /* WrestlingTimerUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C20000000000000000000001 /* WrestlingTimerUITests.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -30,6 +34,13 @@
 			proxyType = 1;
 			remoteGlobalIDString = B50000000000000000000001;
 			remoteInfo = WrestlingTimerLiveActivity;
+		};
+		C90000000000000000000001 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = A70000000000000000000001 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = A50000000000000000000001;
+			remoteInfo = "Wrestling Timer";
 		};
 /* End PBXContainerItemProxy section */
 
@@ -59,11 +70,15 @@
 		A20000000000000000000010 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		A20000000000000000000015 /* Assets/air-horn.m4a */ = {isa = PBXFileReference; lastKnownFileType = file; path = "Assets/air-horn.m4a"; sourceTree = "<group>"; };
 		A20000000000000000000016 /* Assets/round-one.m4a */ = {isa = PBXFileReference; lastKnownFileType = file; path = "Assets/round-one.m4a"; sourceTree = "<group>"; };
+		A20000000000000000000017 /* Assets/silent.caf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "Assets/silent.caf"; sourceTree = "<group>"; };
 		B20000000000000000000001 /* WorkoutActivityAttributes.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkoutActivityAttributes.swift; sourceTree = "<group>"; };
 		B20000000000000000000002 /* WorkoutLiveActivityController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkoutLiveActivityController.swift; sourceTree = "<group>"; };
 		B20000000000000000000003 /* WrestlingTimerLiveActivity.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WrestlingTimerLiveActivity.swift; sourceTree = "<group>"; };
 		B20000000000000000000004 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		B20000000000000000000005 /* WrestlingTimerLiveActivity.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = WrestlingTimerLiveActivity.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		B20000000000000000000006 /* WorkoutTimerIntents.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkoutTimerIntents.swift; sourceTree = "<group>"; };
+		C20000000000000000000001 /* WrestlingTimerUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WrestlingTimerUITests.swift; sourceTree = "<group>"; };
+		C20000000000000000000002 /* WrestlingTimerUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = WrestlingTimerUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -81,6 +96,13 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		C40000000000000000000002 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
@@ -90,6 +112,7 @@
 				A30000000000000000000002 /* WrestlingTimer */,
 				B30000000000000000000001 /* Shared */,
 				B30000000000000000000002 /* WrestlingTimerLiveActivity */,
+				C30000000000000000000001 /* WrestlingTimerUITests */,
 				A30000000000000000000003 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -107,6 +130,7 @@
 				A20000000000000000000007 /* Assets/ten-second-clapper.m4a */,
 				A20000000000000000000015 /* Assets/air-horn.m4a */,
 				A20000000000000000000016 /* Assets/round-one.m4a */,
+				A20000000000000000000017 /* Assets/silent.caf */,
 				A20000000000000000000010 /* Assets.xcassets */,
 			);
 			path = WrestlingTimer;
@@ -117,6 +141,7 @@
 			children = (
 				A20000000000000000000009 /* Wrestling Timer.app */,
 				B20000000000000000000005 /* WrestlingTimerLiveActivity.appex */,
+				C20000000000000000000002 /* WrestlingTimerUITests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -125,6 +150,7 @@
 			isa = PBXGroup;
 			children = (
 				B20000000000000000000001 /* WorkoutActivityAttributes.swift */,
+				B20000000000000000000006 /* WorkoutTimerIntents.swift */,
 			);
 			path = Shared;
 			sourceTree = "<group>";
@@ -136,6 +162,14 @@
 				B20000000000000000000004 /* Info.plist */,
 			);
 			path = WrestlingTimerLiveActivity;
+			sourceTree = "<group>";
+		};
+		C30000000000000000000001 /* WrestlingTimerUITests */ = {
+			isa = PBXGroup;
+			children = (
+				C20000000000000000000001 /* WrestlingTimerUITests.swift */,
+			);
+			path = WrestlingTimerUITests;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -177,6 +211,24 @@
 			productReference = B20000000000000000000005 /* WrestlingTimerLiveActivity.appex */;
 			productType = "com.apple.product-type.app-extension";
 		};
+		C50000000000000000000001 /* WrestlingTimerUITests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = C60000000000000000000001 /* Build configuration list for PBXNativeTarget "WrestlingTimerUITests" */;
+			buildPhases = (
+				C40000000000000000000001 /* Sources */,
+				C40000000000000000000002 /* Frameworks */,
+				C40000000000000000000003 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				CA0000000000000000000001 /* PBXTargetDependency */,
+			);
+			name = WrestlingTimerUITests;
+			productName = WrestlingTimerUITests;
+			productReference = C20000000000000000000002 /* WrestlingTimerUITests.xctest */;
+			productType = "com.apple.product-type.bundle.ui-testing";
+		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -191,6 +243,10 @@
 					};
 					B50000000000000000000001 = {
 						CreatedOnToolsVersion = 26.6;
+					};
+					C50000000000000000000001 = {
+						CreatedOnToolsVersion = 26.6;
+						TestTargetID = A50000000000000000000001;
 					};
 				};
 			};
@@ -209,6 +265,7 @@
 			targets = (
 				A50000000000000000000001 /* Wrestling Timer */,
 				B50000000000000000000001 /* WrestlingTimerLiveActivity */,
+				C50000000000000000000001 /* WrestlingTimerUITests */,
 			);
 		};
 /* End PBXProject section */
@@ -222,11 +279,19 @@
 				A10000000000000000000006 /* Assets/ten-second-clapper.m4a in Resources */,
 				A1000000000000000000000D /* Assets/air-horn.m4a in Resources */,
 				A1000000000000000000000E /* Assets/round-one.m4a in Resources */,
+				A1000000000000000000000F /* Assets/silent.caf in Resources */,
 				A10000000000000000000008 /* Assets.xcassets in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 		B40000000000000000000003 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		C40000000000000000000003 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -245,6 +310,7 @@
 				A10000000000000000000003 /* WorkoutTimer.swift in Sources */,
 				A10000000000000000000004 /* AudioCueScheduler.swift in Sources */,
 				B10000000000000000000001 /* WorkoutActivityAttributes.swift in Sources */,
+				B10000000000000000000006 /* WorkoutTimerIntents.swift in Sources */,
 				B10000000000000000000002 /* WorkoutLiveActivityController.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -254,7 +320,16 @@
 			buildActionMask = 2147483647;
 			files = (
 				B10000000000000000000003 /* WorkoutActivityAttributes.swift in Sources */,
+				B10000000000000000000007 /* WorkoutTimerIntents.swift in Sources */,
 				B10000000000000000000004 /* WrestlingTimerLiveActivity.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		C40000000000000000000001 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				C10000000000000000000001 /* WrestlingTimerUITests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -265,6 +340,11 @@
 			isa = PBXTargetDependency;
 			target = B50000000000000000000001 /* WrestlingTimerLiveActivity */;
 			targetProxy = B90000000000000000000001 /* PBXContainerItemProxy */;
+		};
+		CA0000000000000000000001 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = A50000000000000000000001 /* Wrestling Timer */;
+			targetProxy = C90000000000000000000001 /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
 
@@ -387,6 +467,40 @@
 			};
 			name = Release;
 		};
+		C80000000000000000000001 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = 37F5FGW737;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.sethseneca.wrestlingtimer.uitests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 1;
+				TEST_TARGET_NAME = "Wrestling Timer";
+			};
+			name = Debug;
+		};
+		C80000000000000000000002 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = 37F5FGW737;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.sethseneca.wrestlingtimer.uitests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 1;
+				TEST_TARGET_NAME = "Wrestling Timer";
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -413,6 +527,15 @@
 			buildConfigurations = (
 				B80000000000000000000001 /* Debug */,
 				B80000000000000000000002 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		C60000000000000000000001 /* Build configuration list for PBXNativeTarget "WrestlingTimerUITests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				C80000000000000000000001 /* Debug */,
+				C80000000000000000000002 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

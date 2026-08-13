@@ -10,7 +10,9 @@ struct WrestlingTimerApp: App {
             ContentView()
                 .environmentObject(timer)
                 .onChange(of: scenePhase) { _, phase in
-                    if phase == .active { timer.refresh() }
+                    if phase == .active {
+                        timer.refresh(forceLiveActivitySync: true)
+                    }
                 }
         }
     }

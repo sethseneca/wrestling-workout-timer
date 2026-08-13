@@ -53,7 +53,6 @@ final class WorkoutTimer: ObservableObject {
     private var segments: [WorkoutSegment] = []
     private var startDate: Date?
     private var elapsedBeforeStart: TimeInterval = 0
-    private var lastLiveActivitySegmentIndex: Int?
 
     init() {
         if UserDefaults.standard.object(forKey: "automaticTimerSoundsEnabled") != nil {
@@ -66,6 +65,17 @@ final class WorkoutTimer: ObservableObject {
             )
         }
         reset(stopAudio: false)
+        WorkoutTimerCommandCenter.register(
+            toggle: { [weak self] in self?.startOrPause() },
+            previousInterval: { [weak self] in self?.previousInterval() },
+            nextInterval: { [weak self] in self?.nextInterval() },
+            reset: { [weak self] in self?.reset() }
+        )
+#if WRESTLING_VERIFICATION
+        if ProcessInfo.processInfo.environment["WRESTLING_DEVICE_VERIFY"] == "1" {
+            startDeviceVerificationWorkout()
+        }
+#endif
     }
 
     deinit {
@@ -79,6 +89,10 @@ final class WorkoutTimer: ObservableObject {
     }
 
     var phaseTitle: String {
+        title(for: phase)
+    }
+
+    private func title(for phase: WorkoutPhase) -> String {
         guard phase == .wrestle else { return phase.rawValue }
         let label = settings.wrestleLabel.trimmingCharacters(in: .whitespacesAndNewlines)
         return label.isEmpty ? WorkoutPhase.wrestle.rawValue : label.uppercased()
@@ -118,24 +132,13 @@ final class WorkoutTimer: ObservableObject {
         startDate = Date()
         isRunning = true
         beginTicking()
-        refresh(updateLiveActivity: false)
-        syncLiveActivity()
+        refresh()
+        startLiveActivityPlan()
 
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.02) { [weak self] in
             guard let self, self.isRunning else { return }
             let audioElapsed = self.elapsed
-            let startingPhase = self.segments.last(where: { $0.start <= audioElapsed })?.phase ?? .wrestle
-            if self.settings.automaticTimerSoundsEnabled {
-                self.audio.start(
-                    cues: self.makeCues(),
-                    whistleVolume: Float(self.settings.whistleVolume),
-                    warningVolume: Float(self.settings.tenSecondWarningVolume),
-                    elapsed: audioElapsed,
-                    duckBackgroundAudio: startingPhase == .rest
-                )
-            } else {
-                self.audio.stopTimer()
-            }
+            self.startTimerAudio(at: audioElapsed)
             if self.settings.automaticTimerSoundsEnabled, let immediateStartCue {
                 self.audio.playTimerCueNow(
                     immediateStartCue,
@@ -151,7 +154,7 @@ final class WorkoutTimer: ObservableObject {
         isRunning = false
         tickTimer?.invalidate()
         tickTimer = nil
-        refresh(updateLiveActivity: false)
+        refresh()
         syncLiveActivity()
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.02) { [weak self] in self?.audio.stopTimer() }
     }
@@ -165,9 +168,8 @@ final class WorkoutTimer: ObservableObject {
         tickTimer = nil
         if stopAudio { audio.stopTimer() }
         liveActivity.end()
-        lastLiveActivitySegmentIndex = nil
         segments = makeSegments()
-        refresh(updateLiveActivity: false)
+        refresh()
     }
 
     func previousInterval() {
@@ -223,17 +225,7 @@ final class WorkoutTimer: ObservableObject {
             return
         }
 
-        if enabled {
-            audio.start(
-                cues: makeCues(),
-                whistleVolume: Float(settings.whistleVolume),
-                warningVolume: Float(settings.tenSecondWarningVolume),
-                elapsed: elapsed,
-                duckBackgroundAudio: phase == .rest
-            )
-        } else {
-            audio.stopTimer()
-        }
+        startTimerAudio(at: elapsed)
     }
 
     func setSoundboardVolume(_ volume: Double) {
@@ -268,7 +260,7 @@ final class WorkoutTimer: ObservableObject {
                 )
             }
         }
-        refresh(updateLiveActivity: false)
+        refresh()
         if liveActivity.hasActiveActivity {
             syncLiveActivity()
         }
@@ -290,7 +282,26 @@ final class WorkoutTimer: ObservableObject {
         )
     }
 
-    func refresh(updateLiveActivity: Bool = true) {
+#if WRESTLING_VERIFICATION
+    func startDeviceVerificationWorkout() {
+        settings.readySeconds = 3
+        settings.wrestleSeconds = 6
+        settings.restSeconds = 4
+        settings.rounds = 8
+        settings.tenSecondWarningEnabled = false
+        settings.automaticTimerSoundsEnabled = true
+        reset()
+        NSLog("Device verification workout configured: ready=3 wrestle=6 rest=4 rounds=8")
+
+        // Give ActivityKit time to dismiss any activity left by a prior run
+        // before creating the isolated verification activity.
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) { [weak self] in
+            self?.start()
+        }
+    }
+#endif
+
+    func refresh(forceLiveActivitySync: Bool = false) {
         guard !segments.isEmpty else { return }
         let currentElapsed = elapsed
         let total = segments.last!.start + segments.last!.duration
@@ -312,7 +323,6 @@ final class WorkoutTimer: ObservableObject {
             isFinished = true
             if shouldEndLiveActivity {
                 liveActivity.end()
-                lastLiveActivitySegmentIndex = nil
             }
             return
         }
@@ -330,7 +340,7 @@ final class WorkoutTimer: ObservableObject {
         phaseProgress = segment.duration > 0
             ? min(max((currentElapsed - segment.start) / segment.duration, 0), 1)
             : 1
-        if updateLiveActivity, isRunning, lastLiveActivitySegmentIndex != index {
+        if isRunning, forceLiveActivitySync {
             syncLiveActivity(segmentIndex: index)
         }
     }
@@ -355,7 +365,7 @@ final class WorkoutTimer: ObservableObject {
         if isRunning {
             start()
         } else {
-            refresh(updateLiveActivity: false)
+            refresh()
             if liveActivity.hasActiveActivity {
                 syncLiveActivity(segmentIndex: segmentIndex)
             }
@@ -368,26 +378,57 @@ final class WorkoutTimer: ObservableObject {
         let index = segmentIndex ?? currentSegmentIndex(at: currentElapsed)
         guard segments.indices.contains(index) else { return }
 
-        let segment = segments[index]
-        let elapsedInSegment = min(max(currentElapsed - segment.start, 0), segment.duration)
-        let remaining = max(0, segment.duration - elapsedInSegment)
         let now = Date()
-        let state = WorkoutActivityAttributes.ContentState(
-            phase: phaseTitle,
-            round: segment.round,
-            totalRounds: settings.rounds,
-            timerStart: now.addingTimeInterval(-elapsedInSegment),
-            timerEnd: now.addingTimeInterval(remaining),
-            remainingSeconds: Int(ceil(remaining)),
+        let state = makeLiveActivityState(
+            segmentIndex: index,
+            workoutStart: now.addingTimeInterval(-currentElapsed),
             isRunning: isRunning
         )
 
-        if isRunning {
-            liveActivity.startOrUpdate(state)
-        } else {
-            liveActivity.updateIfActive(state)
-        }
-        lastLiveActivitySegmentIndex = index
+        liveActivity.updateIfActive(state)
+    }
+
+    private func startLiveActivityPlan() {
+        guard !segments.isEmpty, !isFinished else { return }
+        let currentElapsed = elapsed
+        let currentIndex = currentSegmentIndex(at: currentElapsed)
+        let workoutStart = Date().addingTimeInterval(-currentElapsed)
+        let states = segments.indices
+            .filter { $0 >= currentIndex }
+            .map {
+                makeLiveActivityState(
+                    segmentIndex: $0,
+                    workoutStart: workoutStart,
+                    isRunning: true
+                )
+            }
+        liveActivity.startWorkout(with: states)
+    }
+
+    private func makeLiveActivityState(
+        segmentIndex index: Int,
+        workoutStart: Date,
+        isRunning: Bool
+    ) -> WorkoutActivityAttributes.ContentState {
+        let segment = segments[index]
+        let timerStart = workoutStart.addingTimeInterval(segment.start)
+        let timerEnd = timerStart.addingTimeInterval(segment.duration)
+        let now = Date()
+        let remaining = isRunning
+            ? min(segment.duration, max(0, timerEnd.timeIntervalSince(now)))
+            : max(0, segment.duration - (elapsedBeforeStart - segment.start))
+        return WorkoutActivityAttributes.ContentState(
+            phase: title(for: segment.phase),
+            round: segment.round,
+            totalRounds: settings.rounds,
+            timerStart: timerStart,
+            timerEnd: timerEnd,
+            remainingSeconds: Int(ceil(remaining)),
+            isRunning: isRunning,
+            canGoBack: index > 0,
+            canAdvance: index < segments.count - 1,
+            segmentIndex: index
+        )
     }
 
     private func currentSegmentIndex(at elapsed: TimeInterval? = nil) -> Int {
@@ -432,6 +473,83 @@ final class WorkoutTimer: ObservableObject {
         }
         cues.append(ScheduledCue(kind: .whistle, offset: total))
         return cues
+    }
+
+    private func makeTransitionOffsets() -> [TimeInterval] {
+        segments.map { $0.start + $0.duration }
+    }
+
+    private func startTimerAudio(at audioElapsed: TimeInterval) {
+        let startingSegmentIndex = currentSegmentIndex(at: audioElapsed)
+        let startingPhase = segments[startingSegmentIndex].phase
+        let segmentCount = segments.count
+        let workoutStart = Date().addingTimeInterval(-audioElapsed)
+        let workoutEnd = workoutStart.addingTimeInterval(
+            segments.last.map { $0.start + $0.duration } ?? 0
+        )
+        let boundaryStates = segments.indices.map {
+            makeLiveActivityState(
+                segmentIndex: $0,
+                workoutStart: workoutStart,
+                isRunning: true
+            )
+        }
+        audio.start(
+            cues: settings.automaticTimerSoundsEnabled ? makeCues() : [],
+            whistleVolume: Float(settings.whistleVolume),
+            warningVolume: Float(settings.tenSecondWarningVolume),
+            elapsed: audioElapsed,
+            duckBackgroundAudio: settings.automaticTimerSoundsEnabled && startingPhase == .rest,
+            transitionOffsets: makeTransitionOffsets()
+        ) { [weak self] nextSegmentIndex in
+            if boundaryStates.indices.contains(nextSegmentIndex) {
+                WorkoutLiveActivityController.updateFromAudioBoundary(
+                    boundaryStates[nextSegmentIndex]
+                )
+            } else if nextSegmentIndex >= segmentCount {
+                WorkoutLiveActivityController.endFromAudioBoundary(at: workoutEnd)
+            }
+
+            Task { @MainActor [weak self] in
+                guard let self, self.isRunning else { return }
+                self.handleScheduledTransition(to: nextSegmentIndex)
+            }
+        }
+    }
+
+    private func handleScheduledTransition(to segmentIndex: Int) {
+        guard isRunning else { return }
+
+        let boundary = segments.indices.contains(segmentIndex)
+            ? segments[segmentIndex].start
+            : (segments.last.map { $0.start + $0.duration } ?? elapsed)
+        let delay = max(0, boundary - elapsed + 0.02)
+        guard delay <= 0.002 else {
+            DispatchQueue.main.asyncAfter(deadline: .now() + delay) { [weak self] in
+                self?.applyScheduledTransition(to: segmentIndex)
+            }
+            return
+        }
+
+        applyScheduledTransition(to: segmentIndex)
+    }
+
+    private func applyScheduledTransition(to segmentIndex: Int) {
+        guard isRunning else { return }
+
+        guard segments.indices.contains(segmentIndex) else {
+            refresh()
+            return
+        }
+
+        let segment = segments[segmentIndex]
+        phase = segment.phase
+        round = segment.round
+        remainingSeconds = Int(ceil(segment.duration))
+        phaseProgress = 0
+        audio.setBackgroundAudioDucked(
+            settings.automaticTimerSoundsEnabled && segment.phase == .rest
+        )
     }
 
     private func cueForPhaseStart(_ phase: WorkoutPhase) -> CueKind? {
