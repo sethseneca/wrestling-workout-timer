@@ -1,7 +1,7 @@
 import SwiftUI
 
 enum WorkoutPhase: String {
-    case ready = "GET READY"
+    case ready = "READY"
     case wrestle = "WRESTLE"
     case rest = "REST"
 
@@ -103,7 +103,7 @@ final class WorkoutTimer: ObservableObject {
     }
 
     var roundText: String {
-        "Round \(round) of \(settings.rounds)"
+        "ROUND \(round) / \(settings.rounds)"
     }
 
     var canGoToPreviousInterval: Bool {

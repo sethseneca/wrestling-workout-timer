@@ -78,8 +78,9 @@ private struct ExpandedWorkoutView: View {
             HStack(spacing: 10) {
                 CountdownText(
                     state: state,
-                    font: .system(size: 38, weight: .black, design: .rounded)
+                    font: .system(size: 38, weight: .black, design: .default)
                 )
+                .fontWidth(.condensed)
                 .invalidatableContent(true)
                 Spacer(minLength: 4)
                 ExpandedWorkoutControls(state: state)
@@ -115,8 +116,9 @@ private struct RoundBadge: View {
     let state: WorkoutActivityPresentation
 
     var body: some View {
-        Text("ROUND \(state.round) OF \(state.totalRounds)")
+        Text("ROUND \(state.round) / \(state.totalRounds)")
             .font(.caption.monospacedDigit().weight(.black))
+            .fontWidth(.condensed)
             .foregroundStyle(.white)
             .padding(.horizontal, 9)
             .padding(.vertical, 5)
@@ -134,9 +136,8 @@ private struct CompactWorkoutView: View {
     var body: some View {
         CountdownText(
             state: state,
-            font: .system(size: 15, weight: .black, design: .rounded)
+            font: .system(size: 16, weight: .black, design: .default)
         )
-        .font(.system(size: 15, weight: .black, design: .rounded).monospacedDigit())
         .fontWidth(.compressed)
         .lineLimit(1)
         .minimumScaleFactor(0.82)
@@ -151,7 +152,7 @@ private struct CompactRoundView: View {
 
     var body: some View {
         Text(state.phase)
-        .font(.system(size: 14, weight: .black, design: .rounded))
+        .font(.system(size: 14, weight: .black, design: .default))
         .foregroundStyle(state.phaseColor)
         .fontWidth(.compressed)
         .lineLimit(1)
@@ -167,7 +168,7 @@ private struct MinimalWorkoutView: View {
     var body: some View {
         CountdownText(
             state: state,
-            font: .system(size: 15, weight: .black, design: .rounded)
+            font: .system(size: 16, weight: .black, design: .default)
         )
         .fontWidth(.compressed)
         .lineLimit(1)
@@ -241,9 +242,9 @@ private struct LockScreenWorkoutView: View {
         HStack(spacing: 14) {
             VStack(alignment: .leading, spacing: 4) {
                 Text(state.phase)
-                    .font(.headline.weight(.black))
+                    .font(.headline.weight(.bold))
                     .foregroundStyle(state.phaseColor)
-                Text("Round \(state.round) of \(state.totalRounds)")
+                Text("Round \(state.round) / \(state.totalRounds)")
                     .font(.caption.weight(.semibold))
                     .foregroundStyle(.white.opacity(0.68))
             }
@@ -252,8 +253,9 @@ private struct LockScreenWorkoutView: View {
 
             CountdownText(
                 state: state,
-                font: .system(size: 34, weight: .black, design: .rounded)
+                font: .system(size: 34, weight: .black, design: .default)
             )
+            .fontWidth(.condensed)
         }
         .padding(16)
         .foregroundStyle(.white)
@@ -308,7 +310,7 @@ private struct WorkoutProgressView: View {
 private extension WorkoutActivityPresentation {
     var phaseColor: Color {
         switch phase {
-        case "GET READY": return .gray
+        case "READY": return Color(white: 0.68)
         case "REST": return .green
         default: return .red
         }

@@ -103,32 +103,35 @@ struct ContentView: View {
     }
 
     private func timerReadout(for orientation: TimerLayoutOrientation) -> some View {
-        let phaseSize: CGFloat = orientation.isPortrait ? (showingAudioMenu ? 36 : 56) : (showingAudioMenu ? 34 : 48)
+        let phaseSize: CGFloat = orientation.isPortrait ? (showingAudioMenu ? 38 : 60) : (showingAudioMenu ? 36 : 54)
         let countdownSize: CGFloat = orientation.isPortrait ? (showingAudioMenu ? 112 : 188) : (showingAudioMenu ? 126 : 222)
-        let roundSize: CGFloat = orientation.isPortrait ? (showingAudioMenu ? 28 : 42) : (showingAudioMenu ? 32 : 48)
+        let roundSize: CGFloat = showingAudioMenu ? 24 : 34
 
         return VStack(spacing: 1) {
             Text(timer.phaseTitle)
-                .font(fightFont(size: phaseSize))
-                .tracking(0.5)
+                .font(.system(size: phaseSize, weight: .heavy, design: .default))
+                .fontWidth(.condensed)
+                .tracking(1.2)
                 .lineLimit(1)
                 .minimumScaleFactor(0.65)
                 .offset(y: orientation.isPortrait ? 0 : (showingAudioMenu ? 8 : 22))
 
             Text(timer.countdownText)
-                .font(fightFont(size: countdownSize))
+                .font(.system(size: countdownSize, weight: .black, design: .default))
+                .fontWidth(.condensed)
                 .monospacedDigit()
                 .minimumScaleFactor(0.55)
                 .lineLimit(1)
                 .offset(y: orientation.isPortrait ? 0 : (showingAudioMenu ? 12 : 36))
 
-            Text(timer.isFinished ? "WORKOUT COMPLETE" : timer.roundText.uppercased())
-                .font(fightFont(size: roundSize, weight: .heavy))
-                .tracking(0.4)
+            Text(timer.isFinished ? "COMPLETE" : timer.roundText)
+                .font(.system(size: roundSize, weight: .bold, design: .default))
+                .fontWidth(.condensed)
+                .tracking(0.6)
                 .lineLimit(1)
                 .minimumScaleFactor(0.6)
+                .foregroundStyle(.white.opacity(0.85))
         }
-        .shadow(color: .black.opacity(0.40), radius: 0, x: 1.5, y: 2.5)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .contentShape(Rectangle())
         .onTapGesture {
@@ -136,12 +139,6 @@ struct ContentView: View {
             showingTimeEditor = true
         }
         .accessibilityHint(timer.isRunning ? "Pause to edit the time" : "Tap to edit the current time")
-    }
-
-    private func fightFont(size: CGFloat, weight: UIFont.Weight = .black) -> Font {
-        let athleticFont = UIFont(name: "DINCondensed-Bold", size: size)
-            ?? UIFont.systemFont(ofSize: size, weight: weight, width: .compressed)
-        return Font(athleticFont)
     }
 
     private var audioButton: some View {
@@ -459,8 +456,8 @@ private struct AudioMenuPanel: View {
             HStack(spacing: 8) {
                 Image(systemName: "speaker.wave.3.fill")
                     .foregroundStyle(.white.opacity(0.72))
-                Text("SOUND & VOLUME")
-                    .font(.subheadline.weight(.black))
+                Text("AUDIO")
+                    .font(.subheadline.weight(.bold))
                     .lineLimit(1)
                     .minimumScaleFactor(0.8)
                     .layoutPriority(1)
@@ -470,7 +467,7 @@ private struct AudioMenuPanel: View {
                     onClose()
                 } label: {
                     Image(systemName: "xmark")
-                        .font(.caption.weight(.black))
+                        .font(.caption.weight(.bold))
                         .frame(width: 30, height: 30)
                         .background(.white.opacity(0.12), in: Circle())
                         .frame(width: 44, height: 44)
@@ -482,7 +479,7 @@ private struct AudioMenuPanel: View {
 
             HStack(spacing: 8) {
                 compactSettingToggle(
-                    title: "TIMER CUES",
+                    title: "AUTO CUES",
                     icon: "timer",
                     isOn: automaticTimerSoundsEnabled,
                     accessibilityLabel: "Automatic timer cues"
@@ -523,8 +520,8 @@ private struct AudioMenuPanel: View {
 
             VStack(spacing: 2) {
                 HStack {
-                    Text("SOUND PADS")
-                        .font(.caption2.weight(.black))
+                    Text("SOUNDBOARD")
+                        .font(.caption2.weight(.bold))
                         .foregroundStyle(.white.opacity(0.72))
                     Spacer()
                     Text("\(Int((timer.settings.soundboardVolume * 100).rounded()))%")
@@ -537,7 +534,7 @@ private struct AudioMenuPanel: View {
                         .foregroundStyle(.white.opacity(0.65))
                     Slider(value: soundboardVolume, in: 0...1, step: 0.05)
                         .tint(.white)
-                        .accessibilityLabel("Sound pads volume")
+                        .accessibilityLabel("Soundboard volume")
                         .accessibilityValue("\(Int((timer.settings.soundboardVolume * 100).rounded())) percent")
                 }
             }
@@ -567,7 +564,7 @@ private struct AudioMenuPanel: View {
                 .font(.caption)
                 .foregroundStyle(.white.opacity(0.72))
             Text(title)
-                .font(.caption2.weight(.black))
+                .font(.caption2.weight(.bold))
                 .lineLimit(1)
                 .minimumScaleFactor(0.75)
             Spacer(minLength: 0)
@@ -601,7 +598,7 @@ private struct AudioMenuPanel: View {
                         .font(.caption)
                         .foregroundStyle(.white.opacity(0.68))
                     Text(title)
-                        .font(.caption2.weight(.black))
+                        .font(.caption2.weight(.bold))
                         .foregroundStyle(.white.opacity(0.76))
                     Spacer()
                     Text("\(Int((value.wrappedValue * 100).rounded()))%")
@@ -614,7 +611,7 @@ private struct AudioMenuPanel: View {
                     .accessibilityValue("\(Int((value.wrappedValue * 100).rounded())) percent")
             }
             Button("TEST", action: onTest)
-                .font(.caption2.weight(.black))
+                .font(.caption2.weight(.bold))
                 .buttonStyle(.bordered)
                 .controlSize(.small)
                 .frame(width: 58, height: 46)
@@ -635,9 +632,15 @@ private struct AudioMenuPanel: View {
                             Image(systemName: "waveform")
                                 .font(.caption)
                                 .foregroundStyle(.white.opacity(0.68))
-                            Text("10-SECOND CLAPS")
-                                .font(.caption2.weight(.black))
-                                .foregroundStyle(.white.opacity(0.76))
+                            ViewThatFits(in: .horizontal) {
+                                Text("10-SECOND WARNING")
+                                    .fixedSize(horizontal: true, vertical: false)
+                                Text("10-SEC WARNING")
+                                    .fixedSize(horizontal: true, vertical: false)
+                            }
+                            .font(.caption2.weight(.bold))
+                            .foregroundStyle(.white.opacity(0.76))
+                            .lineLimit(1)
                         }
                     }
                     .toggleStyle(.switch)
@@ -650,19 +653,19 @@ private struct AudioMenuPanel: View {
                 }
                 Slider(value: warningVolume, in: 0...3, step: 0.05)
                     .tint(.white)
-                    .accessibilityLabel("10-second claps volume")
+                    .accessibilityLabel("10-second warning volume")
                     .accessibilityValue("\(Int((timer.settings.tenSecondWarningVolume * 100).rounded())) percent")
                     .disabled(!timer.settings.tenSecondWarningEnabled)
                     .opacity(timer.settings.tenSecondWarningEnabled ? 1 : 0.45)
             }
             Button("TEST") { timer.warning() }
-                .font(.caption2.weight(.black))
+                .font(.caption2.weight(.bold))
                 .buttonStyle(.bordered)
                 .controlSize(.small)
                 .frame(width: 58, height: 46)
                 .contentShape(Rectangle())
                 .disabled(!timer.settings.tenSecondWarningEnabled)
-                .accessibilityLabel("Test 10-second claps")
+                .accessibilityLabel("Test 10-second warning")
         }
         .padding(.horizontal, 4)
     }
@@ -730,7 +733,7 @@ private struct SoundPadButton: View {
                 Image(systemName: icon)
                     .font(.system(size: 24, weight: .bold))
                 Text(title)
-                    .font(.caption2.weight(.black))
+                    .font(.caption2.weight(.bold))
                     .tracking(0.3)
                     .lineLimit(1)
                     .minimumScaleFactor(0.75)
@@ -1000,7 +1003,8 @@ private struct CurrentTimeEditorView: View {
                 timeWheel(title: "MINUTES", values: 0...59, selection: minutes, twoDigits: false)
 
                 Text(":")
-                    .font(.system(size: 42, weight: .black, design: .rounded))
+                    .font(.system(size: 42, weight: .black, design: .default))
+                    .fontWidth(.condensed)
                     .padding(.top, 18)
 
                 timeWheel(title: "SECONDS", values: 0...59, selection: secondsPart, twoDigits: true)
@@ -1038,6 +1042,7 @@ private struct CurrentTimeEditorView: View {
                 ForEach(values, id: \.self) { value in
                     Text(twoDigits ? String(format: "%02d", value) : "\(value)")
                         .font(.title.monospacedDigit())
+                        .fontWidth(.condensed)
                         .tag(value)
                 }
             }
@@ -1081,11 +1086,11 @@ private struct SetupView: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: 18) {
                     VStack(alignment: .leading, spacing: 4) {
-                        Text("BUILD YOUR WORKOUT")
-                            .font(.caption.weight(.black))
+                        Text("SET YOUR INTERVALS")
+                            .font(.caption.weight(.bold))
                             .tracking(1.2)
                             .foregroundStyle(.secondary)
-                        Text("Tap one time for each phase.")
+                        Text("Choose a duration for each phase.")
                             .font(.title3.weight(.bold))
                     }
 
@@ -1169,8 +1174,8 @@ private struct SetupView: View {
                     timer.reset()
                     dismiss()
                 } label: {
-                    Text("SAVE & APPLY")
-                        .font(.headline.weight(.black))
+                    Text("APPLY WORKOUT")
+                        .font(.headline.weight(.bold))
                         .tracking(0.7)
                         .frame(maxWidth: .infinity, minHeight: 54)
                         .contentShape(Rectangle())
@@ -1187,7 +1192,7 @@ private struct SetupView: View {
                 .padding(.top, 10)
                 .padding(.bottom, 8)
                 .background(.ultraThinMaterial)
-                .accessibilityLabel("Save & Apply")
+                .accessibilityLabel("Apply Workout")
             }
             .interactiveDismissDisabled()
         }
@@ -1256,14 +1261,14 @@ private struct PhaseDurationCard: View {
                 Circle()
                     .fill(tint)
                     .frame(width: 10, height: 10)
-                Text(title.uppercased())
-                    .font(.headline.weight(.black))
-                    .tracking(0.8)
+                Text(title)
+                    .font(.headline.weight(.bold))
 
                 Spacer()
 
                 Text(seconds == 0 ? "OFF" : clockText(seconds))
-                    .font(.subheadline.weight(.black))
+                    .font(.subheadline.weight(.bold))
+                    .fontWidth(.condensed)
                     .monospacedDigit()
                     .foregroundStyle(tint)
                     .padding(.horizontal, 10)
@@ -1303,12 +1308,12 @@ private struct PhaseDurationCard: View {
         } label: {
             HStack(spacing: 5) {
                 Text(preset.label)
-                    .font(.subheadline.weight(.black))
+                    .font(.subheadline.weight(.bold))
                     .minimumScaleFactor(0.8)
                     .lineLimit(1)
                 if selected {
                     Image(systemName: "checkmark.circle.fill")
-                        .font(.caption.weight(.black))
+                        .font(.caption.weight(.bold))
                 }
             }
             .frame(maxWidth: .infinity, minHeight: 52)
@@ -1338,12 +1343,12 @@ private struct PhaseDurationCard: View {
         } label: {
             HStack(spacing: 5) {
                 Text("CUSTOM")
-                    .font(.subheadline.weight(.black))
+                    .font(.subheadline.weight(.bold))
                     .minimumScaleFactor(0.76)
                     .lineLimit(1)
                 if customSelected {
                     Image(systemName: "checkmark.circle.fill")
-                        .font(.caption.weight(.black))
+                        .font(.caption.weight(.bold))
                 }
             }
             .frame(maxWidth: .infinity, minHeight: 52)
@@ -1366,7 +1371,8 @@ private struct PhaseDurationCard: View {
     private var customEditor: some View {
         VStack(spacing: 10) {
             Text(clockText(seconds))
-                .font(.system(size: 36, weight: .black, design: .rounded))
+                .font(.system(size: 36, weight: .black, design: .default))
+                .fontWidth(.condensed)
                 .monospacedDigit()
                 .frame(maxWidth: .infinity)
                 .accessibilityLabel("\(title) custom time \(clockText(seconds))")
@@ -1379,7 +1385,7 @@ private struct PhaseDurationCard: View {
                         seconds = clamped(seconds + adjustment.delta)
                     } label: {
                         Text(adjustment.label)
-                            .font(.subheadline.weight(.black))
+                            .font(.subheadline.weight(.bold))
                             .frame(maxWidth: .infinity, minHeight: 44)
                     }
                     .buttonStyle(.plain)
@@ -1410,9 +1416,8 @@ private struct RoundSelector: View {
     var body: some View {
         HStack(spacing: 14) {
             VStack(alignment: .leading, spacing: 3) {
-                Text("ROUNDS")
-                    .font(.headline.weight(.black))
-                    .tracking(0.8)
+                Text("Rounds")
+                    .font(.headline.weight(.bold))
                 Text("Total Wrestle periods")
                     .font(.caption)
                     .foregroundStyle(.secondary)
@@ -1425,7 +1430,8 @@ private struct RoundSelector: View {
             }
 
             Text("\(rounds)")
-                .font(.system(size: 30, weight: .black, design: .rounded))
+                .font(.system(size: 30, weight: .black, design: .default))
+                .fontWidth(.condensed)
                 .monospacedDigit()
                 .frame(minWidth: 42)
                 .accessibilityLabel("\(rounds) rounds")
@@ -1472,9 +1478,8 @@ private struct DisplaySettingsCard: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
-            Text("DISPLAY")
-                .font(.headline.weight(.black))
-                .tracking(0.8)
+            Text("Display")
+                .font(.headline.weight(.bold))
 
             TextField("Wrestle label", text: $wrestleLabel)
                 .textInputAutocapitalization(.characters)
@@ -1485,7 +1490,7 @@ private struct DisplaySettingsCard: View {
 
             Divider()
 
-            ColorPicker("Get Ready color", selection: $readyColor, supportsOpacity: false)
+            ColorPicker("Ready color", selection: $readyColor, supportsOpacity: false)
             ColorPicker("Wrestle color", selection: $wrestleColor, supportsOpacity: false)
             ColorPicker("Rest color", selection: $restColor, supportsOpacity: false)
         }

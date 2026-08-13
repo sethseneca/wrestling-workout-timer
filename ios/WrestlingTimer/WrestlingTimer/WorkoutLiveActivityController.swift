@@ -238,7 +238,7 @@ final class WorkoutLiveActivityController {
     private func isWrestleState(
         _ state: WorkoutActivityAttributes.ContentState
     ) -> Bool {
-        state.phase != "GET READY" && state.phase != "REST"
+        state.phase != WorkoutPhase.ready.rawValue && state.phase != WorkoutPhase.rest.rawValue
     }
 
     private func content(

@@ -29,7 +29,7 @@ final class WrestlingTimerUITests: XCTestCase {
         XCTAssertTrue(app.staticTexts["WRESTLE"].exists, "A quick reset tap must not destroy workout progress.")
 
         reset.press(forDuration: 0.75)
-        XCTAssertTrue(app.staticTexts["GET READY"].waitForExistence(timeout: 2))
+        XCTAssertTrue(app.staticTexts["READY"].waitForExistence(timeout: 2))
         XCTAssertFalse(reset.isEnabled, "A completed reset must return to the protected initial state.")
     }
 
@@ -40,7 +40,7 @@ final class WrestlingTimerUITests: XCTestCase {
         app.launchEnvironment["WRESTLING_DEVICE_VERIFY"] = "1"
         app.launch()
 
-        XCTAssertTrue(app.staticTexts["GET READY"].waitForExistence(timeout: 3))
+        XCTAssertTrue(app.staticTexts["READY"].waitForExistence(timeout: 3))
         captureScreen(named: "drain-01-ready-start")
 
         sleep(2)
@@ -95,7 +95,7 @@ final class WrestlingTimerUITests: XCTestCase {
 
         readyTen.tap()
         XCTAssertTrue(readyTen.isSelected)
-        app.buttons["Save & Apply"].tap()
+        app.buttons["Apply Workout"].tap()
         XCTAssertTrue(app.buttons["Open workout setup"].waitForExistence(timeout: 3))
 
         app.buttons["Open workout setup"].tap()
@@ -119,7 +119,7 @@ final class WrestlingTimerUITests: XCTestCase {
         restTwentySeconds.tap()
         XCTAssertTrue(restTwentySeconds.isSelected)
 
-        app.buttons["Save & Apply"].tap()
+        app.buttons["Apply Workout"].tap()
         XCTAssertTrue(app.buttons["Open workout setup"].waitForExistence(timeout: 3))
 
         app.buttons["Open workout setup"].tap()
@@ -169,7 +169,7 @@ final class WrestlingTimerUITests: XCTestCase {
         assertLandscapeLayout(in: app, controlsOnRight: false, audioCorner: .bottomRight)
     }
 
-    func testSaveAndApplyAcceptsTapsAcrossTheEntireButton() throws {
+    func testApplyWorkoutAcceptsTapsAcrossTheEntireButton() throws {
         XCUIDevice.shared.orientation = .portrait
 
         let app = XCUIApplication()
@@ -179,13 +179,13 @@ final class WrestlingTimerUITests: XCTestCase {
             app.buttons["Open workout setup"].tap()
             XCTAssertTrue(app.navigationBars["Workout Setup"].waitForExistence(timeout: 5))
 
-            let saveButton = app.buttons["Save & Apply"]
+            let saveButton = app.buttons["Apply Workout"]
             XCTAssertTrue(saveButton.waitForExistence(timeout: 3))
             XCTAssertTrue(saveButton.isHittable)
             XCTAssertGreaterThan(
                 saveButton.frame.width,
                 app.windows.firstMatch.frame.width * 0.80,
-                "Save & Apply must expose its full visual width as one button."
+                "Apply Workout must expose its full visual width as one button."
             )
 
             saveButton
@@ -205,7 +205,7 @@ final class WrestlingTimerUITests: XCTestCase {
         app.launch()
 
         XCTAssertTrue(
-            app.staticTexts["GET READY"].waitForExistence(timeout: 5),
+            app.staticTexts["READY"].waitForExistence(timeout: 5),
             "The accelerated verification workout did not start."
         )
 
@@ -245,6 +245,7 @@ final class WrestlingTimerUITests: XCTestCase {
         XCTAssertTrue(reset.waitForExistence(timeout: 3))
         XCTAssertTrue(gear.exists)
         XCTAssertTrue(audio.exists)
+        assertPrimaryReadoutFits(in: app)
 
         let bounds = window.frame
         XCTAssertLessThan(abs(reset.frame.midY - gear.frame.midY), 12, "Portrait controls must form one horizontal bottom bar.")
@@ -267,6 +268,7 @@ final class WrestlingTimerUITests: XCTestCase {
         XCTAssertTrue(reset.waitForExistence(timeout: 3))
         XCTAssertTrue(gear.exists)
         XCTAssertTrue(audio.exists)
+        assertPrimaryReadoutFits(in: app)
 
         let bounds = window.frame
         XCTAssertLessThan(abs(reset.frame.midX - gear.frame.midX), 12, "Landscape controls must form one vertical side rail.")
@@ -298,9 +300,28 @@ final class WrestlingTimerUITests: XCTestCase {
         return XCTWaiter.wait(for: [expectation], timeout: 5) == .completed
     }
 
+    private func assertPrimaryReadoutFits(in app: XCUIApplication) {
+        let window = app.windows.firstMatch.frame
+        let readout = [
+            app.staticTexts["READY"],
+            app.staticTexts["00:10"],
+            app.staticTexts["ROUND 1 / 8"]
+        ]
+
+        for element in readout {
+            XCTAssertTrue(element.waitForExistence(timeout: 2))
+            XCTAssertGreaterThan(element.frame.width, 44)
+            XCTAssertGreaterThan(element.frame.height, 24)
+            XCTAssertTrue(
+                window.insetBy(dx: -1, dy: -1).contains(element.frame),
+                "Every primary readout must remain fully visible in every orientation."
+            )
+        }
+    }
+
     private func assertAudioMenuFits(in app: XCUIApplication, portrait: Bool, screenshotName: String) {
         app.buttons["Sound and volume button"].tap()
-        XCTAssertTrue(app.staticTexts["SOUND & VOLUME"].waitForExistence(timeout: 3))
+        XCTAssertTrue(app.staticTexts["AUDIO"].waitForExistence(timeout: 3))
         let close = app.buttons["Close sound and volume"]
         XCTAssertTrue(close.exists)
         XCTAssertTrue(close.isHittable)
@@ -309,10 +330,10 @@ final class WrestlingTimerUITests: XCTestCase {
         XCTAssertTrue(app.switches["Automatic timer cues"].exists)
         XCTAssertTrue(app.switches["Control haptics"].exists)
         XCTAssertTrue(app.sliders["Whistle volume"].exists)
-        XCTAssertTrue(app.sliders["10-second claps volume"].exists)
-        XCTAssertTrue(app.sliders["Sound pads volume"].exists)
+        XCTAssertTrue(app.sliders["10-second warning volume"].exists)
+        XCTAssertTrue(app.sliders["Soundboard volume"].exists)
         XCTAssertTrue(app.buttons["Final Horn"].exists)
-        for testButton in ["Test whistle", "Test 10-second claps"] {
+        for testButton in ["Test whistle", "Test 10-second warning"] {
             let button = app.buttons[testButton]
             XCTAssertTrue(button.exists)
             XCTAssertTrue(button.isHittable)
@@ -333,7 +354,7 @@ final class WrestlingTimerUITests: XCTestCase {
         XCTAssertTrue(app.buttons["Get Ready 10 seconds"].exists)
         XCTAssertEqual(app.pickers.count, 0, "Workout durations must not use scrolling wheels.")
         XCTAssertFalse(app.sliders["Whistle volume"].exists, "Audio controls must not be duplicated in workout setup.")
-        app.buttons["Save & Apply"].tap()
+        app.buttons["Apply Workout"].tap()
         XCTAssertTrue(app.buttons["Open workout setup"].waitForExistence(timeout: 3))
     }
 

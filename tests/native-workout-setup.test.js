@@ -51,7 +51,7 @@ test("workout setup edits a draft and exposes explicit discard and apply actions
   );
   assert.match(
     saveButton,
-    /Text\("SAVE & APPLY"\)[\s\S]*\.frame\(maxWidth: \.infinity, minHeight: 54\)[\s\S]*\.contentShape\(Rectangle\(\)\)/
+    /Text\("APPLY WORKOUT"\)[\s\S]*\.frame\(maxWidth: \.infinity, minHeight: 54\)[\s\S]*\.contentShape\(Rectangle\(\)\)/
   );
 });
 
