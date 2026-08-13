@@ -11,7 +11,7 @@ Help wrestlers, coaches, and training partners run workout timers, interval roun
 - Project folder created on 2026-06-29.
 - Git initialized and linked to the public GitHub repository.
 - Version 1 is a static, mobile-first interval timer built with vanilla HTML/CSS/JS.
-- The browser timer now matches the native iPhone app's landscape layout, phase-color drain, left control rail, and bottom-right setup button.
+- The native iPhone timer supports portrait and both landscape directions. Its controls stay on the phone's physical bottom edge, while setup stays anchored to the physical portrait top-right corner.
 - Browser setup matches the native controls for interval lengths, rounds, custom Wrestle text, phase colors, whistle volume, and the 10-second warning toggle/volume.
 - Wrestle, rest, and finish transitions all use the same short whistle, with a saved 25%-200% whistle-volume control.
 - Levels above 100% use soft saturation so the whistle gets meaningfully louder instead of having the extra gain flattened by a peak limiter.

@@ -6,62 +6,69 @@ struct ContentView: View {
     @State private var showingSetup = false
     @State private var showingSoundboard = false
     @State private var showingTimeEditor = false
+    @State private var interfaceOrientation: UIInterfaceOrientation = .unknown
+
+    private let orientationAnimation = Animation.spring(response: 0.52, dampingFraction: 0.84)
 
     var body: some View {
-        ZStack {
-            timer.color(for: timer.phase)
-                .ignoresSafeArea()
+        GeometryReader { geometry in
+            let layoutOrientation = TimerLayoutOrientation(
+                interfaceOrientation: interfaceOrientation,
+                availableSize: geometry.size
+            )
 
-            GeometryReader { geometry in
+            ZStack {
+                timer.color(for: timer.phase)
+                    .ignoresSafeArea()
+
                 VStack(spacing: 0) {
                     Color.black
                         .frame(height: geometry.size.height * timer.phaseProgress)
                     Spacer(minLength: 0)
                 }
-            }
-            .ignoresSafeArea()
-            .animation(.linear(duration: 0.1), value: timer.phaseProgress)
+                .ignoresSafeArea()
+                .animation(.linear(duration: 0.1), value: timer.phaseProgress)
 
-            timerReadout
-                .padding(.leading, showingSoundboard ? 112 : 0)
-                .padding(.trailing, showingSoundboard ? 326 : 0)
-                .animation(.easeInOut(duration: 0.22), value: showingSoundboard)
+                timerReadout(for: layoutOrientation)
+                    .padding(readoutInsets(for: layoutOrientation))
+                    .animation(orientationAnimation, value: layoutOrientation)
+                    .animation(.easeInOut(duration: 0.22), value: showingSoundboard)
 
-            Button { showingSetup = true } label: {
-                ZStack {
-                    Circle()
-                        .fill(.black.opacity(0.8))
+                setupButton
+                    .frame(
+                        maxWidth: .infinity,
+                        maxHeight: .infinity,
+                        alignment: layoutOrientation.gearAlignment
+                    )
+                    .padding(gearInsets(for: layoutOrientation))
+                    .opacity(showingSoundboard ? 0 : 1)
+                    .allowsHitTesting(!showingSoundboard)
+                    .animation(orientationAnimation, value: layoutOrientation)
 
-                    Image(systemName: "gearshape")
-                        .font(.system(size: 36, weight: .bold))
-                        .foregroundStyle(.white.opacity(0.9))
+                controlRail(for: layoutOrientation)
+                    .frame(
+                        width: layoutOrientation.isPortrait ? max(0, geometry.size.width - 16) : 96,
+                        height: layoutOrientation.isPortrait ? 88 : max(0, geometry.size.height - 16)
+                    )
+                    .frame(
+                        maxWidth: .infinity,
+                        maxHeight: .infinity,
+                        alignment: layoutOrientation.controlAlignment
+                    )
+                    .padding(controlInsets(for: layoutOrientation))
+                    .animation(orientationAnimation, value: layoutOrientation)
+
+                if showingSoundboard {
+                    soundboard(for: layoutOrientation, availableSize: geometry.size)
+                        .transition(
+                            .move(edge: layoutOrientation.soundboardTransitionEdge)
+                                .combined(with: .opacity)
+                        )
                 }
-                .frame(width: 64, height: 64)
-                .contentShape(Circle())
             }
-            .buttonStyle(.plain)
-            .accessibilityLabel("Open workout setup")
-            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomTrailing)
-            .padding(.trailing, 2)
-            .padding(.bottom, 8)
-            .opacity(showingSoundboard ? 0 : 1)
-            .allowsHitTesting(!showingSoundboard)
-
-            controlRail
-                .frame(width: 104)
-                .padding(.vertical, 8)
-                .padding(.leading, 4)
-                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
-                .ignoresSafeArea(.container, edges: .bottom)
-
-            if showingSoundboard {
-                SoundboardPanel()
-                    .environmentObject(timer)
-                    .frame(width: 318)
-                    .padding(.vertical, 8)
-                    .padding(.trailing, 4)
-                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .trailing)
-                    .transition(.move(edge: .trailing).combined(with: .opacity))
+            .onAppear { refreshInterfaceOrientation() }
+            .onReceive(NotificationCenter.default.publisher(for: UIDevice.orientationDidChangeNotification)) { _ in
+                refreshInterfaceOrientation(after: 0.06)
             }
         }
         .foregroundStyle(.white)
@@ -77,29 +84,34 @@ struct ContentView: View {
         }
     }
 
-    private var timerReadout: some View {
-        VStack(spacing: 1) {
+    private func timerReadout(for orientation: TimerLayoutOrientation) -> some View {
+        let phaseSize: CGFloat = orientation.isPortrait ? (showingSoundboard ? 36 : 56) : (showingSoundboard ? 34 : 48)
+        let countdownSize: CGFloat = orientation.isPortrait ? (showingSoundboard ? 112 : 188) : (showingSoundboard ? 126 : 222)
+        let roundSize: CGFloat = orientation.isPortrait ? (showingSoundboard ? 28 : 42) : (showingSoundboard ? 32 : 48)
+
+        return VStack(spacing: 1) {
             Text(timer.phaseTitle)
-                .font(fightFont(size: showingSoundboard ? 34 : 48))
+                .font(fightFont(size: phaseSize))
                 .tracking(0.5)
                 .lineLimit(1)
                 .minimumScaleFactor(0.65)
-                .offset(y: showingSoundboard ? 8 : 22)
+                .offset(y: orientation.isPortrait ? 0 : (showingSoundboard ? 8 : 22))
 
             Text(timer.countdownText)
-                .font(fightFont(size: showingSoundboard ? 126 : 222))
+                .font(fightFont(size: countdownSize))
                 .monospacedDigit()
                 .minimumScaleFactor(0.55)
                 .lineLimit(1)
-                .offset(y: showingSoundboard ? 12 : 36)
+                .offset(y: orientation.isPortrait ? 0 : (showingSoundboard ? 12 : 36))
 
             Text(timer.isFinished ? "WORKOUT COMPLETE" : timer.roundText.uppercased())
-                .font(fightFont(size: showingSoundboard ? 32 : 48, weight: .heavy))
+                .font(fightFont(size: roundSize, weight: .heavy))
                 .tracking(0.4)
+                .lineLimit(1)
+                .minimumScaleFactor(0.6)
         }
         .shadow(color: .black.opacity(0.40), radius: 0, x: 1.5, y: 2.5)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .padding(.horizontal, showingSoundboard ? 8 : 110)
         .contentShape(Rectangle())
         .onTapGesture {
             guard !timer.isRunning else { return }
@@ -114,8 +126,30 @@ struct ContentView: View {
         return Font(athleticFont)
     }
 
-    private var controlRail: some View {
-        VStack(spacing: 0) {
+    private var setupButton: some View {
+        Button { showingSetup = true } label: {
+            ZStack {
+                Circle()
+                    .fill(.black.opacity(0.8))
+
+                Image(systemName: "gearshape")
+                    .font(.system(size: 34, weight: .bold))
+                    .foregroundStyle(.white.opacity(0.9))
+            }
+            .frame(width: 60, height: 60)
+            .contentShape(Circle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel("Open workout setup")
+        .accessibilityIdentifier("Workout setup button")
+    }
+
+    private func controlRail(for orientation: TimerLayoutOrientation) -> some View {
+        let railLayout = orientation.isPortrait
+            ? AnyLayout(HStackLayout(spacing: 0))
+            : AnyLayout(VStackLayout(spacing: 0))
+
+        return railLayout {
             railButton("arrow.counterclockwise", size: 27, label: "Reset") { timer.reset() }
             railButton("backward.end.fill", label: "Previous interval") { timer.previousInterval() }
             Button { timer.startOrPause() } label: {
@@ -146,6 +180,8 @@ struct ContentView: View {
         }
         .foregroundStyle(.white.opacity(0.82))
         .background(.black.opacity(0.8), in: Capsule())
+        .accessibilityElement(children: .contain)
+        .accessibilityIdentifier("Workout controls")
     }
 
     private func railButton(_ icon: String, size: CGFloat = 29, label: String, action: @escaping () -> Void) -> some View {
@@ -162,6 +198,150 @@ struct ContentView: View {
         }
         .buttonStyle(RailButtonStyle())
         .accessibilityLabel(label)
+    }
+
+    @ViewBuilder
+    private func soundboard(
+        for orientation: TimerLayoutOrientation,
+        availableSize: CGSize
+    ) -> some View {
+        SoundboardPanel()
+            .environmentObject(timer)
+            .frame(width: orientation.isPortrait ? max(0, availableSize.width - 16) : 318)
+            .frame(
+                maxWidth: .infinity,
+                maxHeight: .infinity,
+                alignment: orientation.soundboardAlignment
+            )
+            .padding(soundboardInsets(for: orientation))
+    }
+
+    private func readoutInsets(for orientation: TimerLayoutOrientation) -> EdgeInsets {
+        guard !orientation.isPortrait else {
+            return EdgeInsets(
+                top: 68,
+                leading: 24,
+                bottom: showingSoundboard ? 390 : 104,
+                trailing: 24
+            )
+        }
+
+        if !showingSoundboard {
+            return EdgeInsets(top: 0, leading: 104, bottom: 0, trailing: 104)
+        }
+
+        switch orientation {
+        case .portrait:
+            return EdgeInsets()
+        case .landscapeLeft:
+            return EdgeInsets(top: 0, leading: 104, bottom: 0, trailing: 326)
+        case .landscapeRight:
+            return EdgeInsets(top: 0, leading: 326, bottom: 0, trailing: 104)
+        }
+    }
+
+    private func gearInsets(for orientation: TimerLayoutOrientation) -> EdgeInsets {
+        switch orientation {
+        case .portrait:
+            return EdgeInsets(top: 8, leading: 0, bottom: 0, trailing: 8)
+        case .landscapeLeft:
+            return EdgeInsets(top: 0, leading: 0, bottom: 8, trailing: 4)
+        case .landscapeRight:
+            return EdgeInsets(top: 8, leading: 4, bottom: 0, trailing: 0)
+        }
+    }
+
+    private func controlInsets(for orientation: TimerLayoutOrientation) -> EdgeInsets {
+        switch orientation {
+        case .portrait:
+            return EdgeInsets(top: 0, leading: 8, bottom: 4, trailing: 8)
+        case .landscapeLeft:
+            return EdgeInsets(top: 8, leading: 4, bottom: 8, trailing: 0)
+        case .landscapeRight:
+            return EdgeInsets(top: 8, leading: 0, bottom: 8, trailing: 4)
+        }
+    }
+
+    private func soundboardInsets(for orientation: TimerLayoutOrientation) -> EdgeInsets {
+        switch orientation {
+        case .portrait:
+            return EdgeInsets(top: 8, leading: 8, bottom: 100, trailing: 8)
+        case .landscapeLeft:
+            return EdgeInsets(top: 8, leading: 0, bottom: 8, trailing: 4)
+        case .landscapeRight:
+            return EdgeInsets(top: 8, leading: 4, bottom: 8, trailing: 0)
+        }
+    }
+
+    private func refreshInterfaceOrientation(after delay: TimeInterval = 0) {
+        DispatchQueue.main.asyncAfter(deadline: .now() + delay) {
+            guard let orientation = UIApplication.shared.connectedScenes
+                .compactMap({ $0 as? UIWindowScene })
+                .first(where: { $0.activationState == .foregroundActive })?
+                .interfaceOrientation,
+                orientation != .unknown
+            else { return }
+
+            withAnimation(orientationAnimation) {
+                interfaceOrientation = orientation
+            }
+        }
+    }
+}
+
+private enum TimerLayoutOrientation: Equatable {
+    case portrait
+    case landscapeLeft
+    case landscapeRight
+
+    init(interfaceOrientation: UIInterfaceOrientation, availableSize: CGSize) {
+        if availableSize.height >= availableSize.width {
+            self = .portrait
+            return
+        }
+
+        switch interfaceOrientation {
+        case .landscapeLeft:
+            self = .landscapeLeft
+        case .landscapeRight:
+            self = .landscapeRight
+        default:
+            self = .landscapeRight
+        }
+    }
+
+    var isPortrait: Bool { self == .portrait }
+
+    var controlAlignment: Alignment {
+        switch self {
+        case .portrait: .bottom
+        case .landscapeLeft: .leading
+        case .landscapeRight: .trailing
+        }
+    }
+
+    var gearAlignment: Alignment {
+        switch self {
+        case .portrait: .topTrailing
+        case .landscapeLeft: .bottomTrailing
+        case .landscapeRight: .topLeading
+        }
+    }
+
+    var soundboardAlignment: Alignment {
+        switch self {
+        case .portrait: .bottom
+        case .landscapeLeft: .trailing
+        case .landscapeRight: .leading
+        }
+    }
+
+    var soundboardTransitionEdge: Edge {
+        switch self {
+        case .portrait: .bottom
+        case .landscapeLeft: .trailing
+        case .landscapeRight: .leading
+        }
     }
 }
 
