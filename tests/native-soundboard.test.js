@@ -80,10 +80,10 @@ test("ready set is replaced by the bundled Round One cue", () => {
   );
 });
 
-test("timer uses the final horn at every Rest start", () => {
+test("timer anchors whistle and final horn to every Wrestle period", () => {
   assert.match(
     workoutTimer,
-    /case \.wrestle: return \.whistle\s*case \.rest: return \.airHorn/
+    /case \.wrestle: return \.whistle\s*case \.rest, \.ready: return nil/
   );
   assert.match(
     workoutTimer,
@@ -91,7 +91,7 @@ test("timer uses the final horn at every Rest start", () => {
   );
   assert.match(
     workoutTimer,
-    /if let cue = cueForPhaseStart\(segment\.phase\) \{\s*cues\.append\(ScheduledCue\(kind: cue, offset: segment\.start\)\)/
+    /if segment\.phase == \.wrestle \{[\s\S]*ScheduledCue\(kind: \.whistle, offset: segment\.start\)[\s\S]*ScheduledCue\(\s*kind: \.airHorn,\s*offset: segment\.start \+ segment\.duration\s*\)/
   );
   assert.match(
     audioScheduler,
@@ -101,7 +101,7 @@ test("timer uses the final horn at every Rest start", () => {
     audioScheduler,
     /func playTimerCueNow[\s\S]*immediateTimerGain\.globalGain[\s\S]*immediateTimerNode\.scheduleBuffer/
   );
-  assert.match(workoutTimer, /ScheduledCue\(kind: \.whistle, offset: total\)/);
+  assert.doesNotMatch(workoutTimer, /ScheduledCue\(kind: \.whistle, offset: total\)/);
 });
 
 test("every final horn route uses the exact two-second shared asset", () => {

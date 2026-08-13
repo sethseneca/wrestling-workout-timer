@@ -460,18 +460,27 @@ final class WorkoutTimer: ObservableObject {
     }
 
     private func makeCues() -> [ScheduledCue] {
-        let total = segments.last.map { $0.start + $0.duration } ?? 0
         var cues: [ScheduledCue] = []
 
         for segment in segments {
-            if let cue = cueForPhaseStart(segment.phase) {
-                cues.append(ScheduledCue(kind: cue, offset: segment.start))
-            }
-            if settings.tenSecondWarningEnabled, segment.phase == .wrestle, segment.duration > 10 {
-                cues.append(ScheduledCue(kind: .clapper, offset: segment.start + segment.duration - 10))
+            if segment.phase == .wrestle {
+                cues.append(ScheduledCue(kind: .whistle, offset: segment.start))
+                cues.append(
+                    ScheduledCue(
+                        kind: .airHorn,
+                        offset: segment.start + segment.duration
+                    )
+                )
+                if settings.tenSecondWarningEnabled, segment.duration > 10 {
+                    cues.append(
+                        ScheduledCue(
+                            kind: .clapper,
+                            offset: segment.start + segment.duration - 10
+                        )
+                    )
+                }
             }
         }
-        cues.append(ScheduledCue(kind: .whistle, offset: total))
         return cues
     }
 
@@ -555,8 +564,7 @@ final class WorkoutTimer: ObservableObject {
     private func cueForPhaseStart(_ phase: WorkoutPhase) -> CueKind? {
         switch phase {
         case .wrestle: return .whistle
-        case .rest: return .airHorn
-        case .ready: return nil
+        case .rest, .ready: return nil
         }
     }
 }
