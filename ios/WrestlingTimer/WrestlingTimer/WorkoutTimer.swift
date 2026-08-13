@@ -24,6 +24,7 @@ struct TimerSettings {
     var tenSecondWarningEnabled = true
     var tenSecondWarningVolume = 3.0
     var automaticTimerSoundsEnabled = true
+    var controlHapticsEnabled = true
     var soundboardVolume = 1.0
     var readyColor = Color(red: 0.41, green: 0.44, blue: 0.48)
     var wrestleColor = Color(red: 0.95, green: 0.23, blue: 0.25)
@@ -64,6 +65,9 @@ final class WorkoutTimer: ObservableObject {
                 1
             )
         }
+        if UserDefaults.standard.object(forKey: "controlHapticsEnabled") != nil {
+            settings.controlHapticsEnabled = UserDefaults.standard.bool(forKey: "controlHapticsEnabled")
+        }
         reset(stopAudio: false)
         WorkoutTimerCommandCenter.register(
             toggle: { [weak self] in self?.startOrPause() },
@@ -100,6 +104,18 @@ final class WorkoutTimer: ObservableObject {
 
     var roundText: String {
         "Round \(round) of \(settings.rounds)"
+    }
+
+    var canGoToPreviousInterval: Bool {
+        !segments.isEmpty && currentSegmentIndex() > 0
+    }
+
+    var canGoToNextInterval: Bool {
+        !segments.isEmpty && !isFinished && currentSegmentIndex() < segments.count - 1
+    }
+
+    var canReset: Bool {
+        isRunning || isFinished || elapsedBeforeStart > 0.001
     }
 
     func color(for phase: WorkoutPhase) -> Color {
@@ -240,6 +256,11 @@ final class WorkoutTimer: ObservableObject {
         }
 
         startTimerAudio(at: elapsed)
+    }
+
+    func setControlHapticsEnabled(_ enabled: Bool) {
+        settings.controlHapticsEnabled = enabled
+        UserDefaults.standard.set(enabled, forKey: "controlHapticsEnabled")
     }
 
     func setSoundboardVolume(_ volume: Double) {

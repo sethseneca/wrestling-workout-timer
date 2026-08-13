@@ -1,6 +1,38 @@
 import XCTest
 
 final class WrestlingTimerUITests: XCTestCase {
+    func testControlsCommunicateBoundariesAndProtectReset() throws {
+        XCUIDevice.shared.orientation = .portrait
+
+        let app = XCUIApplication()
+        app.launch()
+
+        let reset = app.buttons["Reset"]
+        let previous = app.buttons["Previous interval"]
+        let next = app.buttons["Next interval"]
+        XCTAssertTrue(reset.waitForExistence(timeout: 3))
+        XCTAssertFalse(reset.isEnabled, "Reset must be unavailable before the workout has moved.")
+        XCTAssertFalse(previous.isEnabled, "Previous must be unavailable at the first interval.")
+        XCTAssertTrue(next.isEnabled, "Next must remain available when a later interval exists.")
+
+        app.buttons["Start timer"].tap()
+        XCTAssertTrue(app.buttons["Pause timer"].waitForExistence(timeout: 2))
+        XCTAssertTrue(reset.isEnabled, "A running workout must expose the protected reset action.")
+
+        app.buttons["Pause timer"].tap()
+        XCTAssertTrue(app.buttons["Start timer"].waitForExistence(timeout: 2))
+        next.tap()
+        XCTAssertTrue(app.staticTexts["WRESTLE"].waitForExistence(timeout: 2))
+        XCTAssertTrue(previous.isEnabled, "Previous must become available after advancing.")
+
+        reset.tap()
+        XCTAssertTrue(app.staticTexts["WRESTLE"].exists, "A quick reset tap must not destroy workout progress.")
+
+        reset.press(forDuration: 0.75)
+        XCTAssertTrue(app.staticTexts["GET READY"].waitForExistence(timeout: 2))
+        XCTAssertFalse(reset.isEnabled, "A completed reset must return to the protected initial state.")
+    }
+
     func testDrainAdvancesAndResetsAtThePhaseBoundary() throws {
         XCUIDevice.shared.orientation = .portrait
 
@@ -149,11 +181,23 @@ final class WrestlingTimerUITests: XCTestCase {
     private func assertAudioMenuFits(in app: XCUIApplication, portrait: Bool, screenshotName: String) {
         app.buttons["Sound and volume button"].tap()
         XCTAssertTrue(app.staticTexts["SOUND & VOLUME"].waitForExistence(timeout: 3))
-        XCTAssertTrue(app.buttons["Close sound and volume"].exists)
+        let close = app.buttons["Close sound and volume"]
+        XCTAssertTrue(close.exists)
+        XCTAssertTrue(close.isHittable)
+        XCTAssertGreaterThanOrEqual(close.frame.width, 44)
+        XCTAssertGreaterThanOrEqual(close.frame.height, 44)
+        XCTAssertTrue(app.switches["Automatic timer cues"].exists)
+        XCTAssertTrue(app.switches["Control haptics"].exists)
         XCTAssertTrue(app.sliders["Whistle volume"].exists)
         XCTAssertTrue(app.sliders["10-second claps volume"].exists)
         XCTAssertTrue(app.sliders["Sound pads volume"].exists)
         XCTAssertTrue(app.buttons["Final Horn"].exists)
+        for testButton in ["Test whistle", "Test 10-second claps"] {
+            let button = app.buttons[testButton]
+            XCTAssertTrue(button.exists)
+            XCTAssertTrue(button.isHittable)
+            XCTAssertGreaterThanOrEqual(button.frame.height, 44)
+        }
         XCTAssertTrue(waitForWindow(app.windows.firstMatch, portrait: portrait))
         sleep(1)
         captureScreen(named: screenshotName)
