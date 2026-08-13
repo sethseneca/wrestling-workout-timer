@@ -28,7 +28,7 @@ const browserClapperAsset = fs.readFileSync(
 test("soundboard header has no stop or done controls", () => {
   assert.doesNotMatch(contentView, /STOP SOUND/);
   assert.doesNotMatch(contentView, /Text\("DONE"\)/);
-  assert.match(contentView, /SoundboardPanel\(\)/);
+  assert.match(contentView, /private func audioMenu\(/);
 });
 
 test("soundboard slider updates every manual gain while audio is playing", () => {
@@ -102,6 +102,34 @@ test("timer anchors whistle and final horn to every Wrestle period", () => {
     /func playTimerCueNow[\s\S]*immediateTimerGain\.globalGain[\s\S]*immediateTimerNode\.scheduleBuffer/
   );
   assert.doesNotMatch(workoutTimer, /ScheduledCue\(kind: \.whistle, offset: total\)/);
+});
+
+test("running Next mirrors phase-boundary cues while Previous stays silent", () => {
+  assert.match(
+    workoutTimer,
+    /func previousInterval\(\)[\s\S]*?runningTransitionCue: nil,[\s\S]*?useDefaultPhaseStartCue: false/
+  );
+  assert.match(
+    workoutTimer,
+    /private func cueForManualAdvance[\s\S]*?guard isRunning, settings\.automaticTimerSoundsEnabled[\s\S]*?currentSegment\.phase == \.wrestle \{ return \.airHorn \}[\s\S]*?cueForPhaseStart\(nextSegment\.phase\)/
+  );
+  assert.match(
+    workoutTimer,
+    /rebase\([\s\S]*?runningTransitionCue: transitionCue,[\s\S]*?useDefaultPhaseStartCue: false/
+  );
+});
+
+test("Next can end the final Wrestle early with the final horn", () => {
+  assert.match(workoutTimer, /var canGoToNextInterval: Bool \{\s*!segments\.isEmpty && !isFinished/);
+  assert.match(workoutTimer, /canAdvance: true,/);
+  assert.match(
+    workoutTimer,
+    /guard current < segments\.count - 1 else \{[\s\S]*?currentSegment\.phase == \.wrestle[\s\S]*?\? \.airHorn[\s\S]*?finishFromManualAdvance\(cue: finishCue\)/
+  );
+  assert.match(
+    workoutTimer,
+    /private func finishFromManualAdvance[\s\S]*?audio\.stopTimer\(\)[\s\S]*?audio\.playTimerCueNow\(cue, volume: Float\(settings\.whistleVolume\)\)/
+  );
 });
 
 test("every final horn route uses the exact two-second shared asset", () => {

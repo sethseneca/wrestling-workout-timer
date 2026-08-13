@@ -111,7 +111,7 @@ final class WorkoutTimer: ObservableObject {
     }
 
     var canGoToNextInterval: Bool {
-        !segments.isEmpty && !isFinished && currentSegmentIndex() < segments.count - 1
+        !segments.isEmpty && !isFinished
     }
 
     var canReset: Bool {
@@ -149,6 +149,13 @@ final class WorkoutTimer: ObservableObject {
     }
 
     func start() {
+        startTimer(immediateCue: nil, useDefaultPhaseStartCue: true)
+    }
+
+    private func startTimer(
+        immediateCue: CueKind?,
+        useDefaultPhaseStartCue: Bool
+    ) {
         if isFinished {
             reset()
         }
@@ -156,9 +163,13 @@ final class WorkoutTimer: ObservableObject {
         let pausedElapsed = elapsedBeforeStart
         let startingSegment = segments[currentSegmentIndex(at: pausedElapsed)]
         let startsAtSegmentBoundary = abs(pausedElapsed - startingSegment.start) < 0.001
-        let immediateStartCue: CueKind? = startsAtSegmentBoundary
-            ? cueForPhaseStart(startingSegment.phase)
-            : nil
+        let immediateStartCue: CueKind? = if let immediateCue {
+            immediateCue
+        } else if useDefaultPhaseStartCue, startsAtSegmentBoundary {
+            cueForPhaseStart(startingSegment.phase)
+        } else {
+            nil
+        }
         startDate = Date()
         isRunning = true
         beginTicking()
@@ -204,14 +215,38 @@ final class WorkoutTimer: ObservableObject {
 
     func previousInterval() {
         let current = currentSegmentIndex()
-        rebase(to: max(0, current - 1))
+        rebase(
+            to: max(0, current - 1),
+            runningTransitionCue: nil,
+            useDefaultPhaseStartCue: false
+        )
     }
 
     func nextInterval() {
         let current = currentSegmentIndex()
-        let next = min(segments.count - 1, current + 1)
-        guard next != current else { return }
-        rebase(to: next)
+        guard segments.indices.contains(current) else { return }
+
+        let currentSegment = segments[current]
+        guard current < segments.count - 1 else {
+            let finishCue: CueKind? = isRunning
+                && settings.automaticTimerSoundsEnabled
+                && currentSegment.phase == .wrestle
+                ? .airHorn
+                : nil
+            finishFromManualAdvance(cue: finishCue)
+            return
+        }
+
+        let next = current + 1
+        let transitionCue = cueForManualAdvance(
+            from: currentSegment,
+            to: segments[next]
+        )
+        rebase(
+            to: next,
+            runningTransitionCue: transitionCue,
+            useDefaultPhaseStartCue: false
+        )
     }
 
     func whistle() {
@@ -398,19 +433,50 @@ final class WorkoutTimer: ObservableObject {
         if let tickTimer { RunLoop.main.add(tickTimer, forMode: .common) }
     }
 
-    private func rebase(to segmentIndex: Int) {
+    private func rebase(
+        to segmentIndex: Int,
+        runningTransitionCue: CueKind?,
+        useDefaultPhaseStartCue: Bool
+    ) {
         guard segments.indices.contains(segmentIndex) else { return }
         elapsedBeforeStart = segments[segmentIndex].start
         startDate = nil
         isFinished = false
         if isRunning {
-            start()
+            startTimer(
+                immediateCue: runningTransitionCue,
+                useDefaultPhaseStartCue: useDefaultPhaseStartCue
+            )
         } else {
             refresh()
             if liveActivity.hasActiveActivity {
                 syncLiveActivity(segmentIndex: segmentIndex)
             }
         }
+    }
+
+    private func finishFromManualAdvance(cue: CueKind?) {
+        let total = segments.last.map { $0.start + $0.duration } ?? elapsed
+        elapsedBeforeStart = total
+        startDate = nil
+        isRunning = false
+        tickTimer?.invalidate()
+        tickTimer = nil
+        audio.stopTimer()
+        refresh()
+
+        if let cue {
+            audio.playTimerCueNow(cue, volume: Float(settings.whistleVolume))
+        }
+    }
+
+    private func cueForManualAdvance(
+        from currentSegment: WorkoutSegment,
+        to nextSegment: WorkoutSegment
+    ) -> CueKind? {
+        guard isRunning, settings.automaticTimerSoundsEnabled else { return nil }
+        if currentSegment.phase == .wrestle { return .airHorn }
+        return cueForPhaseStart(nextSegment.phase)
     }
 
     private func syncLiveActivity(segmentIndex: Int? = nil) {
@@ -467,7 +533,7 @@ final class WorkoutTimer: ObservableObject {
             remainingSeconds: Int(ceil(remaining)),
             isRunning: isRunning,
             canGoBack: index > 0,
-            canAdvance: index < segments.count - 1,
+            canAdvance: true,
             segmentIndex: index
         )
     }
