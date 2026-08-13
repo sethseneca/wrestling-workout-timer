@@ -72,7 +72,12 @@ struct ContentView: View {
                         alignment: layoutOrientation.controlAlignment
                     )
                     .padding(controlInsets(for: layoutOrientation))
-                    .offset(y: layoutOrientation.isPortrait ? 14 : 0)
+                    .offset(
+                        controlOffset(
+                            for: layoutOrientation,
+                            safeAreaInsets: geometry.safeAreaInsets
+                        )
+                    )
                     .animation(nil, value: layoutOrientation)
 
                 if showingAudioMenu {
@@ -351,6 +356,28 @@ struct ContentView: View {
             return EdgeInsets(top: 8, leading: 4, bottom: 8, trailing: 0)
         case .landscapeRight:
             return EdgeInsets(top: 8, leading: 0, bottom: 8, trailing: 4)
+        }
+    }
+
+    private func controlOffset(
+        for orientation: TimerLayoutOrientation,
+        safeAreaInsets: EdgeInsets
+    ) -> CGSize {
+        let edgeGap: CGFloat = 6
+
+        switch orientation {
+        case .portrait:
+            return CGSize(width: 0, height: 14)
+        case .landscapeLeft:
+            return CGSize(
+                width: -max(0, safeAreaInsets.leading - edgeGap),
+                height: 0
+            )
+        case .landscapeRight:
+            return CGSize(
+                width: max(0, safeAreaInsets.trailing - edgeGap),
+                height: 0
+            )
         }
     }
 

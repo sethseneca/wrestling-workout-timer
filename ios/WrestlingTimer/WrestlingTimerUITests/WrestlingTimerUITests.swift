@@ -281,8 +281,10 @@ final class WrestlingTimerUITests: XCTestCase {
         XCTAssertLessThan(abs(reset.frame.midX - gear.frame.midX), 12, "Landscape controls must form one vertical side rail.")
         if controlsOnRight {
             XCTAssertGreaterThan(reset.frame.midX, bounds.width * 0.72, "The controls must remain on the phone's physical bottom edge.")
+            XCTAssertLessThan(bounds.maxX - reset.frame.maxX, 16, "The landscape rail must sit tight to the right edge.")
         } else {
             XCTAssertLessThan(reset.frame.midX, bounds.width * 0.28, "The controls must remain on the phone's physical bottom edge.")
+            XCTAssertLessThan(reset.frame.minX, 16, "The landscape rail must sit tight to the left edge.")
         }
 
         switch audioCorner {

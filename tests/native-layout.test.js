@@ -33,8 +33,11 @@ test("control rail stays pinned to the physical bottom without a rotation animat
 
   assert.match(
     body,
-    /\.padding\(controlInsets\(for: layoutOrientation\)\)[\s\S]*\.offset\(y: layoutOrientation\.isPortrait \? 14 : 0\)[\s\S]*\.animation\(nil, value: layoutOrientation\)/
+    /\.padding\(controlInsets\(for: layoutOrientation\)\)[\s\S]*controlOffset\([\s\S]*safeAreaInsets: geometry\.safeAreaInsets[\s\S]*\.animation\(nil, value: layoutOrientation\)/
   );
+  assert.match(contentView, /let edgeGap: CGFloat = 6/);
+  assert.match(contentView, /safeAreaInsets\.leading - edgeGap/);
+  assert.match(contentView, /safeAreaInsets\.trailing - edgeGap/);
   assert.match(orientationRefresh, /interfaceOrientation = orientation/);
   assert.doesNotMatch(orientationRefresh, /withAnimation/);
 });
