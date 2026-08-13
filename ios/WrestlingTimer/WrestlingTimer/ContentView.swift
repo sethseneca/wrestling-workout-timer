@@ -64,7 +64,14 @@ struct ContentView: View {
                 controlRail(for: layoutOrientation)
                     .frame(
                         width: layoutOrientation.isPortrait ? max(0, geometry.size.width - 16) : 96,
-                        height: layoutOrientation.isPortrait ? 88 : max(0, geometry.size.height - 16)
+                        height: layoutOrientation.isPortrait
+                            ? 88
+                            : max(
+                                0,
+                                geometry.size.height
+                                    - 16
+                                    + geometry.safeAreaInsets.bottom
+                            )
                     )
                     .frame(
                         maxWidth: .infinity,
@@ -371,12 +378,12 @@ struct ContentView: View {
         case .landscapeLeft:
             return CGSize(
                 width: -max(0, safeAreaInsets.leading - edgeGap),
-                height: 0
+                height: safeAreaInsets.bottom / 2
             )
         case .landscapeRight:
             return CGSize(
                 width: max(0, safeAreaInsets.trailing - edgeGap),
-                height: 0
+                height: safeAreaInsets.bottom / 2
             )
         }
     }
