@@ -282,6 +282,12 @@ final class WorkoutTimer: ObservableObject {
         )
     }
 
+    func setTenSecondWarningEnabled(_ enabled: Bool) {
+        settings.tenSecondWarningEnabled = enabled
+        guard isRunning else { return }
+        startTimerAudio(at: elapsed)
+    }
+
 #if WRESTLING_VERIFICATION
     func startDeviceVerificationWorkout() {
         settings.readySeconds = 3

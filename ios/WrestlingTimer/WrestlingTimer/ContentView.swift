@@ -4,7 +4,7 @@ import UIKit
 struct ContentView: View {
     @EnvironmentObject private var timer: WorkoutTimer
     @State private var showingSetup = false
-    @State private var showingSoundboard = false
+    @State private var showingAudioMenu = false
     @State private var showingTimeEditor = false
     @State private var interfaceOrientation: UIInterfaceOrientation = .unknown
 
@@ -32,17 +32,17 @@ struct ContentView: View {
                 timerReadout(for: layoutOrientation)
                     .padding(readoutInsets(for: layoutOrientation))
                     .animation(orientationAnimation, value: layoutOrientation)
-                    .animation(.easeInOut(duration: 0.22), value: showingSoundboard)
+                    .animation(.easeInOut(duration: 0.22), value: showingAudioMenu)
 
-                setupButton
+                audioButton
                     .frame(
                         maxWidth: .infinity,
                         maxHeight: .infinity,
-                        alignment: layoutOrientation.gearAlignment
+                        alignment: layoutOrientation.audioButtonAlignment
                     )
-                    .padding(gearInsets(for: layoutOrientation))
-                    .opacity(showingSoundboard ? 0 : 1)
-                    .allowsHitTesting(!showingSoundboard)
+                    .padding(audioButtonInsets(for: layoutOrientation))
+                    .opacity(showingAudioMenu ? 0 : 1)
+                    .allowsHitTesting(!showingAudioMenu)
                     .animation(orientationAnimation, value: layoutOrientation)
 
                 controlRail(for: layoutOrientation)
@@ -58,10 +58,10 @@ struct ContentView: View {
                     .padding(controlInsets(for: layoutOrientation))
                     .animation(orientationAnimation, value: layoutOrientation)
 
-                if showingSoundboard {
-                    soundboard(for: layoutOrientation, availableSize: geometry.size)
+                if showingAudioMenu {
+                    audioMenu(for: layoutOrientation, availableSize: geometry.size)
                         .transition(
-                            .move(edge: layoutOrientation.soundboardTransitionEdge)
+                            .move(edge: layoutOrientation.audioMenuTransitionEdge)
                                 .combined(with: .opacity)
                         )
                 }
@@ -85,9 +85,9 @@ struct ContentView: View {
     }
 
     private func timerReadout(for orientation: TimerLayoutOrientation) -> some View {
-        let phaseSize: CGFloat = orientation.isPortrait ? (showingSoundboard ? 36 : 56) : (showingSoundboard ? 34 : 48)
-        let countdownSize: CGFloat = orientation.isPortrait ? (showingSoundboard ? 112 : 188) : (showingSoundboard ? 126 : 222)
-        let roundSize: CGFloat = orientation.isPortrait ? (showingSoundboard ? 28 : 42) : (showingSoundboard ? 32 : 48)
+        let phaseSize: CGFloat = orientation.isPortrait ? (showingAudioMenu ? 36 : 56) : (showingAudioMenu ? 34 : 48)
+        let countdownSize: CGFloat = orientation.isPortrait ? (showingAudioMenu ? 112 : 188) : (showingAudioMenu ? 126 : 222)
+        let roundSize: CGFloat = orientation.isPortrait ? (showingAudioMenu ? 28 : 42) : (showingAudioMenu ? 32 : 48)
 
         return VStack(spacing: 1) {
             Text(timer.phaseTitle)
@@ -95,14 +95,14 @@ struct ContentView: View {
                 .tracking(0.5)
                 .lineLimit(1)
                 .minimumScaleFactor(0.65)
-                .offset(y: orientation.isPortrait ? 0 : (showingSoundboard ? 8 : 22))
+                .offset(y: orientation.isPortrait ? 0 : (showingAudioMenu ? 8 : 22))
 
             Text(timer.countdownText)
                 .font(fightFont(size: countdownSize))
                 .monospacedDigit()
                 .minimumScaleFactor(0.55)
                 .lineLimit(1)
-                .offset(y: orientation.isPortrait ? 0 : (showingSoundboard ? 12 : 36))
+                .offset(y: orientation.isPortrait ? 0 : (showingAudioMenu ? 12 : 36))
 
             Text(timer.isFinished ? "WORKOUT COMPLETE" : timer.roundText.uppercased())
                 .font(fightFont(size: roundSize, weight: .heavy))
@@ -126,22 +126,26 @@ struct ContentView: View {
         return Font(athleticFont)
     }
 
-    private var setupButton: some View {
-        Button { showingSetup = true } label: {
+    private var audioButton: some View {
+        Button {
+            withAnimation(.easeInOut(duration: 0.22)) {
+                showingAudioMenu = true
+            }
+        } label: {
             ZStack {
                 Circle()
                     .fill(.black.opacity(0.8))
 
-                Image(systemName: "gearshape")
-                    .font(.system(size: 34, weight: .bold))
+                Image(systemName: "speaker.wave.3.fill")
+                    .font(.system(size: 29, weight: .bold))
                     .foregroundStyle(.white.opacity(0.9))
             }
             .frame(width: 60, height: 60)
             .contentShape(Circle())
         }
         .buttonStyle(.plain)
-        .accessibilityLabel("Open workout setup")
-        .accessibilityIdentifier("Workout setup button")
+        .accessibilityLabel("Open sound and volume")
+        .accessibilityIdentifier("Sound and volume button")
     }
 
     private func controlRail(for orientation: TimerLayoutOrientation) -> some View {
@@ -168,14 +172,11 @@ struct ContentView: View {
             .buttonStyle(RailButtonStyle())
             .accessibilityLabel(timer.isRunning ? "Pause timer" : "Start timer")
             railButton("forward.end.fill", label: "Next interval") { timer.nextInterval() }
-            railButton(
-                showingSoundboard ? "chevron.right" : "square.grid.2x2.fill",
-                size: 26,
-                label: showingSoundboard ? "Close soundboard" : "Open soundboard"
-            ) {
+            railButton("gearshape.fill", size: 26, label: "Open workout setup") {
                 withAnimation(.easeInOut(duration: 0.22)) {
-                    showingSoundboard.toggle()
+                    showingAudioMenu = false
                 }
+                showingSetup = true
             }
         }
         .foregroundStyle(.white.opacity(0.82))
@@ -201,19 +202,23 @@ struct ContentView: View {
     }
 
     @ViewBuilder
-    private func soundboard(
+    private func audioMenu(
         for orientation: TimerLayoutOrientation,
         availableSize: CGSize
     ) -> some View {
-        SoundboardPanel()
+        AudioMenuPanel {
+            withAnimation(.easeInOut(duration: 0.22)) {
+                showingAudioMenu = false
+            }
+        }
             .environmentObject(timer)
             .frame(width: orientation.isPortrait ? max(0, availableSize.width - 16) : 318)
             .frame(
                 maxWidth: .infinity,
                 maxHeight: .infinity,
-                alignment: orientation.soundboardAlignment
+                alignment: orientation.audioMenuAlignment
             )
-            .padding(soundboardInsets(for: orientation))
+            .padding(audioMenuInsets(for: orientation))
     }
 
     private func readoutInsets(for orientation: TimerLayoutOrientation) -> EdgeInsets {
@@ -221,12 +226,12 @@ struct ContentView: View {
             return EdgeInsets(
                 top: 68,
                 leading: 24,
-                bottom: showingSoundboard ? 390 : 104,
+                bottom: showingAudioMenu ? 390 : 104,
                 trailing: 24
             )
         }
 
-        if !showingSoundboard {
+        if !showingAudioMenu {
             return EdgeInsets(top: 0, leading: 104, bottom: 0, trailing: 104)
         }
 
@@ -240,7 +245,7 @@ struct ContentView: View {
         }
     }
 
-    private func gearInsets(for orientation: TimerLayoutOrientation) -> EdgeInsets {
+    private func audioButtonInsets(for orientation: TimerLayoutOrientation) -> EdgeInsets {
         switch orientation {
         case .portrait:
             return EdgeInsets(top: 8, leading: 0, bottom: 0, trailing: 8)
@@ -262,7 +267,7 @@ struct ContentView: View {
         }
     }
 
-    private func soundboardInsets(for orientation: TimerLayoutOrientation) -> EdgeInsets {
+    private func audioMenuInsets(for orientation: TimerLayoutOrientation) -> EdgeInsets {
         switch orientation {
         case .portrait:
             return EdgeInsets(top: 8, leading: 8, bottom: 100, trailing: 8)
@@ -320,7 +325,7 @@ private enum TimerLayoutOrientation: Equatable {
         }
     }
 
-    var gearAlignment: Alignment {
+    var audioButtonAlignment: Alignment {
         switch self {
         case .portrait: .topTrailing
         case .landscapeLeft: .bottomTrailing
@@ -328,7 +333,7 @@ private enum TimerLayoutOrientation: Equatable {
         }
     }
 
-    var soundboardAlignment: Alignment {
+    var audioMenuAlignment: Alignment {
         switch self {
         case .portrait: .bottom
         case .landscapeLeft: .trailing
@@ -336,7 +341,7 @@ private enum TimerLayoutOrientation: Equatable {
         }
     }
 
-    var soundboardTransitionEdge: Edge {
+    var audioMenuTransitionEdge: Edge {
         switch self {
         case .portrait: .bottom
         case .landscapeLeft: .trailing
@@ -345,8 +350,9 @@ private enum TimerLayoutOrientation: Equatable {
     }
 }
 
-private struct SoundboardPanel: View {
+private struct AudioMenuPanel: View {
     @EnvironmentObject private var timer: WorkoutTimer
+    let onClose: () -> Void
 
     private let columns = [
         GridItem(.flexible(), spacing: 8),
@@ -354,14 +360,24 @@ private struct SoundboardPanel: View {
     ]
 
     var body: some View {
-        VStack(spacing: 8) {
-            HStack {
-                Text("SOUNDBOARD")
+        VStack(spacing: 7) {
+            HStack(spacing: 8) {
+                Image(systemName: "speaker.wave.3.fill")
+                    .foregroundStyle(.white.opacity(0.72))
+                Text("SOUND & VOLUME")
                     .font(.subheadline.weight(.black))
                     .lineLimit(1)
                     .minimumScaleFactor(0.8)
                     .layoutPriority(1)
                 Spacer()
+                Button(action: onClose) {
+                    Image(systemName: "xmark")
+                        .font(.caption.weight(.black))
+                        .frame(width: 28, height: 28)
+                        .background(.white.opacity(0.12), in: Circle())
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel("Close sound and volume")
             }
 
             Toggle(isOn: automaticTimerSoundsEnabled) {
@@ -382,26 +398,35 @@ private struct SoundboardPanel: View {
             .padding(.vertical, 6)
             .background(.white.opacity(0.08), in: RoundedRectangle(cornerRadius: 12))
 
-            SoundPadButton(title: "ROUND ONE", icon: "quote.bubble.fill", tint: .blue) {
-                timer.playManualRoundOne()
-            }
+            audioVolumeRow(
+                title: "WHISTLE",
+                icon: "speaker.wave.2.fill",
+                value: whistleVolume,
+                range: 0...2,
+                testLabel: "Test whistle",
+                onTest: timer.whistle
+            )
+
+            warningVolumeRow
 
             LazyVGrid(columns: columns, spacing: 8) {
+                SoundPadButton(title: "ROUND ONE", icon: "quote.bubble.fill", tint: .blue) {
+                    timer.playManualRoundOne()
+                }
                 SoundPadButton(title: "THREE CLAPS", icon: "waveform", tint: .orange) {
                     timer.playManualClapper()
                 }
                 SoundPadButton(title: "SHORT WHISTLE", icon: "speaker.wave.2.fill", tint: .mint) {
                     timer.playManualShortWhistle()
                 }
-            }
-
-            SoundPadButton(title: "FINAL HORN", icon: "flag.checkered", tint: .red) {
-                timer.playManualFinalHorn()
+                SoundPadButton(title: "FINAL HORN", icon: "flag.checkered", tint: .red) {
+                    timer.playManualFinalHorn()
+                }
             }
 
             VStack(spacing: 2) {
                 HStack {
-                    Text("SOUNDBOARD VOLUME")
+                    Text("SOUND PADS")
                         .font(.caption2.weight(.black))
                         .foregroundStyle(.white.opacity(0.72))
                     Spacer()
@@ -415,7 +440,7 @@ private struct SoundboardPanel: View {
                         .foregroundStyle(.white.opacity(0.65))
                     Slider(value: soundboardVolume, in: 0...1, step: 0.05)
                         .tint(.white)
-                        .accessibilityLabel("Soundboard volume")
+                        .accessibilityLabel("Sound pads volume")
                         .accessibilityValue("\(Int((timer.settings.soundboardVolume * 100).rounded())) percent")
                 }
             }
@@ -430,6 +455,82 @@ private struct SoundboardPanel: View {
         }
         .shadow(color: .black.opacity(0.42), radius: 18, x: -4, y: 0)
         .onAppear { timer.prepareSoundboard() }
+        .accessibilityElement(children: .contain)
+        .accessibilityIdentifier("Sound and volume menu")
+    }
+
+    private func audioVolumeRow(
+        title: String,
+        icon: String,
+        value: Binding<Double>,
+        range: ClosedRange<Double>,
+        testLabel: String,
+        isEnabled: Bool = true,
+        onTest: @escaping () -> Void
+    ) -> some View {
+        VStack(spacing: 2) {
+            HStack(spacing: 7) {
+                Image(systemName: icon)
+                    .font(.caption)
+                    .foregroundStyle(.white.opacity(0.68))
+                Text(title)
+                    .font(.caption2.weight(.black))
+                    .foregroundStyle(.white.opacity(0.76))
+                Spacer()
+                Text("\(Int((value.wrappedValue * 100).rounded()))%")
+                    .font(.caption2.monospacedDigit().weight(.bold))
+                    .foregroundStyle(.white.opacity(0.68))
+                Button("TEST", action: onTest)
+                    .font(.caption2.weight(.black))
+                    .buttonStyle(.bordered)
+                    .controlSize(.mini)
+                    .accessibilityLabel(testLabel)
+            }
+            Slider(value: value, in: range, step: 0.05)
+                .tint(.white)
+                .accessibilityLabel("\(title.capitalized) volume")
+                .accessibilityValue("\(Int((value.wrappedValue * 100).rounded())) percent")
+        }
+        .padding(.horizontal, 4)
+        .disabled(!isEnabled)
+        .opacity(isEnabled ? 1 : 0.45)
+    }
+
+    private var warningVolumeRow: some View {
+        VStack(spacing: 2) {
+            HStack(spacing: 7) {
+                Toggle(isOn: tenSecondWarningEnabled) {
+                    HStack(spacing: 7) {
+                        Image(systemName: "waveform")
+                            .font(.caption)
+                            .foregroundStyle(.white.opacity(0.68))
+                        Text("10-SECOND CLAPS")
+                            .font(.caption2.weight(.black))
+                            .foregroundStyle(.white.opacity(0.76))
+                    }
+                }
+                .toggleStyle(.switch)
+                .tint(.green)
+                .scaleEffect(0.82, anchor: .trailing)
+                Spacer(minLength: 0)
+                Text("\(Int((timer.settings.tenSecondWarningVolume * 100).rounded()))%")
+                    .font(.caption2.monospacedDigit().weight(.bold))
+                    .foregroundStyle(.white.opacity(0.68))
+                Button("TEST") { timer.warning() }
+                    .font(.caption2.weight(.black))
+                    .buttonStyle(.bordered)
+                    .controlSize(.mini)
+                    .disabled(!timer.settings.tenSecondWarningEnabled)
+                    .accessibilityLabel("Test 10-second claps")
+            }
+            Slider(value: warningVolume, in: 0...3, step: 0.05)
+                .tint(.white)
+                .accessibilityLabel("10-second claps volume")
+                .accessibilityValue("\(Int((timer.settings.tenSecondWarningVolume * 100).rounded())) percent")
+                .disabled(!timer.settings.tenSecondWarningEnabled)
+                .opacity(timer.settings.tenSecondWarningEnabled ? 1 : 0.45)
+        }
+        .padding(.horizontal, 4)
     }
 
     private var automaticTimerSoundsEnabled: Binding<Bool> {
@@ -443,6 +544,27 @@ private struct SoundboardPanel: View {
         Binding(
             get: { timer.settings.soundboardVolume },
             set: { timer.setSoundboardVolume($0) }
+        )
+    }
+
+    private var whistleVolume: Binding<Double> {
+        Binding(
+            get: { timer.settings.whistleVolume },
+            set: { timer.setWhistleVolume($0) }
+        )
+    }
+
+    private var warningVolume: Binding<Double> {
+        Binding(
+            get: { timer.settings.tenSecondWarningVolume },
+            set: { timer.setTenSecondWarningVolume($0) }
+        )
+    }
+
+    private var tenSecondWarningEnabled: Binding<Bool> {
+        Binding(
+            get: { timer.settings.tenSecondWarningEnabled },
+            set: { timer.setTenSecondWarningEnabled($0) }
         )
     }
 
@@ -469,7 +591,7 @@ private struct SoundPadButton: View {
                     .minimumScaleFactor(0.75)
             }
             .foregroundStyle(.white)
-            .frame(maxWidth: .infinity, minHeight: 58)
+            .frame(maxWidth: .infinity, minHeight: 48)
             .background(tint.opacity(0.72), in: RoundedRectangle(cornerRadius: 13))
             .overlay {
                 RoundedRectangle(cornerRadius: 13)
@@ -635,38 +757,6 @@ private struct SetupView: View {
                     ColorPicker("Wrestle", selection: wrestleColor, supportsOpacity: false)
                     ColorPicker("Rest", selection: restColor, supportsOpacity: false)
                 }
-                Section("Sound") {
-                    VStack(alignment: .leading, spacing: 6) {
-                        HStack {
-                            Text("Whistle volume")
-                            Spacer()
-                            Text("\(Int((timer.settings.whistleVolume * 100).rounded()))%")
-                                .foregroundStyle(.secondary)
-                                .monospacedDigit()
-                            Button("Test") { timer.whistle() }
-                                .buttonStyle(.bordered)
-                        }
-                        Slider(value: whistleVolume, in: 0...2, step: 0.05)
-                            .accessibilityLabel("Whistle volume")
-                            .accessibilityValue("\(Int((timer.settings.whistleVolume * 100).rounded())) percent")
-                    }
-                    Toggle("10-second warning", isOn: tenSecondWarningEnabled)
-                    VStack(alignment: .leading, spacing: 6) {
-                        HStack {
-                            Text("Warning volume")
-                            Spacer()
-                            Text("\(Int((timer.settings.tenSecondWarningVolume * 100).rounded()))%")
-                                .foregroundStyle(.secondary)
-                                .monospacedDigit()
-                            Button("Test") { timer.warning() }
-                                .buttonStyle(.bordered)
-                        }
-                        Slider(value: warningVolume, in: 0...3, step: 0.05)
-                            .accessibilityLabel("Warning volume")
-                            .accessibilityValue("\(Int((timer.settings.tenSecondWarningVolume * 100).rounded())) percent")
-                    }
-                    .disabled(!timer.settings.tenSecondWarningEnabled)
-                }
             }
             .navigationTitle("Workout Setup")
             .toolbar {
@@ -686,10 +776,7 @@ private struct SetupView: View {
     private var restSeconds: Binding<Int> { Binding(get: { timer.settings.restSeconds }, set: { timer.settings.restSeconds = $0 }) }
     private var readySeconds: Binding<Int> { Binding(get: { timer.settings.readySeconds }, set: { timer.settings.readySeconds = $0 }) }
     private var rounds: Binding<Int> { Binding(get: { timer.settings.rounds }, set: { timer.settings.rounds = $0 }) }
-    private var whistleVolume: Binding<Double> { Binding(get: { timer.settings.whistleVolume }, set: { timer.setWhistleVolume($0) }) }
-    private var warningVolume: Binding<Double> { Binding(get: { timer.settings.tenSecondWarningVolume }, set: { timer.setTenSecondWarningVolume($0) }) }
     private var wrestleLabel: Binding<String> { Binding(get: { timer.settings.wrestleLabel }, set: { timer.settings.wrestleLabel = $0 }) }
-    private var tenSecondWarningEnabled: Binding<Bool> { Binding(get: { timer.settings.tenSecondWarningEnabled }, set: { timer.settings.tenSecondWarningEnabled = $0 }) }
     private var readyColor: Binding<Color> { Binding(get: { timer.settings.readyColor }, set: { timer.settings.readyColor = $0 }) }
     private var wrestleColor: Binding<Color> { Binding(get: { timer.settings.wrestleColor }, set: { timer.settings.wrestleColor = $0 }) }
     private var restColor: Binding<Color> { Binding(get: { timer.settings.restColor }, set: { timer.settings.restColor = $0 }) }
