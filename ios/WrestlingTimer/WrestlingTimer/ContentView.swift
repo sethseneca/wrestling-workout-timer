@@ -72,7 +72,8 @@ struct ContentView: View {
                         alignment: layoutOrientation.controlAlignment
                     )
                     .padding(controlInsets(for: layoutOrientation))
-                    .animation(orientationAnimation, value: layoutOrientation)
+                    .offset(y: layoutOrientation.isPortrait ? 14 : 0)
+                    .animation(nil, value: layoutOrientation)
 
                 if showingAudioMenu {
                     audioMenu(for: layoutOrientation, availableSize: geometry.size)
@@ -122,7 +123,6 @@ struct ContentView: View {
                 .monospacedDigit()
                 .minimumScaleFactor(0.55)
                 .lineLimit(1)
-                .offset(y: orientation.isPortrait ? 0 : (showingAudioMenu ? 12 : 36))
 
             Text(timer.isFinished ? "COMPLETE" : timer.roundText)
                 .font(.system(size: roundSize, weight: .bold, design: .default))
@@ -374,9 +374,7 @@ struct ContentView: View {
                 orientation != .unknown
             else { return }
 
-            withAnimation(orientationAnimation) {
-                interfaceOrientation = orientation
-            }
+            interfaceOrientation = orientation
         }
     }
 

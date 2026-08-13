@@ -249,7 +249,8 @@ final class WrestlingTimerUITests: XCTestCase {
 
         let bounds = window.frame
         XCTAssertLessThan(abs(reset.frame.midY - gear.frame.midY), 12, "Portrait controls must form one horizontal bottom bar.")
-        XCTAssertGreaterThan(reset.frame.midY, bounds.height * 0.72, "Portrait controls must stay on the phone's physical bottom edge.")
+        XCTAssertGreaterThan(reset.frame.midY, bounds.height * 0.90, "Portrait controls must sit close to the phone's physical bottom edge.")
+        XCTAssertLessThan(bounds.maxY - reset.frame.maxY, 34, "Portrait controls must not float above the bottom edge.")
         XCTAssertGreaterThan(audio.frame.midX, bounds.width * 0.72, "Audio must stay in the physical portrait top-right corner.")
         XCTAssertLessThan(audio.frame.midY, bounds.height * 0.28, "Audio must stay in the physical portrait top-right corner.")
     }
@@ -271,6 +272,12 @@ final class WrestlingTimerUITests: XCTestCase {
         assertPrimaryReadoutFits(in: app)
 
         let bounds = window.frame
+        let countdown = app.staticTexts["00:10"]
+        XCTAssertLessThan(
+            abs(countdown.frame.midY - bounds.midY),
+            bounds.height * 0.06,
+            "The landscape countdown must be visually centered on the physical screen."
+        )
         XCTAssertLessThan(abs(reset.frame.midX - gear.frame.midX), 12, "Landscape controls must form one vertical side rail.")
         if controlsOnRight {
             XCTAssertGreaterThan(reset.frame.midX, bounds.width * 0.72, "The controls must remain on the phone's physical bottom edge.")
