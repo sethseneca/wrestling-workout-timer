@@ -5,6 +5,7 @@ struct ContentView: View {
     @EnvironmentObject private var timer: WorkoutTimer
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var showingSetup = false
+    @State private var preparingSetup = false
     @State private var showingAudioMenu = false
     @State private var showingTimeEditor = false
     @State private var interfaceOrientation: UIInterfaceOrientation = .unknown
@@ -88,7 +89,9 @@ struct ContentView: View {
         }
         .foregroundStyle(.white)
         .preferredColorScheme(.dark)
-        .sheet(isPresented: $showingSetup) {
+        .sheet(isPresented: $showingSetup, onDismiss: {
+            AppOrientationPolicy.restoreTimerOrientations()
+        }) {
             SetupView(initialSettings: timer.settings)
                 .environmentObject(timer)
         }
@@ -218,11 +221,26 @@ struct ContentView: View {
             ) {
                 timer.nextInterval()
             }
-            railButton("gearshape.fill", size: 26, label: "Open workout setup", feedback: .light) {
+            railButton(
+                "gearshape.fill",
+                size: 26,
+                label: "Open workout setup",
+                isEnabled: !preparingSetup,
+                feedback: .light
+            ) {
                 withAnimation(panelAnimation) {
                     showingAudioMenu = false
                 }
-                showingSetup = true
+                preparingSetup = true
+                Task { @MainActor in
+                    let portraitReady = await AppOrientationPolicy.lockSetupToPortrait()
+                    preparingSetup = false
+                    if portraitReady {
+                        showingSetup = true
+                    } else {
+                        AppOrientationPolicy.restoreTimerOrientations()
+                    }
+                }
             }
         }
         .foregroundStyle(.white.opacity(0.82))

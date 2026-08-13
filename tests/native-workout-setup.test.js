@@ -14,6 +14,17 @@ const contentView = fs.readFileSync(
   ),
   "utf8"
 );
+const appSource = fs.readFileSync(
+  path.join(
+    __dirname,
+    "..",
+    "ios",
+    "WrestlingTimer",
+    "WrestlingTimer",
+    "WrestlingTimerApp.swift"
+  ),
+  "utf8"
+);
 
 const setupSource = contentView.slice(contentView.indexOf("private struct SetupView"));
 
@@ -71,4 +82,18 @@ test("selected time blocks are visibly and accessibly distinct", () => {
   assert.match(setupSource, /\.stroke\(selected \? tint[\s\S]*lineWidth: selected \? 2 : 1\)/);
   assert.match(setupSource, /accessibilityAddTraits\(selected \? \.isSelected : \[\]\)/);
   assert.match(setupSource, /accessibilityAddTraits\(customSelected \? \.isSelected : \[\]\)/);
+});
+
+test("workout setup locks to portrait and restores timer rotation after dismissal", () => {
+  assert.match(appSource, /supportedOrientations: UIInterfaceOrientationMask = \.allButUpsideDown/);
+  assert.match(appSource, /static func lockSetupToPortrait\(\) async -> Bool/);
+  assert.match(appSource, /supportedOrientations = \.portrait/);
+  assert.match(appSource, /request\(\.portrait, in: scene\)/);
+  assert.match(appSource, /static func restoreTimerOrientations\(\)/);
+  assert.match(appSource, /supportedOrientations = \.allButUpsideDown/);
+  assert.match(
+    contentView,
+    /\.sheet\(isPresented: \$showingSetup, onDismiss: \{\s*AppOrientationPolicy\.restoreTimerOrientations\(\)/
+  );
+  assert.match(contentView, /await AppOrientationPolicy\.lockSetupToPortrait\(\)/);
 });

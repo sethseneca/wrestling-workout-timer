@@ -132,6 +132,43 @@ final class WrestlingTimerUITests: XCTestCase {
         app.buttons["Discard workout changes"].tap()
     }
 
+    func testWorkoutSetupStaysPortraitAndRestoresTimerRotation() throws {
+        XCUIDevice.shared.orientation = .landscapeLeft
+
+        let app = XCUIApplication()
+        app.launch()
+        assertLandscapeLayout(in: app, controlsOnRight: true, audioCorner: .topLeft)
+
+        app.buttons["Open workout setup"].tap()
+        XCTAssertTrue(app.navigationBars["Workout Setup"].waitForExistence(timeout: 5))
+        XCTAssertTrue(
+            waitForWindow(app.windows.firstMatch, portrait: true),
+            "Workout Setup must rotate into portrait before it appears."
+        )
+
+        XCUIDevice.shared.orientation = .landscapeRight
+        sleep(1)
+        let setupFrame = app.windows.firstMatch.frame
+        XCTAssertGreaterThan(
+            setupFrame.height,
+            setupFrame.width,
+            "Workout Setup must remain portrait while the phone turns."
+        )
+        captureScreen(named: "setup-portrait-lock")
+
+        app.buttons["Discard workout changes"].tap()
+        XCTAssertTrue(
+            waitForWindow(app.windows.firstMatch, portrait: false),
+            "The timer must return to a landscape layout after Setup closes."
+        )
+
+        XCUIDevice.shared.orientation = .portrait
+        assertPortraitLayout(in: app)
+
+        XCUIDevice.shared.orientation = .landscapeRight
+        assertLandscapeLayout(in: app, controlsOnRight: false, audioCorner: .bottomRight)
+    }
+
     func testMinimizedWorkoutSurvivesMidpointHandoff() throws {
         let app = XCUIApplication()
         app.launchEnvironment["WRESTLING_DEVICE_VERIFY"] = "1"
